@@ -83,12 +83,12 @@ export function BottomNav() {
 function CartFab({ withNav }: { withNav: boolean }) {
   const { cart, cartSummary, mode } = useStore();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  if (mode === "courier" || cart.length === 0 || path === "/carrito" || path.startsWith("/plato") || path.startsWith("/pedido")) return null;
+  if (mode === "courier" || cart.length === 0 || path === "/carrito" || path.startsWith("/plato") || path.startsWith("/pedido") || path === "/ai") return null;
   const n = cart.reduce((s, i) => s + i.qty, 0);
   return (
     <Link
       to="/carrito"
-      className=(withNav ? "bottom-20 " : "bottom-4 ") + "fixed inset-x-0 z-40 mx-auto flex w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] items-center justify-between rounded-2xl bg-primary px-4 py-3 text-primary-foreground shadow-lg active:scale-[0.98]"
+      className={(withNav ? "bottom-20 " : "bottom-4 ") + "fixed inset-x-0 z-40 mx-auto flex w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] items-center justify-between rounded-2xl bg-primary px-4 py-3 text-primary-foreground shadow-lg active:scale-[0.98]"}
     >
       <span className="flex items-center gap-2 font-semibold">
         <ShoppingBag className="size-5" /> Ver carrito · {n}
