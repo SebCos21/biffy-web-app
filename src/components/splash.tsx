@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import beeUrl from "@/assets/biffy-logo.png";
 
-const SPLASH_MS = 3000;
+const SPLASH_MS = 1000;
 
 export function Splash() {
   const [visible, setVisible] = useState(true);
