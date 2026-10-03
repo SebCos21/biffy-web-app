@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { universities } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (s: Record<string, unknown>): { next?: string } => ({ next: typeof s.next === "string" ? s.next : undefined }),
+  validateSearch: (s: Record<string, unknown>): { next?: string | undefined } => ({ next: typeof s.next === "string" ? s.next : undefined }),
   head: () => ({
     meta: [
       { title: "Iniciar sesión · Biffy" },

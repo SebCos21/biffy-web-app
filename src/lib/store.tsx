@@ -22,7 +22,7 @@ export type Order = {
   pointsUsed: number;
   total: number;
   status: OrderStatus;
-  scheduledFor?: string; // ISO
+  scheduledFor?: string | undefined; // ISO
   createdAt: string;
   paymentId: string;
   pointId: string;
@@ -33,7 +33,7 @@ export type User = {
   email: string;
   phone: string;
   career: string;
-  universityId?: string;
+  universityId?: string | undefined;
   verified: boolean;
 };
 export type Prefs = { likes: string[]; allergies: string[]; lifestyle: string[]; budget: number };
@@ -67,7 +67,7 @@ function useStoreValue() {
   const [settings, setSettings] = useState({ push: true, promos: true, email: false, dark: false });
   const [courier, setCourier] = useState({ online: false, earningsToday: 0, deliveries: 0, totalRides: 7, pendingFee: 0 });
 
-  const point = deliveryPoints.find((p) => p.id === pointId) ?? deliveryPoints[0];
+  const point = deliveryPoints.find((p) => p.id === pointId) ?? deliveryPoints[0]!;
   const loggedIn = !!user;
   const ordersCount = orders.filter((o) => o.status === "entregado").length + 7 * (loggedIn ? 1 : 0);
 
@@ -178,7 +178,7 @@ function useStoreValue() {
     },
     setPointId,
     setDefaultPayment,
-    placeOrder(opts: { scheduledFor?: string; paymentId: string; pointsToUse: number }) {
+    placeOrder(opts: { scheduledFor?: string | undefined; paymentId: string; pointsToUse: number }) {
       const s = cartSummary(opts.pointsToUse);
       const order: Order = {
         id: "BF" + Math.floor(1000 + Math.random() * 9000),
@@ -209,7 +209,7 @@ function useStoreValue() {
           if (o.id !== id) return o;
           const i = flow.indexOf(o.status);
           if (i < 0 || i === flow.length - 1) return o;
-          return { ...o, status: flow[i + 1] };
+          return { ...o, status: flow[i + 1]! };
         }),
       );
     },

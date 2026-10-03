@@ -67,7 +67,7 @@ function Survey() {
           <>
             <h1 className="text-2xl font-extrabold">¿Cuál es tu presupuesto por comida?</h1>
             <p className="mt-8 text-center text-4xl font-extrabold text-primary">{cop(budget)}</p>
-            <Slider className="mt-6" min={5000} max={50000} step={1000} value={[budget]} onValueChange={(v) => setBudget(v[0])} />
+            <Slider className="mt-6" min={5000} max={50000} step={1000} value={[budget]} onValueChange={(v) => setBudget(v[0] ?? budget)} />
             <div className="mt-2 flex justify-between text-xs text-muted-foreground"><span>$5.000</span><span>$50.000</span></div>
           </>
         )}
