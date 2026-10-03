@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExplorarRouteImport } from './routes/explorar'
+import { Route as PlatoIdRouteImport } from './routes/plato.$id'
+import { Route as RestauranteIdRouteImport } from './routes/restaurante.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +24,49 @@ const ExplorarRoute = ExplorarRouteImport.update({
   path: '/explorar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlatoIdRoute = PlatoIdRouteImport.update({
+  id: '/plato/$id',
+  path: '/plato/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RestauranteIdRoute = RestauranteIdRouteImport.update({
+  id: '/restaurante/$id',
+  path: '/restaurante/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/explorar': typeof ExplorarRoute
+  '/plato/$id': typeof PlatoIdRoute
+  '/restaurante/$id': typeof RestauranteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/explorar': typeof ExplorarRoute
+  '/plato/$id': typeof PlatoIdRoute
+  '/restaurante/$id': typeof RestauranteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/explorar': typeof ExplorarRoute
+  '/plato/$id': typeof PlatoIdRoute
+  '/restaurante/$id': typeof RestauranteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/explorar'
+  fullPaths: '/' | '/explorar' | '/plato/$id' | '/restaurante/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/explorar'
-  id: '__root__' | '/' | '/explorar'
+  to: '/' | '/explorar' | '/plato/$id' | '/restaurante/$id'
+  id: '__root__' | '/' | '/explorar' | '/plato/$id' | '/restaurante/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExplorarRoute: typeof ExplorarRoute
+  PlatoIdRoute: typeof PlatoIdRoute
+  RestauranteIdRoute: typeof RestauranteIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +85,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExplorarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plato/$id': {
+      id: '/plato/$id'
+      path: '/plato/$id'
+      fullPath: '/plato/$id'
+      preLoaderRoute: typeof PlatoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/restaurante/$id': {
+      id: '/restaurante/$id'
+      path: '/restaurante/$id'
+      fullPath: '/restaurante/$id'
+      preLoaderRoute: typeof RestauranteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExplorarRoute: ExplorarRoute,
+  PlatoIdRoute: PlatoIdRoute,
+  RestauranteIdRoute: RestauranteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
