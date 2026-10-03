@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cut, maximum-scale=1" },
-      { name: "theme-color", content: "#5E23E3" },
+      { name: "theme-color", content: "#FCBD1A" },
       { title: "Biffy" },
       { name: "description", content: "Biffy: comida para estudiantes universitarios en Colombia." },
       { property: "og:title", content: "Biffy" },
