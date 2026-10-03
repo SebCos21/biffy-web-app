@@ -11,15 +11,17 @@ import { seo } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/repartidor/")({
-  head: () => seo("Modo repartidor", "Recibe ofertas cerca de ti y gana entregando en el campus."),
+  head: () => seo("Modo repartidor", "Recibe ofertas cerca de ti y gana entregando en tu ciudad o en tu campus."),
   component: Courier,
 });
 
-type Offer = { id: string; restaurant: string; pickup: string; dropoff: string; client: string; km: number; min: number; pay: number; payment: string; items: string; note: string; pickupCode: string; clientCode: string };
+type Offer = { id: string; restaurant: string; pickup: string; dropoff: string; client: string; km: number; min: number; pay: number; payment: string; items: string; note: string; pickupCode: string; clientCode: string; zone: "general" | "campus" };
 const offers: Offer[] = [
-  { id: "of1", restaurant: "La Plazoleta Pizza", pickup: "Plazoleta B · Local 12", dropoff: "Biblioteca Central", client: "Sofía", km: 0.8, min: 12, pay: 7800, payment: "Nequi (pagado)", items: "2 productos · Bolsa mediana", note: "Estoy en las bancas junto al ascensor", pickupCode: "8492", clientCode: "4821" },
-  { id: "of2", restaurant: "Verde Bowl", pickup: "Ingeniería · Cafetería", dropoff: "Plazoleta Che", client: "Mateo", km: 1.3, min: 14, pay: 6900, payment: "Efectivo · cobrar $22.000", items: "1 producto · Bolsa pequeña", note: "Camiseta azul", pickupCode: "3310", clientCode: "7755" },
-  { id: "of3", restaurant: "Café Enjambre", pickup: "Biblioteca · Piso 1", dropoff: "Edificio Ingeniería", client: "Valentina", km: 0.5, min: 8, pay: 5200, payment: "Tarjeta (pagado)", items: "3 productos · Bolsa pequeña", note: "Salón 302", pickupCode: "1188", clientCode: "2468" },
+  { id: "of1", restaurant: "La Plazoleta Pizza", pickup: "Plazoleta B · Local 12", dropoff: "Biblioteca Central", client: "Sofía", km: 0.8, min: 12, pay: 7800, payment: "Nequi (pagado)", items: "2 productos · Bolsa mediana", note: "Estoy en las bancas junto al ascensor", pickupCode: "8492", clientCode: "4821", zone: "campus" },
+  { id: "of2", restaurant: "Verde Bowl", pickup: "Ingeniería · Cafetería", dropoff: "Plazoleta Che", client: "Mateo", km: 1.3, min: 14, pay: 6900, payment: "Efectivo · cobrar $22.000", items: "1 producto · Bolsa pequeña", note: "Camiseta azul", pickupCode: "3310", clientCode: "7755", zone: "campus" },
+  { id: "of3", restaurant: "Café Enjambre", pickup: "Biblioteca · Piso 1", dropoff: "Edificio Ingeniería", client: "Valentina", km: 0.5, min: 8, pay: 5200, payment: "Tarjeta (pagado)", items: "3 productos · Bolsa pequeña", note: "Salón 302", pickupCode: "1188", clientCode: "2468", zone: "campus" },
+  { id: "of4", restaurant: "Burger Station", pickup: "Cra. 7 #45-12", dropoff: "Calle 53 #10-20, Apto 301", client: "Andrés", km: 2.4, min: 18, pay: 9500, payment: "Nequi (pagado)", items: "2 productos · Bolsa mediana", note: "Portería, preguntar por Andrés", pickupCode: "5521", clientCode: "9034", zone: "general" },
+  { id: "of5", restaurant: "Tacos El Parche", pickup: "Calle 63 #9-40", dropoff: "Parque de los Hippies", client: "Laura", km: 1.9, min: 15, pay: 8200, payment: "Efectivo · cobrar $31.000", items: "3 productos · Bolsa grande", note: "Chaqueta roja", pickupCode: "6610", clientCode: "1357", zone: "general" },
 ];
 const goals = [10, 25, 50];
 
@@ -34,15 +36,20 @@ function Courier() {
   const [progress, setProgress] = useState(0);
   const [declined, setDeclined] = useState<string[]>([]);
 
+  const zone = s.courier.zone;
+  const zoneOffers = offers.filter((o) => o.zone === zone);
+  const canCampus = !!s.user?.verified;
+
   // Simulated incoming offer when online
   useEffect(() => {
     if (!s.courier.online || phase !== "home") return;
     const t = setTimeout(() => {
-      const next = offers.find((o) => !declined.includes(o.id)) ?? offers[0]!;
+      const next = zoneOffers.find((o) => !declined.includes(o.id)) ?? zoneOffers[0]!;
       setOffer(next); setLeft(18); setPhase("offer");
     }, 5000);
     return () => clearTimeout(t);
-  }, [s.courier.online, phase, declined]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.courier.online, phase, declined, zone]);
 
   useEffect(() => {
     if (phase !== "offer") return;
@@ -87,6 +94,20 @@ function Courier() {
 
         {phase === "home" && (
           <>
+            <div className="mt-3 rounded-2xl bg-card p-1.5 shadow-sm">
+              <div className="grid grid-cols-2 gap-1">
+                {(["general", "campus"] as const).map((z) => (
+                  <button key={z} onClick={() => {
+                    if (z === "campus" && !canCampus) { toast.error("Verifica tu correo universitario para repartir en el campus"); return; }
+                    s.setCourier((c) => ({ ...c, zone: z })); toast(z === "campus" ? "Repartiendo dentro de tu campus 🎓" : "Repartiendo en toda la ciudad 🛵");
+                  }} className={cn("rounded-xl py-2.5 text-sm font-bold active:scale-95", zone === z ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
+                    {z === "general" ? "🛵 General" : "🎓 Campus" + (canCampus ? "" : " 🔒")}
+                  </button>
+                ))}
+              </div>
+              <p className="px-2 pb-1 pt-1.5 text-xs text-muted-foreground">{zone === "general" ? "Pedidos de restaurantes de la ciudad cerca de ti." : "Solo pedidos dentro de tu universidad, a pie o en bici."}</p>
+              {!canCampus && <Link to="/campus" className="block px-2 pb-1 text-xs font-bold text-primary">Verificar universidad para desbloquear Campus →</Link>}
+            </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div className="rounded-2xl bg-primary p-4 text-primary-foreground"><p className="text-xs">Ganancias hoy</p><p className="text-2xl font-extrabold">{cop(s.courier.earningsToday)}</p></div>
               <div className="rounded-2xl bg-card p-4 shadow-sm"><p className="text-xs text-muted-foreground">Entregas</p><p className="text-2xl font-extrabold">{s.courier.deliveries}</p></div>
@@ -97,14 +118,14 @@ function Courier() {
               <p className="mt-1 text-xs text-muted-foreground">Bonos: 10 → $10.000 · 25 → $30.000 · 50 → $80.000</p>
             </div>
             <h2 className="mb-2 mt-4 font-bold">Mapa de demanda cerca de ti <span className="text-xs text-danger">● Alta ahora</span></h2>
-            <MockMap labelA="Plazoleta · 6 pedidos" labelB="Biblioteca +$1.200" className="h-40" />
+            <MockMap labelA={zone === "campus" ? "Plazoleta · 6 pedidos" : "Chapinero · 9 pedidos"} labelB={zone === "campus" ? "Biblioteca +$1.200" : "Zona G +$1.500"} className="h-40" />
             {!s.courier.online ? (
               <Empty emoji="😴" title="Estás desconectado" body="Conéctate para recibir ofertas." action={<PrimaryButton onClick={() => s.setCourier((c) => ({ ...c, online: true }))}>Conectarme</PrimaryButton>} />
             ) : (
               <>
-                <h2 className="mb-2 mt-4 font-bold">Pedidos disponibles ({offers.length})</h2>
+                <h2 className="mb-2 mt-4 font-bold">Pedidos disponibles ({zoneOffers.length})</h2>
                 <div className="space-y-2">
-                  {offers.map((o) => (
+                  {zoneOffers.map((o) => (
                     <div key={o.id} className="rounded-2xl bg-card p-4 shadow-sm">
                       <div className="flex justify-between"><p className="font-bold">{o.restaurant}</p><p className="font-extrabold text-success">{cop(o.pay)}</p></div>
                       <p className="text-sm text-muted-foreground">→ {o.dropoff} · {o.km} km · {o.min} min</p>

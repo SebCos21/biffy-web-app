@@ -103,10 +103,10 @@ function Profile() {
 
         <div className="mt-4 rounded-3xl bg-primary p-5 text-primary-foreground">
           <div className="flex items-center justify-between">
-            <p className="flex items-center gap-2 text-lg font-extrabold"><Bike /> {isCourier ? "Modo repartidor activo" : "Gana moviéndote por el campus"}</p>
+            <p className="flex items-center gap-2 text-lg font-extrabold"><Bike /> {isCourier ? "Modo repartidor activo" : "Gana dinero como repartidor"}</p>
             <Switch checked={isCourier} onCheckedChange={(v) => { if (v) setCourierOpen(true); else { s.setMode("student"); s.setCourier((c) => ({ ...c, online: false })); toast("Volviste al modo estudiante"); navigate({ to: "/" }); } }} />
           </div>
-          <p className="mt-1 text-sm opacity-90">{isCourier ? "Desactívalo para volver a pedir comida." : "Entrega pedidos entre clases y recibe tu pago al instante."}</p>
+          <p className="mt-1 text-sm opacity-90">{isCourier ? "Desactívalo para volver a pedir comida." : "Reparte en tu ciudad o en tu campus y recibe tu pago al instante."}</p>
           {isCourier && <Link to="/repartidor" className="mt-3 inline-block rounded-xl bg-card px-4 py-2 font-bold text-primary">Ir al panel</Link>}
         </div>
 
@@ -138,15 +138,12 @@ function Profile() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Activar modo repartidor</DialogTitle></DialogHeader>
           <ul className="space-y-2 text-sm">
-            <li>{u.verified ? "✅" : "❌"} Identidad universitaria verificada</li>
-            <li>✅ Mayor de edad</li>
-            <li>✅ Bicicleta, patineta o a pie dentro del campus</li>
+            <li>✅ Documento de identidad y mayor de edad</li>
+            <li>✅ Moto, bicicleta, patineta o a pie</li>
+            <li>{u.verified ? "🎓 Puedes elegir repartir en tu campus desde el panel" : "🎓 Verifica tu universidad si también quieres repartir en el campus"}</li>
             <li>ℹ️ Recibes el pago al entregar; Biffy cobra su tarifa cada quincena.</li>
           </ul>
-          {u.verified ? (
-            <PrimaryButton onClick={() => { s.setMode("courier"); setCourierOpen(false); toast.success("¡Modo repartidor activado! 🛵"); navigate({ to: "/repartidor" }); }}>Entrar como repartidor</PrimaryButton>
-          ) : (
-            <PrimaryButton onClick={() => { setCourierOpen(false); navigate({ to: "/campus" }); }}>Verificar mi universidad</PrimaryButton>
+          <PrimaryButton onClick={() => { s.setMode("courier"); setCourierOpen(false); toast.success("¡Modo repartidor activado! 🛵"); navigate({ to: "/repartidor" }); }}>Entrar como repartidor</PrimaryButton>
           )}
         </DialogContent>
       </Dialog>

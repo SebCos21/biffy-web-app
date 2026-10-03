@@ -65,7 +65,7 @@ function useStoreValue() {
     { id: "n2", title: "Descuento de campus", body: "Hasta 20% en locales de tu universidad.", read: false },
   ]);
   const [settings, setSettings] = useState({ push: true, promos: true, email: false, dark: false });
-  const [courier, setCourier] = useState({ online: false, earningsToday: 0, deliveries: 0, totalRides: 7, pendingFee: 0 });
+  const [courier, setCourier] = useState<{ online: boolean; zone: "general" | "campus"; earningsToday: number; deliveries: number; totalRides: number; pendingFee: number }>({ online: false, zone: "general", earningsToday: 0, deliveries: 0, totalRides: 7, pendingFee: 0 });
 
   const point = deliveryPoints.find((p) => p.id === pointId) ?? deliveryPoints[0]!;
   const loggedIn = !!user;
