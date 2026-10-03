@@ -26,6 +26,7 @@ function Login() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [role, setRole] = useState<"student" | "courier">("student");
 
   const submit = (e: React.FormEvent): void => {
     e.preventDefault();
@@ -33,6 +34,7 @@ function Login() {
     if (pass.length < 6) { toast.error("La contraseña debe tener al menos 6 caracteres"); return; }
     s.login(email.trim(), name.trim());
     toast.success("¡Bienvenido a Biffy! +450 Gotas 💧");
+    if (role === "courier") { s.setMode("courier"); navigate({ to: "/repartidor" }); return; }
     if (next) router.history.push(next);
     else if (!s.surveyDone) navigate({ to: "/encuesta" });
     else navigate({ to: "/" });
@@ -44,7 +46,14 @@ function Login() {
       <form onSubmit={submit} className="space-y-4 px-6">
         <div className="grid size-16 place-items-center rounded-2xl bg-primary text-3xl font-extrabold text-primary-foreground">B</div>
         <h1 className="text-3xl font-extrabold">Entra a Biffy 🐝</h1>
-        <p className="text-muted-foreground">Usa tu correo universitario para verificar tu campus y desbloquear descuentos.</p>
+        <p className="text-muted-foreground">{role === "student" ? "Usa tu correo universitario para verificar tu campus y desbloquear descuentos." : "Reparte en toda la ciudad. Con correo universitario también puedes repartir en tu campus."}</p>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo de cuenta">
+          {([["student", "🍔", "Quiero pedir", "Comida cerca de ti"], ["courier", "🛵", "Quiero repartir", "Gana dinero entregando"]] as const).map(([v, e, t1, t2]) => (
+            <button key={v} type="button" role="radio" aria-checked={role === v} onClick={() => setRole(v)} className={"rounded-2xl border-2 p-3 text-left active:scale-95 " + (role === v ? "border-primary bg-accent" : "border-border bg-card")}>
+              <span className="text-2xl">{e}</span><p className="font-bold">{t1}</p><p className="text-xs text-muted-foreground">{t2}</p>
+            </button>
+          ))}
+        </div>
         <Field label="Nombre" value={name} onChange={setName} placeholder="Sofía Martínez" />
         <Field label="Correo" value={email} onChange={setEmail} placeholder={"tu@" + universities[0]!.domain} type="email" />
         <Field label="Contraseña" value={pass} onChange={setPass} placeholder="••••••" type="password" />
