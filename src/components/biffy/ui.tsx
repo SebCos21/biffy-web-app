@@ -166,6 +166,7 @@ export function AllergyBadge({ dish }: { dish: Dish }) {
 
 export function DishCard({ dish, wide }: { dish: Dish; wide?: boolean }) {
   const { addToCart, loggedIn } = useStore();
+  const navigate = useNavigate();
   const r = restaurantById(dish.restaurantId)!;
   return (
     <Link
