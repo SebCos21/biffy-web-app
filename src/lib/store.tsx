@@ -128,7 +128,7 @@ function useStoreValue() {
     login(email: string, name: string) {
       const domain = email.split("@")[1]?.toLowerCase() ?? "";
       const uni = universities.find((u) => domain.endsWith(u.domain));
-      setUser({ name: name || email.split("@")[0], email, phone: "+57 300 123 4567", career: "Ingeniería de Sistemas", universityId: uni?.id, verified: !!uni });
+      setUser({ name: name || email.split("@")[0] || "Estudiante", email, phone: "+57 300 123 4567", career: "Ingeniería de Sistemas", universityId: uni?.id, verified: !!uni });
       setPoints((p) => (p === 0 ? 450 : p));
     },
     logout() {

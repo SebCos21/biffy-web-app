@@ -38,7 +38,7 @@ function Courier() {
   useEffect(() => {
     if (!s.courier.online || phase !== "home") return;
     const t = setTimeout(() => {
-      const next = offers.find((o) => !declined.includes(o.id)) ?? offers[0];
+      const next = offers.find((o) => !declined.includes(o.id)) ?? offers[0]!;
       setOffer(next); setLeft(18); setPhase("offer");
     }, 5000);
     return () => clearTimeout(t);
@@ -61,12 +61,12 @@ function Courier() {
     return <Screen><Empty emoji="🛵" title="Modo repartidor desactivado" body="Actívalo desde tu perfil." action={<Link to="/perfil" className="rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground">Ir al perfil</Link>} /></Screen>;
 
   const accept = (o: Offer) => { setOffer(o); setChecks([false, false, false]); setPhase("pickup"); toast.success("Pedido aceptado"); };
-  const nextGoal = goals.find((g) => g > s.courier.totalRides) ?? goals[goals.length - 1];
+  const nextGoal = goals.find((g) => g > s.courier.totalRides) ?? 50;
 
-  const complete = () => {
+  const complete = (): void => {
     if (!offer) return;
-    if (code !== offer.clientCode) return toast.error("Código del cliente incorrecto");
-    if (!photo) return toast.error("Toma una foto del pedido entregado");
+    if (code !== offer.clientCode) { toast.error("Código del cliente incorrecto"); return; }
+    if (!photo) { toast.error("Toma una foto del pedido entregado"); return; }
     const fee = Math.round(offer.pay * 0.1);
     s.setCourier((c) => ({ ...c, earningsToday: c.earningsToday + offer.pay, deliveries: c.deliveries + 1, totalRides: c.totalRides + 1, pendingFee: c.pendingFee + fee }));
     if (goals.includes(s.courier.totalRides + 1)) toast.success(`🏆 ¡Meta de ${s.courier.totalRides + 1} carreras! Bono desbloqueado`);

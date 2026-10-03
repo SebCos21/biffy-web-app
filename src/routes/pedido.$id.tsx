@@ -62,12 +62,12 @@ function Tracking() {
             <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} className="mt-1 w-full rounded-xl border bg-card p-3" />
             <div className="mt-3 flex gap-2">
               <button
-                onClick={() => {
-                  if (!newTime) return toast.error("Elige una hora");
+                onClick={(): void => {
+                  if (!newTime) { toast.error("Elige una hora"); return; }
                   const d = new Date(o.scheduledFor!);
-                  const [h, m] = newTime.split(":").map(Number);
+                  const [h = 0, m = 0] = newTime.split(":").map(Number);
                   const r = o.restaurantIds.map((x) => restaurantById(x)!);
-                  if (r.some((x) => h < x.open || h >= x.close)) return toast.error("El local no está disponible a esa hora");
+                  if (r.some((x) => h < x.open || h >= x.close)) { toast.error("El local no está disponible a esa hora"); return; }
                   d.setHours(h, m);
                   s.updateOrder(o.id, { scheduledFor: d.toISOString() });
                   toast.success("Hora actualizada");
@@ -81,7 +81,7 @@ function Tracking() {
           <Empty emoji="❌" title="Pedido cancelado" />
         ) : (
           <>
-            <MockMap progress={progress} labelA={restaurantById(o.restaurantIds[0])?.name} labelB={point.name} className="h-56" />
+            <MockMap progress={progress} labelA={restaurantById(o.restaurantIds[0] ?? "")?.name ?? "Restaurante"} labelB={point.name} className="h-56" />
             <div className="rounded-2xl bg-card p-4 shadow-sm">
               <p className="text-sm text-muted-foreground">{o.status === "entregado" ? "Entregado" : "Llega en"}</p>
               <p className="text-2xl font-extrabold">{o.status === "entregado" ? "¡Buen provecho! 😋" : `${Math.max(2, 18 - idx * 6)} min`}</p>

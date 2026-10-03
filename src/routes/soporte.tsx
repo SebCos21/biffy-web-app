@@ -10,7 +10,7 @@ export const Route = createFileRoute("/soporte")({
   component: Support,
 });
 
-const faqs = [
+const faqs: [string, string][] = [
   ["Mi pedido no llegó", "Revisa el seguimiento. Si pasaron más de 15 min del tiempo estimado, escríbenos por el chat y te reembolsamos."],
   ["¿Cómo uso mis Gotas?", "En el carrito activa 'Usar mis Gotas'. 1 Gota = $10 COP."],
   ["¿Por qué no veo un restaurante?", "Solo mostramos locales cuyo radio de entrega cubre tu punto y que tienen repartidores cerca."],
