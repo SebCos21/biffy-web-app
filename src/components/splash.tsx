@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import beeAsset from "@/assets/biffy-bee.png.asset.json";
+import beeUrl from "@/assets/biffy-bee-splash.png";
 
 const SPLASH_MS = 3000;
 
@@ -26,7 +26,7 @@ export function Splash() {
       <div className="splash-blob splash-blob--soft" />
       <div className="splash-blob splash-blob--warm" />
       <img
-        src={beeAsset.url}
+        src={beeUrl}
         alt=""
         draggable={false}
         className="splash-bee"
