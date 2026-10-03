@@ -15,7 +15,7 @@ import { seo } from "@/lib/seo";
 const searchSchema = z.object({ cat: z.string().optional(), q: z.string().optional(), campus: z.boolean().optional() });
 
 export const Route = createFileRoute("/explorar")({
-  validateSearch: (s) => searchSchema.parse(s),
+  validateSearch: (s: Record<string, unknown>): { cat?: string; q?: string; campus?: boolean } => searchSchema.parse(s),
   head: () => seo("Explorar", "Busca platos y restaurantes, filtra por categoría, precio y dieta."),
   component: Explorar,
 });
