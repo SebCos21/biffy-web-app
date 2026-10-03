@@ -144,7 +144,6 @@ function Profile() {
             <li>ℹ️ Recibes el pago al entregar; Biffy cobra su tarifa cada quincena.</li>
           </ul>
           <PrimaryButton onClick={() => { s.setMode("courier"); setCourierOpen(false); toast.success("¡Modo repartidor activado! 🛵"); navigate({ to: "/repartidor" }); }}>Entrar como repartidor</PrimaryButton>
-          )}
         </DialogContent>
       </Dialog>
     </Screen>
