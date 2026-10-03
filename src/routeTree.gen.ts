@@ -26,6 +26,8 @@ import { Route as RecompensasRouteImport } from './routes/recompensas'
 import { Route as SoporteRouteImport } from './routes/soporte'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PlatoIdRouteImport } from './routes/plato.$id'
+import { Route as RepartidorIndexRouteImport } from './routes/repartidor.index'
+import { Route as RepartidorGananciasRouteImport } from './routes/repartidor.ganancias'
 import { Route as RestauranteIdRouteImport } from './routes/restaurante.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -113,6 +115,16 @@ const PlatoIdRoute = PlatoIdRouteImport.update({
   path: '/plato/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RepartidorIndexRoute = RepartidorIndexRouteImport.update({
+  id: '/repartidor/',
+  path: '/repartidor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RepartidorGananciasRoute = RepartidorGananciasRouteImport.update({
+  id: '/repartidor/ganancias',
+  path: '/repartidor/ganancias',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RestauranteIdRoute = RestauranteIdRouteImport.update({
   id: '/restaurante/$id',
   path: '/restaurante/$id',
@@ -137,7 +149,9 @@ export interface FileRoutesByFullPath {
   '/soporte': typeof SoporteRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/plato/$id': typeof PlatoIdRoute
+  '/repartidor/ganancias': typeof RepartidorGananciasRoute
   '/restaurante/$id': typeof RestauranteIdRoute
+  '/repartidor/': typeof RepartidorIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -157,7 +171,9 @@ export interface FileRoutesByTo {
   '/soporte': typeof SoporteRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/plato/$id': typeof PlatoIdRoute
+  '/repartidor/ganancias': typeof RepartidorGananciasRoute
   '/restaurante/$id': typeof RestauranteIdRoute
+  '/repartidor': typeof RepartidorIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -178,7 +194,9 @@ export interface FileRoutesById {
   '/soporte': typeof SoporteRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/plato/$id': typeof PlatoIdRoute
+  '/repartidor/ganancias': typeof RepartidorGananciasRoute
   '/restaurante/$id': typeof RestauranteIdRoute
+  '/repartidor/': typeof RepartidorIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -200,7 +218,9 @@ export interface FileRouteTypes {
     | '/soporte'
     | '/pedido/$id'
     | '/plato/$id'
+    | '/repartidor/ganancias'
     | '/restaurante/$id'
+    | '/repartidor/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -220,7 +240,9 @@ export interface FileRouteTypes {
     | '/soporte'
     | '/pedido/$id'
     | '/plato/$id'
+    | '/repartidor/ganancias'
     | '/restaurante/$id'
+    | '/repartidor'
   id:
     | '__root__'
     | '/'
@@ -240,7 +262,9 @@ export interface FileRouteTypes {
     | '/soporte'
     | '/pedido/$id'
     | '/plato/$id'
+    | '/repartidor/ganancias'
     | '/restaurante/$id'
+    | '/repartidor/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -261,7 +285,9 @@ export interface RootRouteChildren {
   SoporteRoute: typeof SoporteRoute
   PedidoIdRoute: typeof PedidoIdRoute
   PlatoIdRoute: typeof PlatoIdRoute
+  RepartidorGananciasRoute: typeof RepartidorGananciasRoute
   RestauranteIdRoute: typeof RestauranteIdRoute
+  RepartidorIndexRoute: typeof RepartidorIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -385,6 +411,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlatoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/repartidor/': {
+      id: '/repartidor/'
+      path: '/repartidor'
+      fullPath: '/repartidor/'
+      preLoaderRoute: typeof RepartidorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/repartidor/ganancias': {
+      id: '/repartidor/ganancias'
+      path: '/repartidor/ganancias'
+      fullPath: '/repartidor/ganancias'
+      preLoaderRoute: typeof RepartidorGananciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/restaurante/$id': {
       id: '/restaurante/$id'
       path: '/restaurante/$id'
@@ -413,7 +453,9 @@ const rootRouteChildren: RootRouteChildren = {
   SoporteRoute: SoporteRoute,
   PedidoIdRoute: PedidoIdRoute,
   PlatoIdRoute: PlatoIdRoute,
+  RepartidorGananciasRoute: RepartidorGananciasRoute,
   RestauranteIdRoute: RestauranteIdRoute,
+  RepartidorIndexRoute: RepartidorIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
