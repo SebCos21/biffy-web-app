@@ -161,3 +161,18 @@
     font-family: var(--font-display);
   }
 }
+
+@layer base {
+  html, body {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overscroll-behavior-y: none;
+  }
+  button, a { -webkit-user-select: none; user-select: none; }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar { display: none; }
+}

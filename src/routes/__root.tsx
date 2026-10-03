@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { StoreProvider } from "../lib/store";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -77,11 +79,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cut, maximum-scale=1" },
+      { name: "theme-color", content: "#5E23E3" },
       { title: "Biffy" },
-      { name: "description", content: "Biffy: tu aplicación, en todos tus dispositivos." },
+      { name: "description", content: "Biffy: comida para estudiantes universitarios en Colombia." },
       { property: "og:title", content: "Biffy" },
-      { property: "og:description", content: "Biffy: tu aplicación, en todos tus dispositivos." },
+      { property: "og:description", content: "Biffy: comida para estudiantes universitarios en Colombia." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -107,7 +110,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <head>
         <HeadContent />
       </head>
@@ -125,7 +128,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <StoreProvider>
+        <div className="relative mx-auto min-h-dvh max-w-md bg-background shadow-xl">
+          <Outlet />
+        </div>
+        <Toaster position="top-center" />
+      </StoreProvider>
     </QueryClientProvider>
   );
 }
