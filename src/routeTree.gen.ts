@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CarritoRouteImport } from './routes/carrito'
+import { Route as EncuestaRouteImport } from './routes/encuesta'
 import { Route as ExplorarRouteImport } from './routes/explorar'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlatoIdRouteImport } from './routes/plato.$id'
 import { Route as RestauranteIdRouteImport } from './routes/restaurante.$id'
 
@@ -19,9 +22,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CarritoRoute = CarritoRouteImport.update({
+  id: '/carrito',
+  path: '/carrito',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EncuestaRoute = EncuestaRouteImport.update({
+  id: '/encuesta',
+  path: '/encuesta',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExplorarRoute = ExplorarRouteImport.update({
   id: '/explorar',
   path: '/explorar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlatoIdRoute = PlatoIdRouteImport.update({
@@ -37,34 +55,68 @@ const RestauranteIdRoute = RestauranteIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/carrito': typeof CarritoRoute
+  '/encuesta': typeof EncuestaRoute
   '/explorar': typeof ExplorarRoute
+  '/login': typeof LoginRoute
   '/plato/$id': typeof PlatoIdRoute
   '/restaurante/$id': typeof RestauranteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/carrito': typeof CarritoRoute
+  '/encuesta': typeof EncuestaRoute
   '/explorar': typeof ExplorarRoute
+  '/login': typeof LoginRoute
   '/plato/$id': typeof PlatoIdRoute
   '/restaurante/$id': typeof RestauranteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/carrito': typeof CarritoRoute
+  '/encuesta': typeof EncuestaRoute
   '/explorar': typeof ExplorarRoute
+  '/login': typeof LoginRoute
   '/plato/$id': typeof PlatoIdRoute
   '/restaurante/$id': typeof RestauranteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/explorar' | '/plato/$id' | '/restaurante/$id'
+  fullPaths:
+    | '/'
+    | '/carrito'
+    | '/encuesta'
+    | '/explorar'
+    | '/login'
+    | '/plato/$id'
+    | '/restaurante/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/explorar' | '/plato/$id' | '/restaurante/$id'
-  id: '__root__' | '/' | '/explorar' | '/plato/$id' | '/restaurante/$id'
+  to:
+    | '/'
+    | '/carrito'
+    | '/encuesta'
+    | '/explorar'
+    | '/login'
+    | '/plato/$id'
+    | '/restaurante/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/carrito'
+    | '/encuesta'
+    | '/explorar'
+    | '/login'
+    | '/plato/$id'
+    | '/restaurante/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CarritoRoute: typeof CarritoRoute
+  EncuestaRoute: typeof EncuestaRoute
   ExplorarRoute: typeof ExplorarRoute
+  LoginRoute: typeof LoginRoute
   PlatoIdRoute: typeof PlatoIdRoute
   RestauranteIdRoute: typeof RestauranteIdRoute
 }
@@ -78,11 +130,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/carrito': {
+      id: '/carrito'
+      path: '/carrito'
+      fullPath: '/carrito'
+      preLoaderRoute: typeof CarritoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/encuesta': {
+      id: '/encuesta'
+      path: '/encuesta'
+      fullPath: '/encuesta'
+      preLoaderRoute: typeof EncuestaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/explorar': {
       id: '/explorar'
       path: '/explorar'
       fullPath: '/explorar'
       preLoaderRoute: typeof ExplorarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plato/$id': {
@@ -104,7 +177,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CarritoRoute: CarritoRoute,
+  EncuestaRoute: EncuestaRoute,
   ExplorarRoute: ExplorarRoute,
+  LoginRoute: LoginRoute,
   PlatoIdRoute: PlatoIdRoute,
   RestauranteIdRoute: RestauranteIdRoute,
 }
