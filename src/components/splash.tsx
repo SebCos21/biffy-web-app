@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import beeUrl from "@/assets/biffy-bee-splash.png";
+import beeUrl from "@/assets/biffy-logo.png";
 
 const SPLASH_MS = 3000;
 
