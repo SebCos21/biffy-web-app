@@ -76,7 +76,9 @@ function AiPage() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth" }), [msgs, typing]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [msgs, typing]);
 
   const top3 = s.reachableDishes
     .filter((d) => !allergyConflicts(d, s.prefs.allergies).length)
