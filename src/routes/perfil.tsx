@@ -35,7 +35,7 @@ function Profile() {
     toast(`PIN enviado a tu ${via} (demo: ${p})`, { duration: 8000 });
   };
 
-  const items: { to: string; label: string; emoji: string; hint?: string }[] = [
+  const items: { to: "/pedidos" | "/recompensas" | "/favoritos" | "/campus" | "/encuesta" | "/pagos" | "/ajustes" | "/soporte"; label: string; emoji: string; hint?: string }[] = [
     { to: "/pedidos", label: "Mis pedidos e historial", emoji: "🧾" },
     { to: "/recompensas", label: "Recompensas", emoji: "🎁", hint: `${s.points} 💧` },
     { to: "/favoritos", label: "Favoritos", emoji: "❤️", hint: String(s.favorites.length) },
