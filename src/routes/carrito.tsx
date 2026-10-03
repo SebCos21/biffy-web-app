@@ -67,15 +67,15 @@ function Cart() {
       </Screen>
     );
 
-  const confirm = () => {
+  const confirm = (): void => {
     if (!s.loggedIn) {
       toast("Inicia sesión para completar tu pedido");
       navigate({ to: "/login", search: { next: "/carrito" } });
       return;
     }
-    if (unreachable.length) return toast.error("Hay locales que no entregan en tu punto");
-    if (when === "now" && !openNow) return toast.error("Un local está cerrado. Programa tu pedido.");
-    if (when === "later" && !slot) return toast.error("Elige una hora de entrega");
+    if (unreachable.length) { toast.error("Hay locales que no entregan en tu punto"); return; }
+    if (when === "now" && !openNow) { toast.error("Un local está cerrado. Programa tu pedido."); return; }
+    if (when === "later" && !slot) { toast.error("Elige una hora de entrega"); return; }
     const o = s.placeOrder({ scheduledFor: when === "later" ? slot! : undefined, paymentId: pay, pointsToUse: usePts ? s.points : 0 });
     toast.success(when === "later" ? "Pedido programado 📅" : "¡Pedido confirmado! 🎉");
     navigate({ to: "/pedido/$id", params: { id: o.id } });

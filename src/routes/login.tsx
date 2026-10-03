@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { universities } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (s: Record<string, unknown>): { next?: string } => ({ next: typeof s.next === "string" ? s.next : undefined }),
+  validateSearch: (s: Record<string, unknown>): { next?: string | undefined } => ({ next: typeof s["next"] === "string" ? s["next"] : undefined }),
   head: () => ({
     meta: [
       { title: "Iniciar sesión · Biffy" },
@@ -27,10 +27,10 @@ function Login() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
 
-  const submit = (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent): void => {
     e.preventDefault();
-    if (!/^\S+@\S+\.\S+$/.test(email)) return toast.error("Correo inválido");
-    if (pass.length < 6) return toast.error("La contraseña debe tener al menos 6 caracteres");
+    if (!/^\S+@\S+\.\S+$/.test(email)) { toast.error("Correo inválido"); return; }
+    if (pass.length < 6) { toast.error("La contraseña debe tener al menos 6 caracteres"); return; }
     s.login(email.trim(), name.trim());
     toast.success("¡Bienvenido a Biffy! +450 Gotas 💧");
     if (next) router.history.push(next);
@@ -46,7 +46,7 @@ function Login() {
         <h1 className="text-3xl font-extrabold">Entra a Biffy 🐝</h1>
         <p className="text-muted-foreground">Usa tu correo universitario para verificar tu campus y desbloquear descuentos.</p>
         <Field label="Nombre" value={name} onChange={setName} placeholder="Sofía Martínez" />
-        <Field label="Correo" value={email} onChange={setEmail} placeholder={"tu@" + universities[0].domain} type="email" />
+        <Field label="Correo" value={email} onChange={setEmail} placeholder={"tu@" + universities[0]!.domain} type="email" />
         <Field label="Contraseña" value={pass} onChange={setPass} placeholder="••••••" type="password" />
         <p className="text-xs text-muted-foreground">Dominios verificables: {universities.map((u) => "@" + u.domain).join(", ")}</p>
         <PrimaryButton type="submit">Continuar</PrimaryButton>

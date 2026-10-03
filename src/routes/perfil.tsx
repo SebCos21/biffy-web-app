@@ -35,7 +35,7 @@ function Profile() {
     toast(`PIN enviado a tu ${via} (demo: ${p})`, { duration: 8000 });
   };
 
-  const items: { to: string; label: string; emoji: string; hint?: string }[] = [
+  const items: { to: "/pedidos" | "/recompensas" | "/favoritos" | "/campus" | "/encuesta" | "/pagos" | "/ajustes" | "/soporte"; label: string; emoji: string; hint?: string | undefined }[] = [
     { to: "/pedidos", label: "Mis pedidos e historial", emoji: "🧾" },
     { to: "/recompensas", label: "Recompensas", emoji: "🎁", hint: `${s.points} 💧` },
     { to: "/favoritos", label: "Favoritos", emoji: "❤️", hint: String(s.favorites.length) },
@@ -72,11 +72,11 @@ function Profile() {
               <button onClick={() => { setPinOpen(true); setSent(null); setPin(""); }} className="flex items-center gap-1 text-sm font-bold text-primary"><Lock className="size-4" /> Desbloquear</button>
             )}
           </div>
-          {[
+          {([
             ["Nombre", "name", u.name],
             ["Teléfono", "phone", u.phone],
             ["Carrera", "career", u.career],
-          ].map(([l, k, v]) => (
+          ] as const).map(([l, k, v]) => (
             <label key={k} className="mt-3 block text-sm">
               <span className="text-muted-foreground">{l}</span>
               {unlocked ? (

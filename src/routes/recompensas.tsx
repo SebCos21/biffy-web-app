@@ -26,7 +26,7 @@ function Rewards() {
   const s = useStore();
   if (!s.loggedIn) return <Screen nav={false}><TopBar title="Recompensas" /><Empty emoji="🐝" title="Únete al Club de Enjambre" body="Inicia sesión para ganar Gotas." action={<Link to="/login" className="rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground">Iniciar sesión</Link>} /></Screen>;
   const streak = s.ordersCount % 10;
-  const code = "BIFFY-" + (s.user?.name.split(" ")[0].toUpperCase() ?? "AMIGO");
+  const code = "BIFFY-" + (s.user?.name.split(" ")[0]?.toUpperCase() ?? "AMIGO");
 
   const invite = async () => {
     const text = `Únete a Biffy con mi código ${code} y gana Gotas 🐝 ${window.location.origin}`;

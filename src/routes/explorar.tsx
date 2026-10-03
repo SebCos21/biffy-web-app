@@ -15,7 +15,7 @@ import { seo } from "@/lib/seo";
 const searchSchema = z.object({ cat: z.string().optional(), q: z.string().optional(), campus: z.boolean().optional() });
 
 export const Route = createFileRoute("/explorar")({
-  validateSearch: (s: Record<string, unknown>): { cat?: string; q?: string; campus?: boolean } => searchSchema.parse(s),
+  validateSearch: (s: Record<string, unknown>): { cat?: string | undefined; q?: string | undefined; campus?: boolean | undefined } => searchSchema.parse(s),
   head: () => seo("Explorar", "Busca platos y restaurantes, filtra por categoría, precio y dieta."),
   component: Explorar,
 });
@@ -71,11 +71,11 @@ function Explorar() {
   const filtering = !!(q || cat || quicks.length || diets.length || maxPrice < 40000 || search.campus);
   const activeFilters = (diets.length ? 1 : 0) + (maxPrice < 40000 ? 1 : 0);
 
-  const voice = () => {
+  const voice = (): void => {
     type SR = new () => { lang: string; start: () => void; onresult: (e: { results: { 0: { 0: { transcript: string } } } }) => void };
     const w = window as unknown as { SpeechRecognition?: SR; webkitSpeechRecognition?: SR };
     const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-    if (!Ctor) return toast("Búsqueda por voz no disponible en este dispositivo");
+    if (!Ctor) { toast("Búsqueda por voz no disponible en este dispositivo"); return; }
     const rec = new Ctor();
     rec.lang = "es-CO";
     rec.onresult = (e) => setQ(e.results[0][0].transcript);
@@ -155,7 +155,7 @@ function Explorar() {
           <div className="space-y-6 p-4">
             <div>
               <p className="mb-3 font-semibold">Precio máximo: {cop(maxPrice)}</p>
-              <Slider min={5000} max={40000} step={1000} value={[maxPrice]} onValueChange={(v) => setMaxPrice(v[0])} />
+              <Slider min={5000} max={40000} step={1000} value={[maxPrice]} onValueChange={(v) => setMaxPrice(v[0] ?? maxPrice)} />
             </div>
             <div>
               <p className="mb-3 font-semibold">Estilo de vida</p>

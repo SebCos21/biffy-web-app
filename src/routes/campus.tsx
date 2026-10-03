@@ -29,7 +29,7 @@ function Campus() {
             <p className="mt-1 text-sm opacity-90">Solo estudiantes verificados pueden pedir en los locales de su campus y obtener descuentos exclusivos.</p>
           </div>
           <label className="mt-4 block text-sm font-semibold">Correo institucional</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={"tu@" + universities[0].domain} className="mt-1 w-full rounded-2xl border bg-card px-4 py-3.5 outline-none focus:border-primary" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={"tu@" + universities[0]!.domain} className="mt-1 w-full rounded-2xl border bg-card px-4 py-3.5 outline-none focus:border-primary" />
           <p className="mt-2 text-xs text-muted-foreground">Aceptamos: {universities.map((u) => "@" + u.domain).join(", ")}</p>
           <PrimaryButton className="mt-4" onClick={() => (s.verifyUniversity(email) ? toast.success("¡Universidad verificada! 🎉") : toast.error("Ese correo no pertenece a una universidad aliada"))}>Verificar mi universidad</PrimaryButton>
         </div>
