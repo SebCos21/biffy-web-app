@@ -188,7 +188,7 @@ export function DishCard({ dish, wide }: { dish: Dish; wide?: boolean }) {
             e.preventDefault();
             e.stopPropagation();
             if (dish.options?.length) {
-              window.location.assign(`/plato/${dish.id}`);
+              navigate({ to: "/plato/$id", params: { id: dish.id } });
               return;
             }
             addToCart(dish.id);
