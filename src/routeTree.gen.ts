@@ -10,16 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CampusRouteImport } from './routes/campus'
 import { Route as CarritoRouteImport } from './routes/carrito'
 import { Route as EncuestaRouteImport } from './routes/encuesta'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PedidosRouteImport } from './routes/pedidos'
+import { Route as RecompensasRouteImport } from './routes/recompensas'
+import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PlatoIdRouteImport } from './routes/plato.$id'
 import { Route as RestauranteIdRouteImport } from './routes/restaurante.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CampusRoute = CampusRouteImport.update({
+  id: '/campus',
+  path: '/campus',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CarritoRoute = CarritoRouteImport.update({
@@ -42,6 +51,21 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PedidosRoute = PedidosRouteImport.update({
+  id: '/pedidos',
+  path: '/pedidos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecompensasRoute = RecompensasRouteImport.update({
+  id: '/recompensas',
+  path: '/recompensas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PedidoIdRoute = PedidoIdRouteImport.update({
+  id: '/pedido/$id',
+  path: '/pedido/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlatoIdRoute = PlatoIdRouteImport.update({
   id: '/plato/$id',
   path: '/plato/$id',
@@ -55,29 +79,41 @@ const RestauranteIdRoute = RestauranteIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/campus': typeof CampusRoute
   '/carrito': typeof CarritoRoute
   '/encuesta': typeof EncuestaRoute
   '/explorar': typeof ExplorarRoute
   '/login': typeof LoginRoute
+  '/pedidos': typeof PedidosRoute
+  '/recompensas': typeof RecompensasRoute
+  '/pedido/$id': typeof PedidoIdRoute
   '/plato/$id': typeof PlatoIdRoute
   '/restaurante/$id': typeof RestauranteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/campus': typeof CampusRoute
   '/carrito': typeof CarritoRoute
   '/encuesta': typeof EncuestaRoute
   '/explorar': typeof ExplorarRoute
   '/login': typeof LoginRoute
+  '/pedidos': typeof PedidosRoute
+  '/recompensas': typeof RecompensasRoute
+  '/pedido/$id': typeof PedidoIdRoute
   '/plato/$id': typeof PlatoIdRoute
   '/restaurante/$id': typeof RestauranteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/campus': typeof CampusRoute
   '/carrito': typeof CarritoRoute
   '/encuesta': typeof EncuestaRoute
   '/explorar': typeof ExplorarRoute
   '/login': typeof LoginRoute
+  '/pedidos': typeof PedidosRoute
+  '/recompensas': typeof RecompensasRoute
+  '/pedido/$id': typeof PedidoIdRoute
   '/plato/$id': typeof PlatoIdRoute
   '/restaurante/$id': typeof RestauranteIdRoute
 }
@@ -85,38 +121,54 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/campus'
     | '/carrito'
     | '/encuesta'
     | '/explorar'
     | '/login'
+    | '/pedidos'
+    | '/recompensas'
+    | '/pedido/$id'
     | '/plato/$id'
     | '/restaurante/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/campus'
     | '/carrito'
     | '/encuesta'
     | '/explorar'
     | '/login'
+    | '/pedidos'
+    | '/recompensas'
+    | '/pedido/$id'
     | '/plato/$id'
     | '/restaurante/$id'
   id:
     | '__root__'
     | '/'
+    | '/campus'
     | '/carrito'
     | '/encuesta'
     | '/explorar'
     | '/login'
+    | '/pedidos'
+    | '/recompensas'
+    | '/pedido/$id'
     | '/plato/$id'
     | '/restaurante/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CampusRoute: typeof CampusRoute
   CarritoRoute: typeof CarritoRoute
   EncuestaRoute: typeof EncuestaRoute
   ExplorarRoute: typeof ExplorarRoute
   LoginRoute: typeof LoginRoute
+  PedidosRoute: typeof PedidosRoute
+  RecompensasRoute: typeof RecompensasRoute
+  PedidoIdRoute: typeof PedidoIdRoute
   PlatoIdRoute: typeof PlatoIdRoute
   RestauranteIdRoute: typeof RestauranteIdRoute
 }
@@ -128,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campus': {
+      id: '/campus'
+      path: '/campus'
+      fullPath: '/campus'
+      preLoaderRoute: typeof CampusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/carrito': {
@@ -158,6 +217,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pedidos': {
+      id: '/pedidos'
+      path: '/pedidos'
+      fullPath: '/pedidos'
+      preLoaderRoute: typeof PedidosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recompensas': {
+      id: '/recompensas'
+      path: '/recompensas'
+      fullPath: '/recompensas'
+      preLoaderRoute: typeof RecompensasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pedido/$id': {
+      id: '/pedido/$id'
+      path: '/pedido/$id'
+      fullPath: '/pedido/$id'
+      preLoaderRoute: typeof PedidoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plato/$id': {
       id: '/plato/$id'
       path: '/plato/$id'
@@ -177,10 +257,14 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CampusRoute: CampusRoute,
   CarritoRoute: CarritoRoute,
   EncuestaRoute: EncuestaRoute,
   ExplorarRoute: ExplorarRoute,
   LoginRoute: LoginRoute,
+  PedidosRoute: PedidosRoute,
+  RecompensasRoute: RecompensasRoute,
+  PedidoIdRoute: PedidoIdRoute,
   PlatoIdRoute: PlatoIdRoute,
   RestauranteIdRoute: RestauranteIdRoute,
 }

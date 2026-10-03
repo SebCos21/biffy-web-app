@@ -12,7 +12,7 @@ export const Route = createFileRoute("/pedidos")({
   component: Orders,
 });
 
-export const statusText: Record<Order["status"], string> = {
+const statusText: Record<Order["status"], string> = {
   programado: "Programado",
   confirmado: "Confirmado",
   preparando: "Preparando",

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PrimaryButton, TopBar } from "@/components/biffy/ui";
@@ -21,6 +21,7 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const s = useStore();
   const navigate = useNavigate();
+  const router = useRouter();
   const { next } = Route.useSearch();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,7 +33,7 @@ function Login() {
     if (pass.length < 6) return toast.error("La contraseña debe tener al menos 6 caracteres");
     s.login(email.trim(), name.trim());
     toast.success("¡Bienvenido a Biffy! +450 Gotas 💧");
-    if (next) navigate({ to: next });
+    if (next) router.history.push(next);
     else if (!s.surveyDone) navigate({ to: "/encuesta" });
     else navigate({ to: "/" });
   };

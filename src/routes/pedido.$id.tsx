@@ -39,7 +39,8 @@ function Tracking() {
     if (!o || !["confirmado", "preparando", "en_camino"].includes(o.status)) return;
     const t = setTimeout(() => s.advanceOrder(o.id), 6000);
     return () => clearTimeout(t);
-  }, [o, s]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [o?.id, o?.status]);
 
   if (!o) return <Screen nav={false}><TopBar title="Pedido" /><Empty emoji="🧾" title="Pedido no encontrado" action={<Link to="/pedidos" className="font-bold text-primary">Ver mis pedidos</Link>} /></Screen>;
 
