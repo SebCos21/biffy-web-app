@@ -128,7 +128,7 @@ function Explorar() {
         {filtering ? (
           <>
             <SectionTitle
-              title={`${results.length} resultado${results.length === 1 ? "" : "s"}`}
+              title={`${results.length} plato${results.length === 1 ? "" : "s"} · ${restResults.length} restaurante${restResults.length === 1 ? "" : "s"}`}
               action={<button className="text-sm font-bold text-primary" onClick={() => { setQ(""); setQuicks([]); setDiets([]); setMaxPrice(40000); navigate({ search: {} }); }}>Limpiar</button>}
             />
             {restResults.length > 0 && <Carousel className="mb-4">{restResults.map((r) => <RestaurantCard key={r.id} r={r} />)}</Carousel>}
@@ -142,6 +142,7 @@ function Explorar() {
           <>
             <SectionTitle title="Tendencia en el campus 🔥" />
             <Carousel>{s.reachableDishes.filter((d) => d.popular).map((d) => <DishCard key={d.id} dish={d} />)}</Carousel>
+            <Carousel className="mt-3">{[...s.reachableRestaurants].sort((a, b) => b.rating - a.rating).map((r) => <RestaurantCard key={r.id} r={r} />)}</Carousel>
             <SectionTitle title="Todos los restaurantes" />
             <div className="space-y-3">{s.reachableRestaurants.map((r) => <RestaurantCard key={r.id} r={r} wide />)}</div>
             {s.reachableRestaurants.length === 0 && <Empty emoji="📍" title="Nada disponible en tu zona" body="Cambia el punto de entrega para ver opciones." />}
