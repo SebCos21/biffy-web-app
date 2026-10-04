@@ -15,14 +15,15 @@ export const Route = createFileRoute("/repartidor/")({
   component: Courier,
 });
 
-type Offer = { id: string; restaurant: string; pickup: string; dropoff: string; client: string; km: number; min: number; pay: number; payment: string; items: string; note: string; pickupCode: string; clientCode: string; zone: "general" | "campus" };
+type Offer = { id: string; restaurant: string; pickup: string; dropoff: string; client: string; km: number; min: number; pay: number; payment: string; items: string; note: string; pickupCode: string; clientCode: string; zone: "general" | "campus"; campusId?: string };
 const offers: Offer[] = [
-  { id: "of1", restaurant: "La Plazoleta Pizza", pickup: "Plazoleta B · Local 12", dropoff: "Biblioteca Central", client: "Sofía", km: 0.8, min: 12, pay: 7800, payment: "Nequi (pagado)", items: "2 productos · Bolsa mediana", note: "Estoy en las bancas junto al ascensor", pickupCode: "8492", clientCode: "4821", zone: "campus" },
-  { id: "of2", restaurant: "Verde Bowl", pickup: "Ingeniería · Cafetería", dropoff: "Plazoleta Che", client: "Mateo", km: 1.3, min: 14, pay: 6900, payment: "Efectivo · cobrar $22.000", items: "1 producto · Bolsa pequeña", note: "Camiseta azul", pickupCode: "3310", clientCode: "7755", zone: "campus" },
-  { id: "of3", restaurant: "Café Enjambre", pickup: "Biblioteca · Piso 1", dropoff: "Edificio Ingeniería", client: "Valentina", km: 0.5, min: 8, pay: 5200, payment: "Tarjeta (pagado)", items: "3 productos · Bolsa pequeña", note: "Salón 302", pickupCode: "1188", clientCode: "2468", zone: "campus" },
+  { id: "of1", restaurant: "La Plazoleta Pizza", pickup: "Plazoleta B · Local 12", dropoff: "Biblioteca Central", client: "Sofía", km: 0.8, min: 12, pay: 7800, payment: "Nequi (pagado)", items: "2 productos · Bolsa mediana", note: "Estoy en las bancas junto al ascensor", pickupCode: "8492", clientCode: "4821", zone: "campus", campusId: "unal" },
+  { id: "of2", restaurant: "Verde Bowl", pickup: "Ingeniería · Cafetería", dropoff: "Plazoleta Che", client: "Mateo", km: 1.3, min: 14, pay: 6900, payment: "Efectivo · cobrar $22.000", items: "1 producto · Bolsa pequeña", note: "Camiseta azul", pickupCode: "3310", clientCode: "7755", zone: "campus", campusId: "unal" },
+  { id: "of3", restaurant: "Café Enjambre", pickup: "Biblioteca · Piso 1", dropoff: "Edificio Ingeniería", client: "Valentina", km: 0.5, min: 8, pay: 5200, payment: "Tarjeta (pagado)", items: "3 productos · Bolsa pequeña", note: "Salón 302", pickupCode: "1188", clientCode: "2468", zone: "campus", campusId: "unal" },
   { id: "of4", restaurant: "Burger Station", pickup: "Cra. 7 #45-12", dropoff: "Calle 53 #10-20, Apto 301", client: "Andrés", km: 2.4, min: 18, pay: 9500, payment: "Nequi (pagado)", items: "2 productos · Bolsa mediana", note: "Portería, preguntar por Andrés", pickupCode: "5521", clientCode: "9034", zone: "general" },
   { id: "of5", restaurant: "Tacos El Parche", pickup: "Calle 63 #9-40", dropoff: "Parque de los Hippies", client: "Laura", km: 1.9, min: 15, pay: 8200, payment: "Efectivo · cobrar $31.000", items: "3 productos · Bolsa grande", note: "Chaqueta roja", pickupCode: "6610", clientCode: "1357", zone: "general" },
 ];
+offers.push({ id: "of6", restaurant: "Wok Express", pickup: "Cl 53 #13-40 · Uniandes", dropoff: "Edificio ML", client: "Camila", km: 0.6, min: 9, pay: 5600, payment: "Nequi (pagado)", items: "1 producto · Bolsa pequeña", note: "Entrada del ML", pickupCode: "3307", clientCode: "6612", zone: "campus", campusId: "andes" });
 const goals = [10, 25, 50];
 
 function Courier() {
@@ -37,7 +38,7 @@ function Courier() {
   const [declined, setDeclined] = useState<string[]>([]);
 
   const zone = s.courier.zone;
-  const zoneOffers = offers.filter((o) => o.zone === zone);
+  const zoneOffers = offers.filter((o) => o.zone === zone && (zone === "general" || o.campusId === s.user?.universityId));
   const canCampus = !!s.user?.verified;
 
   // Simulated incoming offer when online
