@@ -28,6 +28,9 @@ function Home() {
     .sort((a, b) => Number(s.prefs.likes.includes(b.category)) - Number(s.prefs.likes.includes(a.category)) || Number(!!b.popular) - Number(!!a.popular))
     .slice(0, 8);
   const popular = s.reachableDishes.filter((d) => d.popular);
+  const campusRests = s.user?.verified ? s.reachableRestaurants.filter((r) => r.campusId === s.user!.universityId) : [];
+  const campusDishes = s.reachableDishes.filter((d) => campusRests.some((r) => r.id === d.restaurantId));
+  const topRests = [...s.reachableRestaurants].sort((a, b) => b.rating - a.rating);
 
   return (
     <Screen>
@@ -108,8 +111,16 @@ function Home() {
           />
         ) : (
           <>
+            {s.user?.verified && campusRests.length > 0 && (
+              <>
+                <SectionTitle title={`🎓 Tu campus · ${s.university?.name ?? ""}`} action={<Link to="/campus" className="text-sm font-bold text-primary">Ver todo</Link>} />
+                <Carousel>{campusRests.map((r) => <RestaurantCard key={r.id} r={r} />)}</Carousel>
+                {campusDishes.length > 0 && <Carousel className="mt-3">{campusDishes.map((d) => <DishCard key={d.id} dish={d} />)}</Carousel>}
+              </>
+            )}
             <SectionTitle title={s.loggedIn ? "Recomendado para ti" : "Lo más pedido"} action={<Link to="/ai" className="text-sm font-bold text-primary">Biffy AI ✨</Link>} />
             <Carousel>{(s.loggedIn ? recommended : popular).map((d) => <DishCard key={d.id} dish={d} />)}</Carousel>
+            <Carousel className="mt-3">{topRests.map((r) => <RestaurantCard key={r.id} r={r} />)}</Carousel>
 
             <SectionTitle title="Restaurantes cerca" action={<Link to="/explorar" className="text-sm font-bold text-primary">Ver todo</Link>} />
             <Carousel>{s.reachableRestaurants.map((r) => <RestaurantCard key={r.id} r={r} />)}</Carousel>
