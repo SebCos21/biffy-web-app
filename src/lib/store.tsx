@@ -9,6 +9,8 @@ import {
   type Dish,
 } from "./mock-data";
 import { isReachable } from "./format";
+import { syncCatalog, productIdFromDish, sedeIdFromDish, type MerchantProfile, type MerchantProduct, type MOrder } from "./merchant";
+import { demoOrders } from "./merchant-demo";
 
 export type CartItem = { key: string; dishId: string; qty: number; optionIds: string[]; note: string };
 export type OrderStatus = "programado" | "confirmado" | "preparando" | "en_camino" | "entregado" | "cancelado";
@@ -39,6 +41,7 @@ export type User = {
 export type Prefs = { likes: string[]; allergies: string[]; lifestyle: string[]; budget: number };
 export type Notification = { id: string; title: string; body: string; read: boolean };
 
+const paymentLabels: Record<string, string> = { nequi: "Nequi", daviplata: "Daviplata", card: "Tarjeta", pse: "PSE", cash: "Efectivo" };
 const GOTA_VALUE = 10; // 700 gotas ≈ $7.000 COP
 
 function uid() {
@@ -57,7 +60,7 @@ function useStoreValue() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [pointId, setPointId] = useState("biblio");
-  const [mode, setMode] = useState<"student" | "courier">("student");
+  const [mode, setMode] = useState<"student" | "courier" | "merchant">("student");
   const [defaultPayment, setDefaultPayment] = useState("nequi");
   const [referrals, setReferrals] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([
@@ -67,6 +70,15 @@ function useStoreValue() {
   const [settings, setSettings] = useState({ push: true, promos: true, email: false, dark: false });
   const [courier, setCourier] = useState<{ online: boolean; zone: "general" | "campus"; earningsToday: number; deliveries: number; totalRides: number; pendingFee: number }>({ online: false, zone: "general", earningsToday: 0, deliveries: 0, totalRides: 7, pendingFee: 0 });
 
+  const [merchant, setMerchant] = useState<MerchantProfile | null>(null);
+  const [products, setProducts] = useState<MerchantProduct[]>([]);
+  const [mOrders, setMOrders] = useState<MOrder[]>([]);
+  const [catalogV, setCatalogV] = useState(0);
+  const publish = (m: MerchantProfile | null, ps: MerchantProduct[]) => {
+    syncCatalog(m, ps);
+    setCatalogV((v) => v + 1);
+  };
+
   const point = deliveryPoints.find((p) => p.id === pointId) ?? deliveryPoints[0]!;
   const loggedIn = !!user;
   const ordersCount = orders.filter((o) => o.status === "entregado").length + 7 * (loggedIn ? 1 : 0);
@@ -75,11 +87,11 @@ function useStoreValue() {
     setNotifications((n) => [{ id: uid(), title, body, read: false }, ...n]);
   }, []);
 
-  const reachableRestaurants = useMemo(() => restaurants.filter((r) => isReachable(r, point)), [point]);
+  const reachableRestaurants = useMemo(() => restaurants.filter((r) => isReachable(r, point)), [point, catalogV]);
   const reachableDishes = useMemo(() => {
     const ids = new Set(reachableRestaurants.map((r) => r.id));
     return dishes.filter((d) => ids.has(d.restaurantId));
-  }, [reachableRestaurants]);
+  }, [reachableRestaurants, catalogV]);
 
   const campusEligible = (restaurantId: string) => {
     const r = restaurantById(restaurantId);
@@ -119,6 +131,7 @@ function useStoreValue() {
   return {
     // state
     user, points, surveyDone, prefs, favorites, cart, orders, point, pointId, mode, defaultPayment,
+    merchant, products, mOrders, catalogV,
     referrals, notifications, settings, courier, loggedIn, ordersCount,
     reachableRestaurants, reachableDishes, GOTA_VALUE,
     // helpers
@@ -197,6 +210,25 @@ function useStoreValue() {
         code: code4(),
       };
       setOrders((o) => [order, ...o]);
+      // Route merchant-owned items to the merchant panel, one ticket per sede.
+      const bySede = new Map<string, MOrder["items"]>();
+      for (const it of cart) {
+        const pid = productIdFromDish(it.dishId);
+        const sid = sedeIdFromDish(it.dishId);
+        const d = dishById(it.dishId);
+        if (!pid || !sid || !d) continue;
+        const arr = bySede.get(sid) ?? [];
+        arr.push({ name: d.name, qty: it.qty, price: unitPrice(d, it.optionIds), ...(it.note ? { note: it.note } : {}) });
+        bySede.set(sid, arr);
+      }
+      if (bySede.size) {
+        const pay = (paymentLabels[opts.paymentId] ?? opts.paymentId) + (opts.paymentId === "cash" ? " · lo cobra el repartidor" : " · pagado");
+        const tickets: MOrder[] = [...bySede].map(([sid, items]) => ({
+          id: order.id + (bySede.size > 1 ? "-" + sid : ""), client: user?.name ?? "Cliente", items, total: items.reduce((a, i) => a + i.price * i.qty, 0),
+          payment: pay, delivery: "domicilio", status: "nuevo", createdAt: order.createdAt, scheduledFor: opts.scheduledFor, sedeId: sid, clientOrderId: order.id,
+        }));
+        setMOrders((m) => [...tickets, ...m]);
+      }
       setPoints((p) => p - s.pointsUsed + Math.floor(s.total / 1000));
       setCart([]);
       notify("Pedido " + order.id, opts.scheduledFor ? "Programado correctamente." : "¡Confirmado! El restaurante lo está recibiendo.");
@@ -233,6 +265,47 @@ function useStoreValue() {
       setNotifications((n) => n.map((x) => ({ ...x, read: true })));
     },
     setSettings,
+    registerMerchant(m: MerchantProfile, ps: MerchantProduct[] = []) {
+      setMerchant(m);
+      setProducts(ps);
+      setMOrders(ps.length ? demoOrders() : []);
+      setMode("merchant");
+      publish(m, ps);
+      notify("Restaurante aprobado ✅", `${m.brand} ya está visible para clientes dentro de tu radio.`);
+    },
+    updateMerchant(patch: Partial<MerchantProfile>) {
+      if (!merchant) return;
+      const m = { ...merchant, ...patch };
+      setMerchant(m);
+      publish(m, products);
+    },
+    saveProduct(p: MerchantProduct) {
+      const ps = products.some((x) => x.id === p.id) ? products.map((x) => (x.id === p.id ? p : x)) : [p, ...products];
+      setProducts(ps);
+      publish(merchant, ps);
+    },
+    deleteProduct(id: string) {
+      const ps = products.filter((x) => x.id !== id);
+      setProducts(ps);
+      publish(merchant, ps);
+    },
+    setMOrderStatus(id: string, status: MOrder["status"], rejectReason?: string) {
+      setMOrders((os) => os.map((o) => (o.id === id ? { ...o, status, ...(rejectReason ? { rejectReason } : {}) } : o)));
+      const mo = mOrders.find((o) => o.id === id);
+      if (mo?.clientOrderId) {
+        const map: Partial<Record<MOrder["status"], OrderStatus>> = { preparando: "preparando", listo: "preparando", rechazado: "cancelado" };
+        const st = map[status];
+        if (st) setOrders((os) => os.map((o) => (o.id === mo.clientOrderId ? { ...o, status: st } : o)));
+      }
+      // Once ready, Biffy assigns a courier and handles the delivery — the merchant only watches.
+      if (status === "listo") {
+        setTimeout(() => {
+          setMOrders((os) => os.map((o) => (o.id === id && o.status === "listo" ? { ...o, status: "en_camino" } : o)));
+          if (mo?.clientOrderId) setOrders((os) => os.map((o) => (o.id === mo.clientOrderId ? { ...o, status: "en_camino" } : o)));
+        }, 4000);
+        setTimeout(() => setMOrders((os) => os.map((o) => (o.id === id && o.status === "en_camino" ? { ...o, status: "entregado" } : o))), 12000);
+      }
+    },
     setMode,
     setCourier,
   };
