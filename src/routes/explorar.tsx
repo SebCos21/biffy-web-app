@@ -107,6 +107,7 @@ function Explorar() {
         </div>
         <Carousel className="mt-3">
           {s.user?.verified && <Chip active={!!search.campus} onClick={() => navigate({ search: (p) => ({ ...p, campus: p.campus ? undefined : true }) })}>🎓 Mi campus</Chip>}
+          <Chip onClick={() => void navigate({ to: "/nutricion" })}>🥦 Calorías y nutrientes</Chip>
           {quick.map((x) => <Chip key={x.id} active={quicks.includes(x.id)} onClick={() => toggleQuick(x.id)}>{x.label}</Chip>)}
         </Carousel>
       </div>

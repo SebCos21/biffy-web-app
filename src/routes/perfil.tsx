@@ -110,6 +110,13 @@ function Profile() {
           {isCourier && <Link to="/repartidor" className="mt-3 inline-block rounded-xl bg-card px-4 py-2 font-bold text-primary">Ir al panel</Link>}
         </div>
 
+        <Link to={s.merchant ? "/empresario" : "/empresario/registro"} onClick={() => { if (s.merchant) s.setMode("merchant"); }} className="mt-3 flex items-center gap-3 rounded-3xl bg-card p-4 shadow-sm active:scale-[0.99]">
+          <span className="text-3xl">🏪</span>
+          <span className="min-w-0 flex-1"><b className="block">{s.merchant ? `Panel de ${s.merchant.brand}` : "Vende tu restaurante en Biffy"}</b><span className="text-xs text-muted-foreground">{s.merchant ? "Pedidos, menú y estadísticas" : "Registra tu negocio y llega a estudiantes"}</span></span>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </Link>
+
+
         <button onClick={() => { s.logout(); toast("Sesión cerrada"); navigate({ to: "/" }); }} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-danger/10 py-4 font-bold text-danger active:scale-[0.98]"><LogOut className="size-5" /> Cerrar sesión</button>
       </div>
 

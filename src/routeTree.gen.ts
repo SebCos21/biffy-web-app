@@ -19,16 +19,24 @@ import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotificacionesRouteImport } from './routes/notificaciones'
+import { Route as NutricionRouteImport } from './routes/nutricion'
 import { Route as PagosRouteImport } from './routes/pagos'
 import { Route as PedidosRouteImport } from './routes/pedidos'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as RecompensasRouteImport } from './routes/recompensas'
 import { Route as SoporteRouteImport } from './routes/soporte'
+import { Route as EmpresarioIndexRouteImport } from './routes/empresario.index'
+import { Route as EmpresarioEstadisticasRouteImport } from './routes/empresario.estadisticas'
+import { Route as EmpresarioMenuRouteImport } from './routes/empresario.menu'
+import { Route as EmpresarioPedidosRouteImport } from './routes/empresario.pedidos'
+import { Route as EmpresarioPerfilRouteImport } from './routes/empresario.perfil'
+import { Route as EmpresarioRegistroRouteImport } from './routes/empresario.registro'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PlatoIdRouteImport } from './routes/plato.$id'
 import { Route as RepartidorIndexRouteImport } from './routes/repartidor.index'
 import { Route as RepartidorGananciasRouteImport } from './routes/repartidor.ganancias'
 import { Route as RestauranteIdRouteImport } from './routes/restaurante.$id'
+import { Route as EmpresarioProductoIdRouteImport } from './routes/empresario.producto.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -80,6 +88,11 @@ const NotificacionesRoute = NotificacionesRouteImport.update({
   path: '/notificaciones',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NutricionRoute = NutricionRouteImport.update({
+  id: '/nutricion',
+  path: '/nutricion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PagosRoute = PagosRouteImport.update({
   id: '/pagos',
   path: '/pagos',
@@ -103,6 +116,36 @@ const RecompensasRoute = RecompensasRouteImport.update({
 const SoporteRoute = SoporteRouteImport.update({
   id: '/soporte',
   path: '/soporte',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresarioIndexRoute = EmpresarioIndexRouteImport.update({
+  id: '/empresario/',
+  path: '/empresario/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresarioEstadisticasRoute = EmpresarioEstadisticasRouteImport.update({
+  id: '/empresario/estadisticas',
+  path: '/empresario/estadisticas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresarioMenuRoute = EmpresarioMenuRouteImport.update({
+  id: '/empresario/menu',
+  path: '/empresario/menu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresarioPedidosRoute = EmpresarioPedidosRouteImport.update({
+  id: '/empresario/pedidos',
+  path: '/empresario/pedidos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresarioPerfilRoute = EmpresarioPerfilRouteImport.update({
+  id: '/empresario/perfil',
+  path: '/empresario/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresarioRegistroRoute = EmpresarioRegistroRouteImport.update({
+  id: '/empresario/registro',
+  path: '/empresario/registro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PedidoIdRoute = PedidoIdRouteImport.update({
@@ -130,6 +173,11 @@ const RestauranteIdRoute = RestauranteIdRouteImport.update({
   path: '/restaurante/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EmpresarioProductoIdRoute = EmpresarioProductoIdRouteImport.update({
+  id: '/empresario/producto/$id',
+  path: '/empresario/producto/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -142,16 +190,24 @@ export interface FileRoutesByFullPath {
   '/favoritos': typeof FavoritosRoute
   '/login': typeof LoginRoute
   '/notificaciones': typeof NotificacionesRoute
+  '/nutricion': typeof NutricionRoute
   '/pagos': typeof PagosRoute
   '/pedidos': typeof PedidosRoute
   '/perfil': typeof PerfilRoute
   '/recompensas': typeof RecompensasRoute
   '/soporte': typeof SoporteRoute
+  '/empresario/estadisticas': typeof EmpresarioEstadisticasRoute
+  '/empresario/menu': typeof EmpresarioMenuRoute
+  '/empresario/pedidos': typeof EmpresarioPedidosRoute
+  '/empresario/perfil': typeof EmpresarioPerfilRoute
+  '/empresario/registro': typeof EmpresarioRegistroRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/plato/$id': typeof PlatoIdRoute
   '/repartidor/ganancias': typeof RepartidorGananciasRoute
   '/restaurante/$id': typeof RestauranteIdRoute
+  '/empresario/': typeof EmpresarioIndexRoute
   '/repartidor/': typeof RepartidorIndexRoute
+  '/empresario/producto/$id': typeof EmpresarioProductoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -164,16 +220,24 @@ export interface FileRoutesByTo {
   '/favoritos': typeof FavoritosRoute
   '/login': typeof LoginRoute
   '/notificaciones': typeof NotificacionesRoute
+  '/nutricion': typeof NutricionRoute
   '/pagos': typeof PagosRoute
   '/pedidos': typeof PedidosRoute
   '/perfil': typeof PerfilRoute
   '/recompensas': typeof RecompensasRoute
   '/soporte': typeof SoporteRoute
+  '/empresario/estadisticas': typeof EmpresarioEstadisticasRoute
+  '/empresario/menu': typeof EmpresarioMenuRoute
+  '/empresario/pedidos': typeof EmpresarioPedidosRoute
+  '/empresario/perfil': typeof EmpresarioPerfilRoute
+  '/empresario/registro': typeof EmpresarioRegistroRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/plato/$id': typeof PlatoIdRoute
   '/repartidor/ganancias': typeof RepartidorGananciasRoute
   '/restaurante/$id': typeof RestauranteIdRoute
+  '/empresario': typeof EmpresarioIndexRoute
   '/repartidor': typeof RepartidorIndexRoute
+  '/empresario/producto/$id': typeof EmpresarioProductoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -187,16 +251,24 @@ export interface FileRoutesById {
   '/favoritos': typeof FavoritosRoute
   '/login': typeof LoginRoute
   '/notificaciones': typeof NotificacionesRoute
+  '/nutricion': typeof NutricionRoute
   '/pagos': typeof PagosRoute
   '/pedidos': typeof PedidosRoute
   '/perfil': typeof PerfilRoute
   '/recompensas': typeof RecompensasRoute
   '/soporte': typeof SoporteRoute
+  '/empresario/estadisticas': typeof EmpresarioEstadisticasRoute
+  '/empresario/menu': typeof EmpresarioMenuRoute
+  '/empresario/pedidos': typeof EmpresarioPedidosRoute
+  '/empresario/perfil': typeof EmpresarioPerfilRoute
+  '/empresario/registro': typeof EmpresarioRegistroRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/plato/$id': typeof PlatoIdRoute
   '/repartidor/ganancias': typeof RepartidorGananciasRoute
   '/restaurante/$id': typeof RestauranteIdRoute
+  '/empresario/': typeof EmpresarioIndexRoute
   '/repartidor/': typeof RepartidorIndexRoute
+  '/empresario/producto/$id': typeof EmpresarioProductoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -211,16 +283,24 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/login'
     | '/notificaciones'
+    | '/nutricion'
     | '/pagos'
     | '/pedidos'
     | '/perfil'
     | '/recompensas'
     | '/soporte'
+    | '/empresario/estadisticas'
+    | '/empresario/menu'
+    | '/empresario/pedidos'
+    | '/empresario/perfil'
+    | '/empresario/registro'
     | '/pedido/$id'
     | '/plato/$id'
     | '/repartidor/ganancias'
     | '/restaurante/$id'
+    | '/empresario/'
     | '/repartidor/'
+    | '/empresario/producto/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -233,16 +313,24 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/login'
     | '/notificaciones'
+    | '/nutricion'
     | '/pagos'
     | '/pedidos'
     | '/perfil'
     | '/recompensas'
     | '/soporte'
+    | '/empresario/estadisticas'
+    | '/empresario/menu'
+    | '/empresario/pedidos'
+    | '/empresario/perfil'
+    | '/empresario/registro'
     | '/pedido/$id'
     | '/plato/$id'
     | '/repartidor/ganancias'
     | '/restaurante/$id'
+    | '/empresario'
     | '/repartidor'
+    | '/empresario/producto/$id'
   id:
     | '__root__'
     | '/'
@@ -255,16 +343,24 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/login'
     | '/notificaciones'
+    | '/nutricion'
     | '/pagos'
     | '/pedidos'
     | '/perfil'
     | '/recompensas'
     | '/soporte'
+    | '/empresario/estadisticas'
+    | '/empresario/menu'
+    | '/empresario/pedidos'
+    | '/empresario/perfil'
+    | '/empresario/registro'
     | '/pedido/$id'
     | '/plato/$id'
     | '/repartidor/ganancias'
     | '/restaurante/$id'
+    | '/empresario/'
     | '/repartidor/'
+    | '/empresario/producto/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -278,16 +374,24 @@ export interface RootRouteChildren {
   FavoritosRoute: typeof FavoritosRoute
   LoginRoute: typeof LoginRoute
   NotificacionesRoute: typeof NotificacionesRoute
+  NutricionRoute: typeof NutricionRoute
   PagosRoute: typeof PagosRoute
   PedidosRoute: typeof PedidosRoute
   PerfilRoute: typeof PerfilRoute
   RecompensasRoute: typeof RecompensasRoute
   SoporteRoute: typeof SoporteRoute
+  EmpresarioEstadisticasRoute: typeof EmpresarioEstadisticasRoute
+  EmpresarioMenuRoute: typeof EmpresarioMenuRoute
+  EmpresarioPedidosRoute: typeof EmpresarioPedidosRoute
+  EmpresarioPerfilRoute: typeof EmpresarioPerfilRoute
+  EmpresarioRegistroRoute: typeof EmpresarioRegistroRoute
   PedidoIdRoute: typeof PedidoIdRoute
   PlatoIdRoute: typeof PlatoIdRoute
   RepartidorGananciasRoute: typeof RepartidorGananciasRoute
   RestauranteIdRoute: typeof RestauranteIdRoute
+  EmpresarioIndexRoute: typeof EmpresarioIndexRoute
   RepartidorIndexRoute: typeof RepartidorIndexRoute
+  EmpresarioProductoIdRoute: typeof EmpresarioProductoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -362,6 +466,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotificacionesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nutricion': {
+      id: '/nutricion'
+      path: '/nutricion'
+      fullPath: '/nutricion'
+      preLoaderRoute: typeof NutricionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pagos': {
       id: '/pagos'
       path: '/pagos'
@@ -395,6 +506,48 @@ declare module '@tanstack/react-router' {
       path: '/soporte'
       fullPath: '/soporte'
       preLoaderRoute: typeof SoporteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresario/': {
+      id: '/empresario/'
+      path: '/empresario'
+      fullPath: '/empresario/'
+      preLoaderRoute: typeof EmpresarioIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresario/estadisticas': {
+      id: '/empresario/estadisticas'
+      path: '/empresario/estadisticas'
+      fullPath: '/empresario/estadisticas'
+      preLoaderRoute: typeof EmpresarioEstadisticasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresario/menu': {
+      id: '/empresario/menu'
+      path: '/empresario/menu'
+      fullPath: '/empresario/menu'
+      preLoaderRoute: typeof EmpresarioMenuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresario/pedidos': {
+      id: '/empresario/pedidos'
+      path: '/empresario/pedidos'
+      fullPath: '/empresario/pedidos'
+      preLoaderRoute: typeof EmpresarioPedidosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresario/perfil': {
+      id: '/empresario/perfil'
+      path: '/empresario/perfil'
+      fullPath: '/empresario/perfil'
+      preLoaderRoute: typeof EmpresarioPerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresario/registro': {
+      id: '/empresario/registro'
+      path: '/empresario/registro'
+      fullPath: '/empresario/registro'
+      preLoaderRoute: typeof EmpresarioRegistroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pedido/$id': {
@@ -432,6 +585,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RestauranteIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/empresario/producto/$id': {
+      id: '/empresario/producto/$id'
+      path: '/empresario/producto/$id'
+      fullPath: '/empresario/producto/$id'
+      preLoaderRoute: typeof EmpresarioProductoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -446,16 +606,24 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritosRoute: FavoritosRoute,
   LoginRoute: LoginRoute,
   NotificacionesRoute: NotificacionesRoute,
+  NutricionRoute: NutricionRoute,
   PagosRoute: PagosRoute,
   PedidosRoute: PedidosRoute,
   PerfilRoute: PerfilRoute,
   RecompensasRoute: RecompensasRoute,
   SoporteRoute: SoporteRoute,
+  EmpresarioEstadisticasRoute: EmpresarioEstadisticasRoute,
+  EmpresarioMenuRoute: EmpresarioMenuRoute,
+  EmpresarioPedidosRoute: EmpresarioPedidosRoute,
+  EmpresarioPerfilRoute: EmpresarioPerfilRoute,
+  EmpresarioRegistroRoute: EmpresarioRegistroRoute,
   PedidoIdRoute: PedidoIdRoute,
   PlatoIdRoute: PlatoIdRoute,
   RepartidorGananciasRoute: RepartidorGananciasRoute,
   RestauranteIdRoute: RestauranteIdRoute,
+  EmpresarioIndexRoute: EmpresarioIndexRoute,
   RepartidorIndexRoute: RepartidorIndexRoute,
+  EmpresarioProductoIdRoute: EmpresarioProductoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

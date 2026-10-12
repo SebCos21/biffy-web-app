@@ -20,7 +20,7 @@ export function isReachable(r: Restaurant, p: DeliveryPoint) {
 
 export function isOpenNow(r: Restaurant, d = new Date()) {
   const h = d.getHours();
-  return !r.closedDays.includes(d.getDay()) && h >= r.open && h < r.close;
+  return !r.paused && !r.closedDays.includes(d.getDay()) && h >= r.open && h < r.close;
 }
 
 export function allergyConflicts(d: Dish, allergies: string[]) {

@@ -50,8 +50,8 @@ function DishPage() {
     <Screen nav={false} className="pb-32">
       <TopBar title={r.name} right={<button aria-label="Compartir" onClick={share} className="grid size-11 place-items-center rounded-full bg-card shadow-sm active:scale-95"><Share2 className="size-5" /></button>} />
       <div className="px-4">
-        <div className="relative grid h-56 place-items-center rounded-3xl bg-accent text-8xl">
-          {dish.emoji}
+        <div className="relative grid h-56 place-items-center overflow-hidden rounded-3xl bg-accent text-8xl">
+          {dish.photo ? <img src={dish.photo} alt={dish.name} className="absolute inset-0 size-full rounded-3xl object-cover" /> : dish.emoji}
           <FavButton id={dish.id} className="absolute right-3 top-3 size-11" />
         </div>
         <h1 className="mt-4 text-2xl font-extrabold">{dish.name}</h1>
@@ -59,11 +59,23 @@ function DishPage() {
         <p className="mt-2 text-muted-foreground">{dish.description}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <PriceTag dish={dish} />
-          <span className="text-xs text-muted-foreground">· {dish.calories} kcal</span>
+          {dish.calories > 0 && <span className="text-xs text-muted-foreground">· {dish.calories} kcal</span>}
           {dish.tags.map((t) => <span key={t} className="rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-semibold text-success">{t}</span>)}
         </div>
         <div className="mt-2"><AllergyBadge dish={dish} /></div>
         {dish.allergens.length > 0 && <p className="mt-2 text-xs text-muted-foreground">Alérgenos: {dish.allergens.join(", ")}</p>}
+
+        {dish.nutrition && r.showsNutrition && (
+          <div className="mt-4 rounded-2xl bg-card p-4 shadow-sm">
+            <p className="text-sm font-bold">🥦 Información nutricional · porción</p>
+            <div className="mt-2 grid grid-cols-4 gap-2 text-center">
+              {([["Calorías", dish.nutrition.kcal, "kcal"], ["Proteína", dish.nutrition.protein, "g"], ["Carbos", dish.nutrition.carbs, "g"], ["Grasas", dish.nutrition.fat, "g"]] as const).map(([l, v, u]) => (
+                <div key={l} className="rounded-xl bg-accent p-2"><p className="font-extrabold">{v}<span className="text-[10px]"> {u}</span></p><p className="text-[11px] text-muted-foreground">{l}</p></div>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">Datos reportados por el restaurante.</p>
+          </div>
+        )}
 
         {dish.options && (
           <div className="mt-6">
