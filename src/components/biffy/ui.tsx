@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft, Heart, Home, Search, Sparkles, User, ShoppingBag, AlertTriangle, Plus, Bike, Wallet } from "lucide-react";
+import { ArrowLeft, Heart, Home, Search, Sparkles, User, ShoppingBag, AlertTriangle, Plus, Bike, Wallet, Store, ClipboardList, UtensilsCrossed, BarChart3 } from "lucide-react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
@@ -50,15 +50,23 @@ const courierTabs = [
   { to: "/perfil", label: "Perfil", icon: User },
 ] as const;
 
+const merchantTabs = [
+  { to: "/empresario", label: "Inicio", icon: Store },
+  { to: "/empresario/pedidos", label: "Pedidos", icon: ClipboardList },
+  { to: "/empresario/menu", label: "Menú", icon: UtensilsCrossed },
+  { to: "/empresario/estadisticas", label: "Estadísticas", icon: BarChart3 },
+  { to: "/empresario/perfil", label: "Perfil", icon: User },
+] as const;
+
 export function BottomNav() {
   const { mode } = useStore();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const tabs = mode === "courier" ? courierTabs : studentTabs;
+  const tabs = mode === "courier" ? courierTabs : mode === "merchant" ? merchantTabs : studentTabs;
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
       <ul className="flex">
         {tabs.map((t) => {
-          const active = t.to === "/" || t.to === "/repartidor" ? path === t.to : path.startsWith(t.to);
+          const active = t.to === "/" || t.to === "/repartidor" || t.to === "/empresario" ? path === t.to : path.startsWith(t.to);
           const Icon = t.icon;
           return (
             <li key={t.to} className="flex-1">
@@ -83,7 +91,7 @@ export function BottomNav() {
 function CartFab({ withNav }: { withNav: boolean }) {
   const { cart, cartSummary, mode } = useStore();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  if (mode === "courier" || cart.length === 0 || path === "/carrito" || path.startsWith("/plato") || path.startsWith("/pedido") || path === "/ai") return null;
+  if (mode !== "student" || cart.length === 0 || path === "/carrito" || path.startsWith("/plato") || path.startsWith("/pedido") || path === "/ai") return null;
   const n = cart.reduce((s, i) => s + i.qty, 0);
   return (
     <Link
@@ -174,8 +182,8 @@ export function DishCard({ dish, wide }: { dish: Dish; wide?: boolean }) {
       params={{ id: dish.id }}
       className={cn("relative block snap-start rounded-2xl bg-card p-3 shadow-sm active:scale-[0.98]", wide ? "w-full" : "w-44 shrink-0")}
     >
-      <div className="relative grid h-24 place-items-center rounded-xl bg-accent text-5xl">
-        {dish.emoji}
+      <div className="relative grid h-24 place-items-center overflow-hidden rounded-xl bg-accent text-5xl">
+        {dish.photo ? <img src={dish.photo} alt={dish.name} loading="lazy" className="absolute inset-0 size-full rounded-xl object-cover" /> : dish.emoji}
         <FavButton id={dish.id} className="absolute right-1.5 top-1.5" />
       </div>
       <p className="mt-2 truncate font-semibold">{dish.name}</p>
