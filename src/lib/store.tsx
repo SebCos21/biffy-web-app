@@ -11,6 +11,22 @@ import {
 import { isReachable } from "./format";
 import { syncCatalog, productIdFromDish, sedeIdFromDish, type MerchantProfile, type MerchantProduct, type MOrder } from "./merchant";
 import { demoOrders } from "./merchant-demo";
+import { getBrandLabel, type CardBrand } from "./card-utils";
+
+export type UserPaymentCard = {
+  id: string;
+  brand: CardBrand;
+  last4: string;
+  holderName: string;
+  expMonth: string;
+  expYear: string;
+  isDefault?: boolean;
+};
+
+const INITIAL_CARDS: UserPaymentCard[] = [
+  { id: "card_visa_4242", brand: "visa", last4: "4242", holderName: "Sofía Gómez", expMonth: "08", expYear: "28", isDefault: true },
+  { id: "card_mc_5555", brand: "mastercard", last4: "5555", holderName: "Sofía Gómez", expMonth: "11", expYear: "27", isDefault: false },
+];
 
 export type CartItem = { key: string; dishId: string; qty: number; optionIds: string[]; note: string };
 export type OrderStatus = "programado" | "confirmado" | "preparando" | "en_camino" | "entregado" | "cancelado";
@@ -61,8 +77,26 @@ function useStoreValue() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [pointId, setPointId] = useState("biblio");
   const [mode, setMode] = useState<"student" | "courier" | "merchant">("student");
-  const [defaultPayment, setDefaultPayment] = useState("nequi");
+  const [cards, setCards] = useState<UserPaymentCard[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("biffy_cards");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return INITIAL_CARDS;
+  });
+  const [defaultPayment, setDefaultPayment] = useState("card_visa_4242");
   const [referrals, setReferrals] = useState(0);
+
+  const paymentLabel = useCallback(
+    (id: string) => {
+      const c = cards.find((x) => x.id === id);
+      if (c) return `${getBrandLabel(c.brand)} •••• ${c.last4}`;
+      return paymentLabels[id] ?? id;
+    },
+    [cards],
+  );
   const [notifications, setNotifications] = useState<Notification[]>([
     { id: "n1", title: "¡Bienvenido a Biffy! 🐝", body: "Completa tus filtros y gana 300 Gotas.", read: false },
     { id: "n2", title: "Descuento de campus", body: "Hasta 20% en locales de tu universidad.", read: false },
@@ -131,6 +165,7 @@ function useStoreValue() {
   return {
     // state
     user, points, surveyDone, prefs, favorites, cart, orders, point, pointId, mode, defaultPayment,
+    cards, paymentLabel,
     merchant, products, mOrders, catalogV,
     referrals, notifications, settings, courier, loggedIn, ordersCount,
     reachableRestaurants, reachableDishes, GOTA_VALUE,
@@ -191,6 +226,36 @@ function useStoreValue() {
     },
     setPointId,
     setDefaultPayment,
+    addCard(card: Omit<UserPaymentCard, "id">) {
+      const newCard: UserPaymentCard = { ...card, id: "card_" + uid() };
+      setCards((prev) => {
+        const updated = card.isDefault ? prev.map((x) => ({ ...x, isDefault: false })) : prev;
+        const res = [newCard, ...updated];
+        try { localStorage.setItem("biffy_cards", JSON.stringify(res)); } catch {}
+        return res;
+      });
+      if (card.isDefault) setDefaultPayment(newCard.id);
+      notify("Tarjeta agregada 💳", `${getBrandLabel(newCard.brand)} terminada en •••• ${newCard.last4}`);
+      return newCard;
+    },
+    removeCard(id: string) {
+      setCards((prev) => {
+        const res = prev.filter((x) => x.id !== id);
+        try { localStorage.setItem("biffy_cards", JSON.stringify(res)); } catch {}
+        return res;
+      });
+      if (defaultPayment === id) setDefaultPayment("nequi");
+      notify("Tarjeta eliminada", "El método de pago fue removido.");
+    },
+    setDefaultCard(id: string) {
+      setCards((prev) => {
+        const res = prev.map((x) => ({ ...x, isDefault: x.id === id }));
+        try { localStorage.setItem("biffy_cards", JSON.stringify(res)); } catch {}
+        return res;
+      });
+      setDefaultPayment(id);
+      notify("Método actualizado", "Tarjeta seleccionada por defecto.");
+    },
     placeOrder(opts: { scheduledFor?: string | undefined; paymentId: string; pointsToUse: number }) {
       const s = cartSummary(opts.pointsToUse);
       const order: Order = {
@@ -222,7 +287,7 @@ function useStoreValue() {
         bySede.set(sid, arr);
       }
       if (bySede.size) {
-        const pay = (paymentLabels[opts.paymentId] ?? opts.paymentId) + (opts.paymentId === "cash" ? " · lo cobra el repartidor" : " · pagado");
+        const pay = paymentLabel(opts.paymentId) + (opts.paymentId === "cash" ? " · lo cobra el repartidor" : " · pagado");
         const tickets: MOrder[] = [...bySede].map(([sid, items]) => ({
           id: order.id + (bySede.size > 1 ? "-" + sid : ""), client: user?.name ?? "Cliente", items, total: items.reduce((a, i) => a + i.price * i.qty, 0),
           payment: pay, delivery: "domicilio", status: "nuevo", createdAt: order.createdAt, scheduledFor: opts.scheduledFor, sedeId: sid, clientOrderId: order.id,

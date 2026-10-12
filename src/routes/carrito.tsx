@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Minus, Plus, Trash2, Pencil, MapPin } from "lucide-react";
+import { Minus, Plus, Trash2, Pencil, MapPin, CreditCard } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Screen, TopBar, PrimaryButton, Empty, Carousel, Chip, AllergyBadge } from "@/components/biffy/ui";
@@ -10,6 +10,7 @@ import { useStore } from "@/lib/store";
 import { cop, isOpenNow, isReachable } from "@/lib/format";
 import { seo } from "@/lib/seo";
 import { cn } from "@/lib/utils";
+import { getBrandLabel } from "@/lib/card-utils";
 
 export const Route = createFileRoute("/carrito")({
   head: () => seo("Carrito", "Revisa tu pedido, prográmalo y paga."),
@@ -26,6 +27,7 @@ function Cart() {
   const [slot, setSlot] = useState<string | null>(null);
   const [pay, setPay] = useState(s.defaultPayment);
   const [usePts, setUsePts] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
 
   const rests = [...new Set(s.cart.map((i) => dishById(i.dishId)!.restaurantId))].map((id) => restaurantById(id)!);
   const unreachable = rests.filter((r) => !isReachable(r, s.point));
@@ -76,6 +78,19 @@ function Cart() {
     if (unreachable.length) { toast.error("Hay locales que no entregan en tu punto"); return; }
     if (when === "now" && !openNow) { toast.error("Un local está cerrado. Programa tu pedido."); return; }
     if (when === "later" && !slot) { toast.error("Elige una hora de entrega"); return; }
+
+    if (pay.startsWith("card")) {
+      setIsPaying(true);
+      toast("Procesando cobro en pasarela segura...", { duration: 1200 });
+      setTimeout(() => {
+        setIsPaying(false);
+        const o = s.placeOrder({ scheduledFor: when === "later" ? slot! : undefined, paymentId: pay, pointsToUse: usePts ? s.points : 0 });
+        toast.success(when === "later" ? "Pedido programado 📅" : "¡Pago aprobado y pedido confirmado! 🎉");
+        navigate({ to: "/pedido/$id", params: { id: o.id } });
+      }, 1000);
+      return;
+    }
+
     const o = s.placeOrder({ scheduledFor: when === "later" ? slot! : undefined, paymentId: pay, pointsToUse: usePts ? s.points : 0 });
     toast.success(when === "later" ? "Pedido programado 📅" : "¡Pedido confirmado! 🎉");
     navigate({ to: "/pedido/$id", params: { id: o.id } });
@@ -157,18 +172,63 @@ function Cart() {
         </section>
 
         <section className="rounded-2xl bg-card p-4 shadow-sm">
-          <h2 className="font-bold">Método de pago</h2>
-          <div className="mt-2 space-y-2">
-            {paymentMethodsCatalog.map((m) => (
-              <button key={m.id} onClick={() => setPay(m.id)} className={cn("flex w-full items-center gap-3 rounded-xl border p-3 active:scale-[0.99]", pay === m.id && "border-primary bg-accent")}>
-                <span className="text-xl">{m.emoji}</span><span className="flex-1 text-left font-semibold">{m.label}</span>
-                <span className={cn("size-5 rounded-full border-2", pay === m.id && "border-[6px] border-primary")} />
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold">Método de pago</h2>
+            <Link to="/pagos" className="text-xs font-bold text-primary active:scale-95 flex items-center gap-1">
+              <Plus className="size-3.5" /> Nueva tarjeta
+            </Link>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {/* Tarjetas de crédito/débito guardadas del usuario */}
+            {s.cards.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setPay(c.id)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl border p-3 active:scale-[0.99] transition-all",
+                  pay === c.id && "border-primary bg-accent",
+                )}
+              >
+                <div className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                  <CreditCard className="size-4" />
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="font-semibold text-sm truncate">
+                    {getBrandLabel(c.brand)} •••• {c.last4}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {c.holderName} · Vence {c.expMonth}/{c.expYear}
+                  </p>
+                </div>
+                <span className={cn("size-5 rounded-full border-2", pay === c.id && "border-[6px] border-primary")} />
               </button>
             ))}
+
+            {/* Otros métodos (Nequi, Daviplata, PSE, Efectivo) */}
+            {paymentMethodsCatalog
+              .filter((m) => m.id !== "card")
+              .map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setPay(m.id)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl border p-3 active:scale-[0.99] transition-all",
+                    pay === m.id && "border-primary bg-accent",
+                  )}
+                >
+                  <span className="text-xl">{m.emoji}</span>
+                  <span className="flex-1 text-left font-semibold text-sm">{m.label}</span>
+                  <span className={cn("size-5 rounded-full border-2", pay === m.id && "border-[6px] border-primary")} />
+                </button>
+              ))}
           </div>
+
           {s.loggedIn && s.points > 0 && (
             <label className="mt-3 flex items-center justify-between rounded-xl bg-secondary/20 p-3">
-              <span className="text-sm font-semibold">Usar mis {s.points} Gotas 💧 (−{cop(Math.min(s.points * s.GOTA_VALUE, sum.subtotal - sum.discount))})</span>
+              <span className="text-sm font-semibold">
+                Usar mis {s.points} Gotas 💧 (−{cop(Math.min(s.points * s.GOTA_VALUE, sum.subtotal - sum.discount))})
+              </span>
               <Switch checked={usePts} onCheckedChange={setUsePts} />
             </label>
           )}
@@ -184,7 +244,13 @@ function Cart() {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t bg-card p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
-        <PrimaryButton onClick={confirm}>{s.loggedIn ? (when === "later" ? "Programar" : "Pagar") : "Inicia sesión para pagar"} · {cop(sum.total)}</PrimaryButton>
+        <PrimaryButton onClick={confirm} disabled={isPaying}>
+          {isPaying
+            ? "Verificando tarjeta con pasarela..."
+            : s.loggedIn
+              ? (when === "later" ? "Programar" : "Pagar")
+              : "Inicia sesión para pagar"} · {cop(sum.total)}
+        </PrimaryButton>
       </div>
     </Screen>
   );

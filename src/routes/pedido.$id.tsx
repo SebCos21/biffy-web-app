@@ -116,7 +116,7 @@ function Tracking() {
         <div className="rounded-2xl bg-card p-4 text-sm shadow-sm">
           <p className="mb-2 font-bold">Resumen</p>
           {o.items.map((i) => <p key={i.key} className="flex justify-between"><span>{i.qty}× {dishById(i.dishId)?.name}</span></p>)}
-          <p className="mt-2 flex justify-between text-muted-foreground"><span>Pago</span><span>{pay?.label}</span></p>
+          <p className="mt-2 flex justify-between text-muted-foreground"><span>Pago</span><span>{s.paymentLabel(o.paymentId)}</span></p>
           <p className="flex justify-between text-muted-foreground"><span>Entrega</span><span>{point.name}</span></p>
           <p className="mt-2 flex justify-between border-t pt-2 font-extrabold"><span>Total</span><span>{cop(o.total)}</span></p>
         </div>
