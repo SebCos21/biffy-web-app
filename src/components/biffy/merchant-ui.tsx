@@ -50,7 +50,7 @@ export function Card({ children, className, title, right }: { children: ReactNod
   );
 }
 
-export function TextField({ label, value, onChange, placeholder, type = "text", required, hint, max, inputMode }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; required?: boolean; hint?: string; max?: number; inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"] }) {
+export function TextField({ label, value, onChange, placeholder, type = "text", required, hint, max, inputMode }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; required?: boolean; hint?: string | undefined; max?: number; inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"] }) {
   return (
     <label className="block">
       <span className="flex justify-between text-sm font-semibold"><span>{label}{required && <span className="text-danger"> *</span>}</span>{max && <span className="text-xs text-muted-foreground">{value.length}/{max}</span>}</span>
