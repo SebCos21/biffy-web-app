@@ -48,7 +48,7 @@ function Home() {
         <h1 className="mt-4 text-2xl font-extrabold">
           {s.user ? `Hola, ${s.user.name.split(" ")[0]} 👋` : "¿Qué se te antoja hoy? 🐝"}
         </h1>
-        <Link to="/demo/qbano" className="mt-3 flex items-center gap-3 border-y border-primary/40 py-3 active:opacity-70">
+        <Link to="/restaurante/$id" params={{ id: "qbano-icesi" }} className="mt-3 flex items-center gap-3 border-y border-primary/40 py-3 active:opacity-70">
           <span className="text-3xl">🥪</span>
           <span className="min-w-0 flex-1"><b className="block">Qbano en Icesi</b><span className="text-xs text-muted-foreground">Compra de demostración · sin cobros reales</span></span>
           <ChevronRight className="size-5 shrink-0" />
