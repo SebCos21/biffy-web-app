@@ -140,7 +140,7 @@ function useStoreValue() {
     university: universities.find((u) => u.id === user?.universityId),
     // actions
     startQbanoDemo() {
-      setUser({ name: "Valentina", email: "demo@icesi.edu.co", phone: "", career: "Estudiante · demostración", universityId: "icesi", verified: true });
+      setUser({ name: "Diego", email: "demo@icesi.edu.co", phone: "", career: "Estudiante · demostración", universityId: "icesi", verified: true });
       setPointId("icesi-biblioteca");
       setMode("student");
       setPrefs({ likes: ["sandwich"], allergies: [], lifestyle: [], budget: 30000 });

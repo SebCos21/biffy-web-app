@@ -44,6 +44,19 @@ function Tracking() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [o?.id, o?.status]);
 
+  // Pedido programado: al llegar la hora de entrega arranca solo el proceso de delivery.
+  useEffect(() => {
+    if (!o || o.status !== "programado" || !o.scheduledFor) return;
+    const t = setInterval(() => {
+      if (Date.now() >= new Date(o.scheduledFor!).getTime()) {
+        s.updateOrder(o.id, { status: "confirmado", scheduledFor: undefined });
+        toast.success("¡Es la hora! Tu pedido ya está en proceso 🐝");
+      }
+    }, 1000);
+    return () => clearInterval(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [o?.id, o?.status, o?.scheduledFor]);
+
   if (!o) return <Screen nav={false}><TopBar title="Pedido" /><Empty emoji="🧾" title="Pedido no encontrado" action={<Link to="/pedidos" className="font-bold text-primary">Ver mis pedidos</Link>} /></Screen>;
 
   const idx = steps.findIndex((x) => x.id === o.status);
