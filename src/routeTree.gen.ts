@@ -25,6 +25,7 @@ import { Route as PedidosRouteImport } from './routes/pedidos'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as RecompensasRouteImport } from './routes/recompensas'
 import { Route as SoporteRouteImport } from './routes/soporte'
+import { Route as DemoQbanoRouteImport } from './routes/demo.qbano'
 import { Route as EmpresarioIndexRouteImport } from './routes/empresario.index'
 import { Route as EmpresarioEstadisticasRouteImport } from './routes/empresario.estadisticas'
 import { Route as EmpresarioMenuRouteImport } from './routes/empresario.menu'
@@ -118,6 +119,11 @@ const SoporteRoute = SoporteRouteImport.update({
   path: '/soporte',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoQbanoRoute = DemoQbanoRouteImport.update({
+  id: '/demo/qbano',
+  path: '/demo/qbano',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EmpresarioIndexRoute = EmpresarioIndexRouteImport.update({
   id: '/empresario/',
   path: '/empresario/',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof PerfilRoute
   '/recompensas': typeof RecompensasRoute
   '/soporte': typeof SoporteRoute
+  '/demo/qbano': typeof DemoQbanoRoute
   '/empresario/estadisticas': typeof EmpresarioEstadisticasRoute
   '/empresario/menu': typeof EmpresarioMenuRoute
   '/empresario/pedidos': typeof EmpresarioPedidosRoute
@@ -226,6 +233,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof PerfilRoute
   '/recompensas': typeof RecompensasRoute
   '/soporte': typeof SoporteRoute
+  '/demo/qbano': typeof DemoQbanoRoute
   '/empresario/estadisticas': typeof EmpresarioEstadisticasRoute
   '/empresario/menu': typeof EmpresarioMenuRoute
   '/empresario/pedidos': typeof EmpresarioPedidosRoute
@@ -257,6 +265,7 @@ export interface FileRoutesById {
   '/perfil': typeof PerfilRoute
   '/recompensas': typeof RecompensasRoute
   '/soporte': typeof SoporteRoute
+  '/demo/qbano': typeof DemoQbanoRoute
   '/empresario/estadisticas': typeof EmpresarioEstadisticasRoute
   '/empresario/menu': typeof EmpresarioMenuRoute
   '/empresario/pedidos': typeof EmpresarioPedidosRoute
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/recompensas'
     | '/soporte'
+    | '/demo/qbano'
     | '/empresario/estadisticas'
     | '/empresario/menu'
     | '/empresario/pedidos'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/recompensas'
     | '/soporte'
+    | '/demo/qbano'
     | '/empresario/estadisticas'
     | '/empresario/menu'
     | '/empresario/pedidos'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/recompensas'
     | '/soporte'
+    | '/demo/qbano'
     | '/empresario/estadisticas'
     | '/empresario/menu'
     | '/empresario/pedidos'
@@ -380,6 +392,7 @@ export interface RootRouteChildren {
   PerfilRoute: typeof PerfilRoute
   RecompensasRoute: typeof RecompensasRoute
   SoporteRoute: typeof SoporteRoute
+  DemoQbanoRoute: typeof DemoQbanoRoute
   EmpresarioEstadisticasRoute: typeof EmpresarioEstadisticasRoute
   EmpresarioMenuRoute: typeof EmpresarioMenuRoute
   EmpresarioPedidosRoute: typeof EmpresarioPedidosRoute
@@ -508,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SoporteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/qbano': {
+      id: '/demo/qbano'
+      path: '/demo/qbano'
+      fullPath: '/demo/qbano'
+      preLoaderRoute: typeof DemoQbanoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/empresario/': {
       id: '/empresario/'
       path: '/empresario'
@@ -612,6 +632,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilRoute: PerfilRoute,
   RecompensasRoute: RecompensasRoute,
   SoporteRoute: SoporteRoute,
+  DemoQbanoRoute: DemoQbanoRoute,
   EmpresarioEstadisticasRoute: EmpresarioEstadisticasRoute,
   EmpresarioMenuRoute: EmpresarioMenuRoute,
   EmpresarioPedidosRoute: EmpresarioPedidosRoute,

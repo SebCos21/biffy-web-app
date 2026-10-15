@@ -158,6 +158,7 @@ function Cart() {
 
         <section className="rounded-2xl bg-card p-4 shadow-sm">
           <h2 className="font-bold">Método de pago</h2>
+          {rests.some((r) => r.demo) && <p className="mt-1 text-xs text-muted-foreground">Pago simulado: no se cobra dinero ni se envía un pedido real a Qbano.</p>}
           <div className="mt-2 space-y-2">
             {paymentMethodsCatalog.map((m) => (
               <button key={m.id} onClick={() => setPay(m.id)} className={cn("flex w-full items-center gap-3 rounded-xl border p-3 active:scale-[0.99]", pay === m.id && "border-primary bg-accent")}>

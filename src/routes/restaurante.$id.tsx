@@ -20,6 +20,8 @@ export const Route = createFileRoute("/restaurante/$id")({
           { name: "description", content: loaderData.r.tagline },
           { property: "og:title", content: `${loaderData.r.name} · Biffy` },
           { property: "og:description", content: loaderData.r.tagline },
+          { property: "og:type", content: "website" },
+          { name: "twitter:card", content: "summary" },
         ]
       : [{ title: "Restaurante no encontrado · Biffy" }, { name: "robots", content: "noindex" }],
   }),
@@ -50,6 +52,7 @@ function RestaurantPage() {
         <div className="grid h-40 place-items-center rounded-3xl bg-primary text-7xl">{r.emoji}</div>
         <h1 className="mt-4 text-2xl font-extrabold">{r.name}</h1>
         <p className="text-muted-foreground">{r.tagline}</p>
+        {r.demo && <p className="mt-2 border-y py-2 text-xs text-muted-foreground">Demostración sin cobros ni entregas reales. Sede, menú, foto, precios y horarios ilustrativos, no oficiales.</p>}
         <div className="mt-3 flex flex-wrap gap-3 text-sm font-medium">
           <span>⭐ {r.rating}</span>
           <span className="flex items-center gap-1"><Clock className="size-4" /> {r.timeMin} min</span>
@@ -57,7 +60,7 @@ function RestaurantPage() {
           <span className={open ? "text-success" : "text-danger"}>{open ? "Abierto" : `Cerrado · abre ${r.open}:00`}</span>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">{r.place} · Horario {r.open}:00–{r.close}:00</p>
-        {s.campusEligible(r.id) && <p className="mt-2 rounded-xl bg-success/15 p-2 text-sm font-semibold text-success">🎓 Tienes {Math.round((r.studentDiscount ?? 0) * 100)}% de descuento de campus</p>}
+        {s.campusEligible(r.id) && !!r.studentDiscount && <p className="mt-2 rounded-xl bg-success/15 p-2 text-sm font-semibold text-success">🎓 Tienes {Math.round((r.studentDiscount ?? 0) * 100)}% de descuento de campus</p>}
         {r.campusId && !s.campusEligible(r.id) && <Link to="/campus" className="mt-2 block rounded-xl bg-accent p-2 text-sm font-semibold text-accent-foreground">🎓 Local de campus: verifica tu universidad para obtener descuento</Link>}
         {!reachable && <p className="mt-2 rounded-xl bg-danger/10 p-2 text-sm font-semibold text-danger">Este local no entrega en {s.point.name}.</p>}
         {!open && reachable && <p className="mt-2 rounded-xl bg-secondary/20 p-2 text-sm font-semibold">Puedes programar tu pedido para cuando abra.</p>}

@@ -15,6 +15,8 @@ export const Route = createFileRoute("/pedido/$id")({
       { name: "description", content: "Sigue tu pedido en tiempo real." },
       { property: "og:title", content: "Seguimiento de pedido · Biffy" },
       { property: "og:description", content: "Sigue tu pedido en tiempo real." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Tracking,
@@ -53,6 +55,7 @@ function Tracking() {
     <Screen nav={false} className="pb-10">
       <TopBar title={`Pedido ${o.id}`} right={<Link to="/pedidos" className="text-sm font-bold text-primary">Todos</Link>} />
       <div className="space-y-4 px-4">
+        {o.restaurantIds.some((rid) => restaurantById(rid)?.demo) && <p className="border-y py-2 text-sm font-semibold text-muted-foreground">Pedido de demostración · sin cobros ni entrega real</p>}
         {o.status === "programado" ? (
           <div className="rounded-2xl bg-card p-4 shadow-sm">
             <p className="text-sm text-muted-foreground">Programado para</p>
