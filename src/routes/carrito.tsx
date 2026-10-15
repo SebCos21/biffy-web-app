@@ -26,11 +26,14 @@ function Cart() {
   const [slot, setSlot] = useState<string | null>(null);
   const [pay, setPay] = useState(s.defaultPayment);
   const [usePts, setUsePts] = useState(false);
+  const [tipPct, setTipPct] = useState(0);
 
   const rests = [...new Set(s.cart.map((i) => dishById(i.dishId)!.restaurantId))].map((id) => restaurantById(id)!);
   const unreachable = rests.filter((r) => !isReachable(r, s.point));
   const openNow = rests.every((r) => isOpenNow(r));
   const sum = s.cartSummary(usePts ? s.points : 0);
+  const tip = Math.round(((sum.subtotal - sum.discount) * tipPct) / 100);
+  const grand = sum.total + tip;
 
   const days = useMemo(() => {
     const out: { date: Date; ok: boolean }[] = [];
@@ -76,7 +79,7 @@ function Cart() {
     if (unreachable.length) { toast.error("Hay locales que no entregan en tu punto"); return; }
     if (when === "now" && !openNow) { toast.error("Un local está cerrado. Programa tu pedido."); return; }
     if (when === "later" && !slot) { toast.error("Elige una hora de entrega"); return; }
-    const o = s.placeOrder({ scheduledFor: when === "later" ? slot! : undefined, paymentId: pay, pointsToUse: usePts ? s.points : 0 });
+    const o = s.placeOrder({ scheduledFor: when === "later" ? slot! : undefined, paymentId: pay, pointsToUse: usePts ? s.points : 0, tip });
     toast.success(when === "later" ? "Pedido programado 📅" : "¡Pedido confirmado! 🎉");
     navigate({ to: "/pedido/$id", params: { id: o.id } });
   };
@@ -175,17 +178,28 @@ function Cart() {
           )}
         </section>
 
+        <section className="rounded-2xl bg-card p-4 shadow-sm">
+          <h2 className="font-bold">Propina para el repartidor</h2>
+          <p className="mt-1 text-xs text-muted-foreground">El 100% es para quien te lleva el pedido.{pay === "cash" ? " Se la pagas en efectivo junto al total." : ""}</p>
+          <div className="mt-2 grid grid-cols-4 gap-2">
+            {[0, 5, 10, 15].map((p) => (
+              <button key={p} onClick={() => setTipPct(p)} className={cn("rounded-xl border py-2.5 text-sm font-bold active:scale-95", tipPct === p && "border-primary bg-accent")}>{p === 0 ? "Sin" : p + "%"}</button>
+            ))}
+          </div>
+        </section>
+
         <section className="space-y-1.5 rounded-2xl bg-card p-4 text-sm shadow-sm">
           <Row l="Subtotal" v={cop(sum.subtotal)} />
           {sum.discount > 0 && <Row l="🎓 Descuento estudiante" v={"−" + cop(sum.discount)} green />}
           <Row l="Tarifa de entrega" v={cop(sum.fee)} />
           {sum.pointsDiscount > 0 && <Row l="💧 Gotas" v={"−" + cop(sum.pointsDiscount)} green />}
-          <div className="mt-2 flex justify-between border-t pt-2 text-base font-extrabold"><span>Total</span><span>{cop(sum.total)}</span></div>
+          {tip > 0 && <Row l={`🤝 Propina (${tipPct}%)`} v={cop(tip)} />}
+          <div className="mt-2 flex justify-between border-t pt-2 text-base font-extrabold"><span>Total</span><span>{cop(grand)}</span></div>
         </section>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t bg-card p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
-        <PrimaryButton onClick={confirm}>{s.loggedIn ? (when === "later" ? "Programar" : "Pagar") : "Inicia sesión para pagar"} · {cop(sum.total)}</PrimaryButton>
+        <PrimaryButton onClick={confirm}>{s.loggedIn ? (when === "later" ? "Programar" : "Pagar") : "Inicia sesión para pagar"} · {cop(grand)}</PrimaryButton>
       </div>
     </Screen>
   );

@@ -21,6 +21,7 @@ export type Order = {
   subtotal: number;
   discount: number;
   fee: number;
+  tip: number;
   pointsUsed: number;
   total: number;
   status: OrderStatus;
@@ -145,6 +146,7 @@ function useStoreValue() {
       setPrefs({ likes: ["sandwich"], allergies: [], lifestyle: [], budget: 30000 });
       setSurveyDone(true);
       setPoints(0);
+      setDefaultPayment("cash");
       setCart([]);
       setOrders([]);
     },
@@ -201,8 +203,9 @@ function useStoreValue() {
     },
     setPointId,
     setDefaultPayment,
-    placeOrder(opts: { scheduledFor?: string | undefined; paymentId: string; pointsToUse: number }) {
+    placeOrder(opts: { scheduledFor?: string | undefined; paymentId: string; pointsToUse: number; tip?: number }) {
       const s = cartSummary(opts.pointsToUse);
+      const tip = Math.max(0, Math.round(opts.tip ?? 0));
       const order: Order = {
         id: "BF" + Math.floor(1000 + Math.random() * 9000),
         items: cart,
@@ -210,8 +213,9 @@ function useStoreValue() {
         subtotal: s.subtotal,
         discount: s.discount,
         fee: s.fee,
+        tip,
         pointsUsed: s.pointsUsed,
-        total: s.total,
+        total: s.total + tip,
         status: opts.scheduledFor ? "programado" : "confirmado",
         scheduledFor: opts.scheduledFor,
         createdAt: new Date().toISOString(),

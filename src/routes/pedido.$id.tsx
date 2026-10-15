@@ -50,6 +50,7 @@ function Tracking() {
   const progress = o.status === "en_camino" ? 0.6 : o.status === "entregado" ? 1 : 0;
   const point = deliveryPoints.find((p) => p.id === o.pointId)!;
   const pay = paymentMethodsCatalog.find((p) => p.id === o.paymentId);
+  const isDemo = o.restaurantIds.some((rid) => restaurantById(rid)?.demo);
 
   return (
     <Screen nav={false} className="pb-10">
@@ -87,7 +88,7 @@ function Tracking() {
             <MockMap progress={progress} labelA={restaurantById(o.restaurantIds[0] ?? "")?.name ?? "Restaurante"} labelB={point.name} className="h-56" />
             <div className="rounded-2xl bg-card p-4 shadow-sm">
               <p className="text-sm text-muted-foreground">{o.status === "entregado" ? "Entregado" : "Llega en"}</p>
-              <p className="text-2xl font-extrabold">{o.status === "entregado" ? "¡Buen provecho! 😋" : `${Math.max(2, 18 - idx * 6)} min`}</p>
+              <p className="text-2xl font-extrabold">{o.status === "entregado" ? "¡Buen provecho! 😋" : `${isDemo ? Math.max(1, 8 - idx * 3) : Math.max(2, 18 - idx * 6)} min`}</p>
               <div className="mt-4 flex gap-1.5">{steps.map((st, i) => <div key={st.id} className={cn("h-1.5 flex-1 rounded-full", i <= idx ? "bg-success" : "bg-muted")} />)}</div>
               <div className="mt-2 flex justify-between text-[11px] font-semibold">{steps.map((st, i) => <span key={st.id} className={i <= idx ? "text-success" : "text-muted-foreground"}>{st.label}</span>)}</div>
             </div>
@@ -95,7 +96,7 @@ function Tracking() {
               <>
                 <div className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-sm">
                   <div className="grid size-12 place-items-center rounded-full bg-accent text-2xl">🧑🏽‍🦱</div>
-                  <div className="flex-1"><p className="font-bold">Andrés · Repartidor</p><p className="text-xs text-muted-foreground">⭐ 4.9 · Bicicleta</p></div>
+                  <div className="flex-1"><p className="font-bold">{isDemo ? "Sebastián" : "Andrés"} · Repartidor</p><p className="text-xs text-muted-foreground">{isDemo ? "🎓 Repartidor de campus · Universidad Icesi · ⭐ 4.9" : "⭐ 4.9 · Bicicleta"}</p></div>
                   <a href="tel:+573001112233" aria-label="Llamar" className="grid size-11 place-items-center rounded-full bg-success/15 text-success active:scale-90"><Phone className="size-5" /></a>
                   <a href="sms:+573001112233" aria-label="Mensaje" className="grid size-11 place-items-center rounded-full bg-primary/15 text-primary active:scale-90"><MessageCircle className="size-5" /></a>
                 </div>
@@ -120,6 +121,7 @@ function Tracking() {
           <p className="mb-2 font-bold">Resumen</p>
           {o.items.map((i) => <p key={i.key} className="flex justify-between"><span>{i.qty}× {dishById(i.dishId)?.name}</span></p>)}
           <p className="mt-2 flex justify-between text-muted-foreground"><span>Pago</span><span>{pay?.label}</span></p>
+          {o.tip > 0 && <p className="flex justify-between text-muted-foreground"><span>Propina para el repartidor</span><span>{cop(o.tip)}</span></p>}
           <p className="flex justify-between text-muted-foreground"><span>Entrega</span><span>{point.name}</span></p>
           <p className="mt-2 flex justify-between border-t pt-2 font-extrabold"><span>Total</span><span>{cop(o.total)}</span></p>
         </div>

@@ -53,6 +53,11 @@ function answer(text: string, s: Store): Msg {
     const c = allergyConflicts(asked, s.prefs.allergies);
     return { role: "ai", text: `${asked.name}: ${asked.description} Alérgenos: ${asked.allergens.join(", ") || "ninguno"}. ${asked.calories > 0 ? asked.calories + " kcal." : "Información nutricional no disponible."} Precio ${cop(s.discountedPrice(asked))}.${c.length ? ` ⚠️ Contiene ${c.join(", ")}, que marcaste como alergia.` : " ✅ Compatible con tus alergias."}`, dishes: [asked] };
   }
+  if (t.includes("qbano")) {
+    const order = ["qbano-especial", "qbano-pollo", "qbano-vegetariano"];
+    const q = order.map((id) => s.reachableDishes.find((d) => d.id === id)).filter((d): d is Dish => !!d);
+    if (q.length) return { role: "ai", text: `Estas son las ${q.length} mejores opciones de Qbano para ti en Icesi 🥪 (llegan en ~8 min):`, dishes: q };
+  }
   let list = pool;
   const requestedRestaurant = s.reachableRestaurants.find((r) => t.includes(r.name.toLowerCase().split(" · ")[0] ?? r.name.toLowerCase()));
   if (requestedRestaurant) list = list.filter((d) => d.restaurantId === requestedRestaurant.id);
