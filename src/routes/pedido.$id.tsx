@@ -35,7 +35,6 @@ function Tracking() {
   const navigate = useNavigate();
   const o = s.orders.find((x) => x.id === id);
   const [rating, setRating] = useState(0);
-  const [newTime, setNewTime] = useState("");
 
   useEffect(() => {
     if (!o || !["confirmado", "preparando", "en_camino"].includes(o.status)) return;
@@ -70,38 +69,14 @@ function Tracking() {
       <TopBar title={`Pedido ${o.id}`} right={<Link to="/pedidos" className="text-sm font-bold text-primary">Todos</Link>} />
       <div className="space-y-4 px-4">
         {o.restaurantIds.some((rid) => restaurantById(rid)?.demo) && <p className="border-y py-2 text-sm font-semibold text-muted-foreground">Pedido de demostración · sin cobros ni entrega real</p>}
-        {o.status === "programado" ? (
-          <div className="rounded-2xl bg-card p-4 shadow-sm">
-            <p className="text-sm text-muted-foreground">Programado para</p>
-            <p className="text-xl font-extrabold">{new Date(o.scheduledFor!).toLocaleString("es-CO", { weekday: "long", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
-            <p className="mt-2 text-sm">Te avisaremos cuando un repartidor lo tome.</p>
-            <label className="mt-3 block text-sm font-semibold">Modificar hora</label>
-            <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} className="mt-1 w-full rounded-xl border bg-card p-3" />
-            <div className="mt-3 flex gap-2">
-              <button
-                onClick={(): void => {
-                  if (!newTime) { toast.error("Elige una hora"); return; }
-                  const d = new Date(o.scheduledFor!);
-                  const [h = 0, m = 0] = newTime.split(":").map(Number);
-                  const r = o.restaurantIds.map((x) => restaurantById(x)!);
-                  if (r.some((x) => h < x.open || h >= x.close)) { toast.error("El local no está disponible a esa hora"); return; }
-                  d.setHours(h, m);
-                  s.updateOrder(o.id, { scheduledFor: d.toISOString() });
-                  toast.success("Hora actualizada");
-                }}
-                className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground active:scale-95"
-              >Guardar</button>
-              <button onClick={() => { s.updateOrder(o.id, { status: "confirmado", scheduledFor: undefined }); toast("Pedido enviado ahora"); }} className="flex-1 rounded-xl bg-muted py-3 font-semibold active:scale-95">Pedir ahora</button>
-            </div>
-          </div>
-        ) : o.status === "cancelado" ? (
+        {o.status === "cancelado" ? (
           <Empty emoji="❌" title="Pedido cancelado" />
         ) : (
           <>
             <MockMap progress={progress} labelA={restaurantById(o.restaurantIds[0] ?? "")?.name ?? "Restaurante"} labelB={point.name} className="h-56" />
             <div className="rounded-2xl bg-card p-4 shadow-sm">
-              <p className="text-sm text-muted-foreground">{o.status === "entregado" ? "Entregado" : "Llega en"}</p>
-              <p className="text-2xl font-extrabold">{o.status === "entregado" ? "¡Buen provecho! 😋" : `${isDemo ? Math.max(1, 8 - idx * 3) : Math.max(2, 18 - idx * 6)} min`}</p>
+              <p className="text-sm text-muted-foreground">{o.status === "entregado" ? "Entregado" : o.status === "programado" ? "Llega a las" : "Llega en"}</p>
+              <p className="text-2xl font-extrabold">{o.status === "entregado" ? "¡Buen provecho! 😋" : o.status === "programado" && o.scheduledFor ? new Date(o.scheduledFor).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }) : `${isDemo ? Math.max(1, 8 - idx * 3) : Math.max(2, 18 - idx * 6)} min`}</p>
               <div className="mt-4 flex gap-1.5">{steps.map((st, i) => <div key={st.id} className={cn("h-1.5 flex-1 rounded-full", i <= idx ? "bg-success" : "bg-muted")} />)}</div>
               <div className="mt-2 flex justify-between text-[11px] font-semibold">{steps.map((st, i) => <span key={st.id} className={i <= idx ? "text-success" : "text-muted-foreground"}>{st.label}</span>)}</div>
             </div>
