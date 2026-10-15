@@ -54,13 +54,30 @@ function Cart() {
     if (!day?.ok) return [];
     const res: string[] = [];
     const now = new Date();
+    const lead = rests.every((r) => r.demo) ? 8 : 45;
     for (let m = open * 60; m <= close * 60 - 30; m += 30) {
       const t = new Date(day.date);
       t.setMinutes(m);
-      if (t.getTime() > now.getTime() + 45 * 60000) res.push(t.toISOString());
+      if (t.getTime() > now.getTime() + lead * 60000) res.push(t.toISOString());
     }
     return res;
   }, [rests, days, dayIdx]);
+
+  const isDemo = rests.length > 0 && rests.every((r) => r.demo);
+  const noonPick = (() => {
+    for (let i = 0; i < days.length; i++) {
+      if (!days[i].ok) continue;
+      const t = new Date(days[i].date);
+      t.setHours(12, 0, 0, 0);
+      if (t.getTime() > Date.now() + 8 * 60000) return { i, iso: t.toISOString() };
+    }
+    return null;
+  })();
+  const pickNoon = (): void => {
+    if (!noonPick) return;
+    setWhen("later"); setDayIdx(noonPick.i); setSlot(noonPick.iso);
+    toast.success(noonPick.i === 0 ? "Programado para hoy a las 12:00" : "Programado a las 12:00 del próximo día disponible");
+  };
 
   if (!s.cart.length)
     return (
@@ -121,6 +138,12 @@ function Cart() {
             <button onClick={() => setWhen("now")} className={cn("rounded-xl border p-3 font-semibold active:scale-95", when === "now" && "border-primary bg-accent text-primary")}>⚡ Ahora {!openNow && <span className="block text-[11px] text-danger">Local cerrado</span>}</button>
             <button onClick={() => setWhen("later")} className={cn("rounded-xl border p-3 font-semibold active:scale-95", when === "later" && "border-primary bg-accent text-primary")}>📅 Programar</button>
           </div>
+          {isDemo && noonPick && (
+            <button onClick={pickNoon} className={cn("mt-2 w-full rounded-xl border-2 border-dashed border-primary p-3 text-left font-semibold active:scale-[0.99]", slot === noonPick.iso && when === "later" && "bg-accent")}>
+              🕛 Que llegue a las 12:00 {noonPick.i === 0 ? "hoy" : `· ${dayNames[days[noonPick.i].date.getDay()]} ${days[noonPick.i].date.getDate()}`}
+              <span className="block text-xs font-normal text-muted-foreground">A las 12:00 Sebastián sale con tu pedido · llega en 8 min</span>
+            </button>
+          )}
           {when === "later" && (
             <>
               <Carousel className="mt-3">
