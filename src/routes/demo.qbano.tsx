@@ -16,7 +16,7 @@ function QbanoDemo() {
   const navigate = useNavigate();
   const start = (ai: boolean) => {
     s.startQbanoDemo();
-    if (ai) navigate({ to: "/ai" });
+    if (ai) navigate({ to: "/" });
     else navigate({ to: "/restaurante/$id", params: { id: "qbano-icesi" } });
   };
   const share = async () => {
@@ -35,7 +35,7 @@ function QbanoDemo() {
         <h1 className="text-3xl font-extrabold">Qbano en Icesi</h1>
         <div className="flex justify-between border-y py-3 text-sm"><span>Compradora de ejemplo</span><b>Valentina · Icesi</b></div>
         <p className="text-sm text-muted-foreground">Demostración sin cobros ni entregas reales. Menú, precios, horarios, sede y foto ilustrativos; no son información oficial de Qbano. El pedido se conserva mientras esta página permanezca abierta.</p>
-        <PrimaryButton onClick={() => start(true)}><Sparkles className="size-5" /> Pedir con Biffy AI</PrimaryButton>
+        <PrimaryButton onClick={() => start(true)}><Sparkles className="size-5" /> Empezar desde Inicio</PrimaryButton>
         <PrimaryButton className="bg-card text-foreground border" onClick={() => start(false)}><UtensilsCrossed className="size-5" /> Ver menú de Qbano</PrimaryButton>
         <PrimaryButton className="bg-muted text-foreground" onClick={share}><Share2 className="size-5" /> Compartir ejemplo</PrimaryButton>
       </div>
