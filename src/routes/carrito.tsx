@@ -66,8 +66,8 @@ function Cart() {
   const isDemo = rests.length > 0 && rests.every((r) => r.demo);
   const noonPick = (() => {
     for (let i = 0; i < days.length; i++) {
-      if (!days[i].ok) continue;
-      const t = new Date(days[i].date);
+      const day = days[i]; if (!day?.ok) continue;
+      const t = new Date(day.date);
       t.setHours(12, 0, 0, 0);
       if (t.getTime() > Date.now() + 8 * 60000) return { i, iso: t.toISOString() };
     }
@@ -140,7 +140,7 @@ function Cart() {
           </div>
           {isDemo && noonPick && (
             <button onClick={pickNoon} className={cn("mt-2 w-full rounded-xl border-2 border-dashed border-primary p-3 text-left font-semibold active:scale-[0.99]", slot === noonPick.iso && when === "later" && "bg-accent")}>
-              🕛 Que llegue a las 12:00 {noonPick.i === 0 ? "hoy" : `· ${dayNames[days[noonPick.i].date.getDay()]} ${days[noonPick.i].date.getDate()}`}
+              🕛 Que llegue a las 12:00 {noonPick.i === 0 ? "hoy" : `· ${dayNames[days[noonPick.i]!.date.getDay()]} ${days[noonPick.i]!.date.getDate()}`}
               <span className="block text-xs font-normal text-muted-foreground">A las 12:00 Sebastián sale con tu pedido · llega en 8 min</span>
             </button>
           )}
