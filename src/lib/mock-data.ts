@@ -1,4 +1,6 @@
-// Mock data (no backend yet). Coordinates around Bogotá.
+import qbanoSandwich from "@/assets/demo-qbano-sandwich.jpg";
+
+// Mock data (no backend yet). Bogotá catalog plus a fictional Icesi demo.
 export type CategoryId =
   | "pizza"
   | "hamburguesa"
@@ -8,6 +10,7 @@ export type CategoryId =
   | "mexicana"
   | "asiatica"
   | "almuerzo";
+// Sandwiches are available as a separate search category.
 
 export const categories: { id: CategoryId; label: string; emoji: string }[] = [
   { id: "pizza", label: "Pizza", emoji: "🍕" },
