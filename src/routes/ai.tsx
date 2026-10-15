@@ -151,7 +151,7 @@ function AiPage() {
           <div ref={end} />
         </div>
         <Carousel className="mt-2">
-          {(s.pointId.startsWith("icesi-") ? ["Quiero Qbano por menos de 30 mil", "¿Qué contiene el Sándwich Especial?", "Qbano vegetariano"] : ["Algo barato menos de 15 mil", "Pizza vegetariana", "¿Qué contiene el Bowl Proteico?", "Algo saludable"]).map((x) => <Chip key={x} onClick={() => send(x)}>{x}</Chip>)}
+          {(s.pointId.startsWith("icesi-") ? ["Qbano", "¿Qué contiene el Qbano Especial?"] : ["Algo barato menos de 15 mil", "Pizza vegetariana", "¿Qué contiene el Bowl Proteico?", "Algo saludable"]).map((x) => <Chip key={x} onClick={() => send(x)}>{x}</Chip>)}
         </Carousel>
       </div>
       <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="fixed inset-x-0 bottom-[4.25rem] z-30 mx-auto flex max-w-md gap-2 border-t bg-background p-3">

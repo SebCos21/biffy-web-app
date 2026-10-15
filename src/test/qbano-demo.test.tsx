@@ -26,3 +26,10 @@ describe("Qbano Icesi demonstration", () => {
     expect(result.current.orders[0]?.restaurantIds).toEqual(["qbano-icesi"]);
   });
 });
+describe("Qbano demo details", () => {
+  it("delivers in 8 minutes and names the special first", async () => {
+    const { restaurants, dishes } = await import("@/lib/mock-data");
+    expect(restaurants.find((r) => r.id === "qbano-icesi")?.timeMin).toBe(8);
+    expect(dishes.filter((d) => d.restaurantId === "qbano-icesi")[0]?.name).toBe("Qbano Especial");
+  });
+});
