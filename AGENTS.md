@@ -14,3 +14,4 @@
 - Visibility of restaurants/dishes must go through `isReachable` (radius + couriers nearby) via `reachableRestaurants/reachableDishes` — single source for the distance rule.
 - Mobile-first touch UI: shared pieces in `src/components/biffy/ui.tsx`; use `active:` states, never rely on hover; carousels use the `no-scrollbar` snap pattern.
 - Merchant data lives in store state and is published into the shared mock catalog via `syncCatalog` in `src/lib/merchant.ts` — so client screens and the radius rule see merchant products without a second source.
+- Shareable purchase demos use a dedicated entry route and initialize an explicit mock buyer through the shared store; this keeps demo checkout on the normal purchase flow without backend or persistent sessions.

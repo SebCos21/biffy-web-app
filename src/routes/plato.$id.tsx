@@ -21,6 +21,8 @@ export const Route = createFileRoute("/plato/$id")({
           { name: "description", content: loaderData.dish.description },
           { property: "og:title", content: `${loaderData.dish.name} · Biffy` },
           { property: "og:description", content: loaderData.dish.description },
+          { property: "og:type", content: "website" },
+          { name: "twitter:card", content: "summary" },
         ]
       : [{ title: "Plato no encontrado · Biffy" }, { name: "robots", content: "noindex" }],
   }),

@@ -79,7 +79,7 @@ function useStoreValue() {
     setCatalogV((v) => v + 1);
   };
 
-  const point = deliveryPoints.find((p) => p.id === pointId) ?? deliveryPoints[0]!;
+  const point = deliveryPoints.find((p) => p.id === pointId) ?? { id: "biblio", name: "Biblioteca Central", detail: "Entrada principal", lat: 4.6355, lng: -74.083 };
   const loggedIn = !!user;
   const ordersCount = orders.filter((o) => o.status === "entregado").length + 7 * (loggedIn ? 1 : 0);
 
@@ -138,6 +138,16 @@ function useStoreValue() {
     campusEligible, unitPrice, discountedPrice, cartSummary,
     university: universities.find((u) => u.id === user?.universityId),
     // actions
+    startQbanoDemo() {
+      setUser({ name: "Valentina", email: "demo@icesi.edu.co", phone: "", career: "Estudiante · demostración", universityId: "icesi", verified: true });
+      setPointId("icesi-biblioteca");
+      setMode("student");
+      setPrefs({ likes: ["sandwich"], allergies: [], lifestyle: [], budget: 30000 });
+      setSurveyDone(true);
+      setPoints(0);
+      setCart([]);
+      setOrders([]);
+    },
     login(email: string, name: string) {
       const domain = email.split("@")[1]?.toLowerCase() ?? "";
       const uni = universities.find((u) => domain.endsWith(u.domain));

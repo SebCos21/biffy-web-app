@@ -15,6 +15,7 @@ export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; ln
 
 /** A restaurant is visible only if the point is inside its radius and couriers are nearby. */
 export function isReachable(r: Restaurant, p: DeliveryPoint) {
+  if (r.campusDeliveryOnly && !p.id.startsWith(`${r.campusId}-`)) return false;
   return r.couriersNearby > 0 && distanceKm(r, p) <= r.radiusKm;
 }
 

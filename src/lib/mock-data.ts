@@ -1,4 +1,6 @@
-// Mock data (no backend yet). Coordinates around Bogotá.
+import qbanoSandwich from "@/assets/demo-qbano-sandwich.jpg";
+
+// Mock data (no backend yet). Bogotá catalog plus a fictional Icesi demo.
 export type CategoryId =
   | "pizza"
   | "hamburguesa"
@@ -7,9 +9,11 @@ export type CategoryId =
   | "postres"
   | "mexicana"
   | "asiatica"
-  | "almuerzo";
+  | "almuerzo"
+  | "sandwich";
 
 export const categories: { id: CategoryId; label: string; emoji: string }[] = [
+  { id: "sandwich", label: "Sándwiches", emoji: "🥪" },
   { id: "pizza", label: "Pizza", emoji: "🍕" },
   { id: "hamburguesa", label: "Hamburguesas", emoji: "🍔" },
   { id: "saludable", label: "Saludable", emoji: "🥗" },
@@ -21,6 +25,7 @@ export const categories: { id: CategoryId; label: string; emoji: string }[] = [
 ];
 
 export const universities = [
+  { id: "icesi", name: "Universidad Icesi", domain: "icesi.edu.co" },
   { id: "unal", name: "Universidad Nacional", domain: "unal.edu.co" },
   { id: "andes", name: "Universidad de los Andes", domain: "uniandes.edu.co" },
   { id: "javeriana", name: "Pontificia Universidad Javeriana", domain: "javeriana.edu.co" },
@@ -28,6 +33,9 @@ export const universities = [
 
 export type DeliveryPoint = { id: string; name: string; detail: string; lat: number; lng: number };
 export const deliveryPoints: DeliveryPoint[] = [
+  { id: "icesi-biblioteca", name: "Icesi · Biblioteca", detail: "Punto de encuentro demo · Cali", lat: 3.3415, lng: -76.5305 },
+  { id: "icesi-plazoleta", name: "Icesi · Plazoleta", detail: "Punto de encuentro demo · Cali", lat: 3.3421, lng: -76.5298 },
+  { id: "icesi-entrada", name: "Icesi · Entrada principal", detail: "Punto de encuentro demo · Cali", lat: 3.3409, lng: -76.5309 },
   { id: "biblio", name: "Biblioteca Central", detail: "Entrada principal", lat: 4.6355, lng: -74.083 },
   { id: "inge", name: "Edificio Ingeniería", detail: "Hall piso 1", lat: 4.6378, lng: -74.0825 },
   { id: "plazoleta", name: "Plazoleta Che", detail: "Junto a las bancas", lat: 4.6362, lng: -74.0815 },
@@ -55,9 +63,12 @@ export type Restaurant = {
   showsNutrition?: boolean;
   paused?: boolean;
   brandId?: string;
+  demo?: boolean;
+  campusDeliveryOnly?: boolean;
 };
 
 export const restaurants: Restaurant[] = [
+  { id: "qbano-icesi", name: "Qbano · Icesi", emoji: "🥪", tagline: "Sándwiches · menú de demostración", rating: 4.8, timeMin: 15, lat: 3.3418, lng: -76.5303, radiusKm: 0.6, couriersNearby: 2, campusId: "icesi", open: 10, close: 20, closedDays: [0], place: "Entrega dentro de Icesi · sede simulada", demo: true, campusDeliveryOnly: true },
   { id: "r1", name: "La Plazoleta Pizza", emoji: "🍕", tagline: "Pizza artesanal en horno de leña", rating: 4.8, timeMin: 15, lat: 4.6365, lng: -74.0818, radiusKm: 2.5, couriersNearby: 6, campusId: "unal", studentDiscount: 0.15, open: 10, close: 21, closedDays: [0], place: "Plazoleta B · Local 12" },
   { id: "r2", name: "Burger Lab", emoji: "🍔", tagline: "Smash burgers y papas rústicas", rating: 4.6, timeMin: 20, lat: 4.6395, lng: -74.0790, radiusKm: 3, couriersNearby: 4, open: 11, close: 22, closedDays: [], place: "Cl 45 #22-10" },
   { id: "r3", name: "Verde Bowl", emoji: "🥗", tagline: "Bowls frescos, veganos y sin gluten", rating: 4.9, timeMin: 12, lat: 4.6370, lng: -74.0840, radiusKm: 2, couriersNearby: 5, campusId: "unal", studentDiscount: 0.2, open: 7, close: 19, closedDays: [0, 6], place: "Edificio Ingeniería · Cafetería", showsNutrition: true },
@@ -90,6 +101,9 @@ export type Dish = {
 export type Nutrition = { kcal: number; protein: number; carbs: number; fat: number };
 
 export const dishes: Dish[] = [
+  { id: "qbano-especial", restaurantId: "qbano-icesi", name: "Sándwich Especial", description: "Ejemplo de menú: pan tostado, pollo, jamón, queso, lechuga, tomate y salsa. Ingredientes y precio no oficiales.", price: 24900, emoji: "🥪", category: "sandwich", tags: [], allergens: ["gluten", "lácteos", "huevo"], calories: 0, popular: true, section: "Sándwiches", photo: qbanoSandwich, options: [{ id: "qbano-queso", label: "Extra queso", price: 3000 }] },
+  { id: "qbano-pollo", restaurantId: "qbano-icesi", name: "Sándwich de Pollo", description: "Ejemplo de menú: pan tostado, pollo, queso, lechuga y tomate. Ingredientes y precio no oficiales.", price: 21900, emoji: "🥪", category: "sandwich", tags: [], allergens: ["gluten", "lácteos"], calories: 0, popular: true, section: "Sándwiches", photo: qbanoSandwich },
+  { id: "qbano-vegetariano", restaurantId: "qbano-icesi", name: "Sándwich Vegetariano", description: "Ejemplo de menú: pan tostado, queso, lechuga, tomate y vegetales. Ingredientes y precio no oficiales.", price: 18900, emoji: "🥪", category: "sandwich", tags: ["vegetariano"], allergens: ["gluten", "lácteos"], calories: 0, section: "Sándwiches" },
   { id: "d1", restaurantId: "r1", name: "Pizza Margarita", description: "Tomate, mozzarella fresca y albahaca.", price: 18000, emoji: "🍕", category: "pizza", tags: ["vegetariano"], allergens: ["gluten", "lácteos"], calories: 720, popular: true, section: "Pizzas", options: [{ id: "o1", label: "Borde de queso", price: 4000 }, { id: "o2", label: "Extra albahaca", price: 1000 }] },
   { id: "d2", restaurantId: "r1", name: "Pizza Pepperoni", description: "Doble pepperoni y orégano.", price: 21000, emoji: "🍕", category: "pizza", tags: ["picante"], allergens: ["gluten", "lácteos"], calories: 860, popular: true, section: "Pizzas", options: [{ id: "o1", label: "Borde de queso", price: 4000 }, { id: "o3", label: "Jalapeños", price: 2000 }] },
   { id: "d3", restaurantId: "r1", name: "Limonada de coco", description: "Natural, 16 oz.", price: 7000, emoji: "🥥", category: "cafe", tags: ["vegano", "sin gluten"], allergens: [], calories: 210, section: "Bebidas" },

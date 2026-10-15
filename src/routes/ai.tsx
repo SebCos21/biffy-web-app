@@ -34,7 +34,7 @@ function score(d: Dish, s: Store, mode: Mode) {
   if (s.campusEligible(r.id)) { sc += 4; why.push("descuento de campus"); }
   if (mode === "rapido") sc += 25 - r.timeMin;
   if (mode === "economico") sc += (25000 - price) / 1000;
-  if (mode === "saludable") sc += d.category === "saludable" || d.calories < 600 ? 15 : -15;
+  if (mode === "saludable") sc += d.category === "saludable" || (d.calories > 0 && d.calories < 600) ? 15 : -15;
   if (mode === "favoritos") sc += s.favorites.includes(d.id) || s.favorites.includes(r.id) ? 20 : -10;
   if (mode === "sorpresa") sc += Math.random() * 30 - 10;
   const h = new Date().getHours();
@@ -51,9 +51,11 @@ function answer(text: string, s: Store): Msg {
   const asked = s.reachableDishes.find((d) => t.includes(d.name.toLowerCase()) || t.includes(d.name.toLowerCase().split(" ")[0] + " " + (d.name.toLowerCase().split(" ")[1] ?? "")));
   if (asked && /(contiene|ingrediente|lleva|tiene|alerg)/.test(t)) {
     const c = allergyConflicts(asked, s.prefs.allergies);
-    return { role: "ai", text: `${asked.name}: ${asked.description} Alérgenos: ${asked.allergens.join(", ") || "ninguno"}. ${asked.calories} kcal. Precio ${cop(s.discountedPrice(asked))}.${c.length ? ` ⚠️ Contiene ${c.join(", ")}, que marcaste como alergia.` : " ✅ Compatible con tus alergias."}`, dishes: [asked] };
+    return { role: "ai", text: `${asked.name}: ${asked.description} Alérgenos: ${asked.allergens.join(", ") || "ninguno"}. ${asked.calories > 0 ? asked.calories + " kcal." : "Información nutricional no disponible."} Precio ${cop(s.discountedPrice(asked))}.${c.length ? ` ⚠️ Contiene ${c.join(", ")}, que marcaste como alergia.` : " ✅ Compatible con tus alergias."}`, dishes: [asked] };
   }
   let list = pool;
+  const requestedRestaurant = s.reachableRestaurants.find((r) => t.includes(r.name.toLowerCase().split(" · ")[0] ?? r.name.toLowerCase()));
+  if (requestedRestaurant) list = list.filter((d) => d.restaurantId === requestedRestaurant.id);
   const cat = categories.find((c) => t.includes(c.id) || t.includes(c.label.toLowerCase().slice(0, -1)) || t.includes(c.label.toLowerCase()));
   if (cat) list = list.filter((d) => d.category === cat.id);
   for (const tag of ["vegano", "vegetariano", "sin gluten", "picante", "proteína"]) if (t.includes(tag)) list = list.filter((d) => d.tags.some((x) => x.includes(tag)));
@@ -62,7 +64,7 @@ function answer(text: string, s: Store): Msg {
   if (num) max = Number(num[1]) * (num[2] || Number(num[1]) < 1000 ? 1000 : 1);
   if (/(barat|económ|economic)/.test(t)) max = max ?? 15000;
   if (max) list = list.filter((d) => s.discountedPrice(d) <= max!);
-  if (/(saludable|light|ligero)/.test(t)) list = list.filter((d) => d.category === "saludable" || d.calories < 600);
+  if (/(saludable|light|ligero)/.test(t)) list = list.filter((d) => d.category === "saludable" || (d.calories > 0 && d.calories < 600));
   const ranked = list.map((d) => score(d, s, "gustos")).sort((a, b) => b.pct - a.pct).slice(0, 4).map((x) => x.d);
   if (!ranked.length) return { role: "ai", text: "No encontré opciones con eso cerca de ti 😕. Prueba subir el presupuesto o cambiar de categoría." };
   return { role: "ai", text: `Encontré ${ranked.length} opciones${max ? ` por menos de ${cop(max)}` : ""}, ordenadas por compatibilidad contigo:`, dishes: ranked };
@@ -144,7 +146,7 @@ function AiPage() {
           <div ref={end} />
         </div>
         <Carousel className="mt-2">
-          {["Algo barato menos de 15 mil", "Pizza vegetariana", "¿Qué contiene el Bowl Proteico?", "Algo saludable"].map((x) => <Chip key={x} onClick={() => send(x)}>{x}</Chip>)}
+          {(s.pointId.startsWith("icesi-") ? ["Quiero Qbano por menos de 30 mil", "¿Qué contiene el Sándwich Especial?", "Qbano vegetariano"] : ["Algo barato menos de 15 mil", "Pizza vegetariana", "¿Qué contiene el Bowl Proteico?", "Algo saludable"]).map((x) => <Chip key={x} onClick={() => send(x)}>{x}</Chip>)}
         </Carousel>
       </div>
       <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="fixed inset-x-0 bottom-[4.25rem] z-30 mx-auto flex max-w-md gap-2 border-t bg-background p-3">
