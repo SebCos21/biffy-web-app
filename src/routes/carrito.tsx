@@ -222,7 +222,7 @@ function Cart() {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t bg-card p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
-        <PrimaryButton onClick={confirm}>{s.loggedIn ? (when === "later" ? "Programar" : "Pagar") : "Inicia sesión para pagar"} · {cop(grand)}</PrimaryButton>
+        <PrimaryButton onClick={confirm}>{s.loggedIn ? "Pagar" : "Inicia sesión para pagar"} · {cop(grand)}</PrimaryButton>
       </div>
     </Screen>
   );
