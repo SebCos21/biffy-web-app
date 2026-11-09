@@ -55,7 +55,15 @@ const kBenefits = [
 ];
 
 /// Resultado de verificar el correo universitario.
-enum VerifyResult { ok, invalidEmail, domainMismatch, notLoggedIn }
+enum VerifyResult {
+  ok,
+  invalidEmail,
+  domainMismatch,
+  unknownUniversity,
+  notAuthenticated,
+  notLoggedIn,
+  rpcError,
+}
 
 /// Sesión simulada: usuario, rol activo, datos personales y preferencias.
 class SessionController extends ChangeNotifier {
@@ -84,37 +92,50 @@ class SessionController extends ChangeNotifier {
 
   /// Usuario con sesión iniciada, si hay.
   AppUser? get user => _user;
+
   /// `true` si hay una cuenta activa.
   bool get isLoggedIn => _user != null;
+
   /// Rol con el que se está usando la app.
   UserRole get activeRole => _activeRole;
+
   /// Ajustes locales vigentes.
   AppSettings get settings => _settings;
+
   /// Repositorio de autenticación en uso.
   AuthRepository get auth => _auth;
 
   /// Datos del usuario activo o del invitado.
   UserData get data => _user == null ? _guest : dataFor(_user!.id);
+
   /// Datos de un usuario, creándolos si no existen.
   UserData dataFor(String userId) => _data.putIfAbsent(userId, UserData.new);
 
   /// Preferencias del usuario activo.
   Preferences get prefs => data.prefs;
+
   /// Saldo de Gotas del usuario activo.
   int get gotas => data.gotas;
+
   /// Universidad verificada, si la hay.
   String? get verifiedUniversityId => data.verifiedUniversityId;
+
   /// `true` si el comprador verificó su universidad.
   bool get isVerifiedStudent => data.verifiedUniversityId != null;
+
   /// Universidad verificada o la elegida en preferencias.
   String? get universityId =>
       data.verifiedUniversityId ?? data.prefs.universityId;
+
   /// Punto de entrega activo.
   DeliveryPoint get point => pointById(_pointId);
+
   /// Id del punto de entrega activo.
   String get pointId => _pointId;
+
   /// `true` si el usuario ya registró perfil de repartidor.
   bool get hasCourierProfile => data.courierProfile != null;
+
   /// Negocio vinculado a la cuenta, si es restaurante.
   String? get businessId => _user?.businessId;
 
@@ -318,6 +339,7 @@ class SessionController extends ChangeNotifier {
       final settingsF = profile.settings(u.id);
       final couponsF = profile.coupons(u.id);
       final notifsF = profile.notifications(u.id);
+      final verificationF = profile.verification(u.id);
 
       final p = await prefsF;
       if (p.prefs != null) d.prefs = p.prefs!;
@@ -338,6 +360,16 @@ class SessionController extends ChangeNotifier {
         _clock.simulateLunch = s.demoLunch;
       }
 
+      // Verificación universitaria guardada en el perfil.
+      final v = await verificationF;
+      if (v.verified && v.universityId != null) {
+        d.verifiedUniversityId = v.universityId;
+        d.universityEmail = v.universityEmail;
+        if (d.prefs.universityId != v.universityId) {
+          d.prefs = d.prefs.copyWith(universityId: v.universityId);
+        }
+      }
+
       // Cupones generados por las cajas y notificaciones guardadas.
       d.coupons
         ..clear()
@@ -354,13 +386,17 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Actualiza nombre y teléfono del usuario.
-  void updateProfile({String? name, String? phone}) {
+  /// Actualiza nombre y teléfono del usuario (local y remoto).
+  Future<void> updateProfile({String? name, String? phone}) async {
     final u = _user;
     if (u == null) return;
     if (name != null && name.trim().isNotEmpty) u.name = name.trim();
     if (phone != null) u.phone = phone.trim();
     notifyListeners();
+
+    if (_auth.isRemote) {
+      await _auth.saveProfile(u.id, name: name, phone: phone);
+    }
   }
 
   /// Vincula la cuenta a un negocio y pasa al rol restaurante.
@@ -412,11 +448,7 @@ class SessionController extends ChangeNotifier {
     return awarded;
   }
 
-  /// Verifica el correo universitario de forma simulada.
-  ///
-  /// TODO equipo: con Supabase debe llamar al RPC `verify_university` (ya
-  /// existe y valida el dominio) y refrescar `profiles.verified` y
-  /// `university_email`. Hoy solo cambia el estado en memoria.
+  /// Verifica el correo universitario de forma simulada (solo modo demo).
   VerifyResult verifyUniversity(String universityId, String email) {
     if (!isLoggedIn) return VerifyResult.notLoggedIn;
     final e = email.trim().toLowerCase();
@@ -427,18 +459,64 @@ class SessionController extends ChangeNotifier {
     if (uni == null || !e.endsWith('@${uni.domain}')) {
       return VerifyResult.domainMismatch;
     }
+    _markVerified(uni.id, e, uni.name, simulated: true);
+    return VerifyResult.ok;
+  }
+
+  /// Verifica el correo con el RPC `verify_university` en modo Supabase.
+  Future<VerifyResult> verifyUniversityAsync(
+    String universityId,
+    String email,
+  ) async {
+    if (!isLoggedIn) return VerifyResult.notLoggedIn;
+    final e = email.trim().toLowerCase();
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(e)) {
+      return VerifyResult.invalidEmail;
+    }
+    if (!_auth.isRemote) return verifyUniversity(universityId, e);
+
+    final result = await _auth.verifyUniversity(universityId, e);
+    switch (result) {
+      case 'ok':
+        final uni = universityById(universityId);
+        _markVerified(
+          universityId,
+          e,
+          uni?.name ?? 'tu universidad',
+          simulated: false,
+        );
+        return VerifyResult.ok;
+      case 'domain_mismatch':
+        return VerifyResult.domainMismatch;
+      case 'unknown_university':
+        return VerifyResult.unknownUniversity;
+      case 'not_authenticated':
+        return VerifyResult.notAuthenticated;
+      default:
+        return VerifyResult.rpcError;
+    }
+  }
+
+  /// Guarda la verificación en memoria y avisa al usuario.
+  void _markVerified(
+    String universityId,
+    String email,
+    String universityName, {
+    required bool simulated,
+  }) {
     final d = data;
-    d.verifiedUniversityId = uni.id;
-    d.universityEmail = e;
-    d.prefs = d.prefs.copyWith(universityId: uni.id);
+    d.verifiedUniversityId = universityId;
+    d.universityEmail = email;
+    d.prefs = d.prefs.copyWith(universityId: universityId);
     _notifications.push(
-      title: 'Universidad verificada (simulación) 🎓',
-      body: 'Ya ves descuentos y secciones de ${uni.name}.',
+      title: simulated
+          ? 'Universidad verificada (simulación) 🎓'
+          : 'Universidad verificada 🎓',
+      body: 'Ya ves descuentos y secciones de $universityName.',
       audience: 'user:${_user!.id}',
       route: '/campus',
     );
     notifyListeners();
-    return VerifyResult.ok;
   }
 
   /// Elige la universidad y descarta una verificación previa.
@@ -653,14 +731,19 @@ class SessionController extends ChangeNotifier {
 
   // ------------------------------------------------------- Repartidor
 
-  /// Guarda el perfil de repartidor y activa ese rol.
-  void saveCourierProfile(CourierProfile p) {
+  /// Guarda el perfil de repartidor (local y remoto) y activa ese rol.
+  Future<void> saveCourierProfile(CourierProfile p) async {
     data.courierProfile = p;
     if (_user != null && p.phone.isNotEmpty && _user!.phone.isEmpty) {
       _user!.phone = p.phone;
     }
     _activeRole = UserRole.courier;
     notifyListeners();
+
+    final u = _user;
+    if (u != null && _auth.isRemote) {
+      await _auth.saveCourierProfile(u.id, p);
+    }
   }
 
   /// Cambia la disponibilidad del repartidor.

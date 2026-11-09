@@ -82,11 +82,20 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               const SizedBox(height: 20),
               PrimaryButton(
                 label: 'Guardar',
-                onPressed: () {
+                onPressed: () async {
                   if (!_form.currentState!.validate()) return;
-                  _session.updateProfile(name: _name.text, phone: _phone.text);
-                  showSnack(context, 'Datos actualizados');
-                  context.pop();
+                  try {
+                    await _session.updateProfile(
+                      name: _name.text,
+                      phone: _phone.text,
+                    );
+                    if (!context.mounted) return;
+                    showSnack(context, 'Datos actualizados');
+                    context.pop();
+                  } on Object catch (e) {
+                    if (!context.mounted) return;
+                    showSnack(context, '$e', error: true);
+                  }
                 },
               ),
             ],

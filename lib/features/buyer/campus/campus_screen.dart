@@ -120,12 +120,15 @@ class _CampusScreenState extends State<CampusScreen> {
                       const SizedBox(height: 8),
                       PrimaryButton(
                         key: const Key('uni-verify'),
-                        label: 'Verificar (simulado)',
-                        onPressed: () {
-                          final r = session.verifyUniversity(
+                        label: session.auth.isRemote
+                            ? 'Verificar correo'
+                            : 'Verificar (simulado)',
+                        onPressed: () async {
+                          final r = await session.verifyUniversityAsync(
                             uniId,
                             _email.text,
                           );
+                          if (!context.mounted) return;
                           setState(() {
                             _error = switch (r) {
                               VerifyResult.ok => null,
@@ -133,14 +136,21 @@ class _CampusScreenState extends State<CampusScreen> {
                                 'Escribe un correo válido',
                               VerifyResult.domainMismatch =>
                                 'El correo debe terminar en @${uni.domain}',
+                              VerifyResult.unknownUniversity =>
+                                'No encontramos esa universidad',
+                              VerifyResult.notAuthenticated ||
                               VerifyResult.notLoggedIn =>
                                 'Inicia sesión primero',
+                              VerifyResult.rpcError =>
+                                'No pudimos verificar tu correo. Intenta de nuevo.',
                             };
                           });
                           if (r == VerifyResult.ok) {
                             showSnack(
                               context,
-                              'Verificación simulada completada 🎓',
+                              session.auth.isRemote
+                                  ? 'Universidad verificada 🎓'
+                                  : 'Verificación simulada completada 🎓',
                             );
                           }
                         },

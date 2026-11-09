@@ -6,6 +6,7 @@ import '../models/user.dart';
 class AuthException implements Exception {
   AuthException(this.message);
   final String message;
+
   /// Muestra solo el mensaje, sin el tipo de excepción.
   @override
   String toString() => message;
@@ -16,8 +17,10 @@ class AuthException implements Exception {
 abstract class AuthRepository {
   /// Cuentas de demostración para el acceso rápido.
   List<AppUser> get demoAccounts;
+
   /// Inicia sesión de forma síncrona.
   AppUser login(String email, String password);
+
   /// Registra una cuenta nueva y la devuelve.
   AppUser register({
     required String name,
@@ -26,8 +29,10 @@ abstract class AuthRepository {
     required UserRole role,
     String phone,
   });
+
   /// Usuario por id, si existe en la sesión.
   AppUser? byId(String id);
+
   /// Cuenta dueña del negocio indicado.
   AppUser? byBusiness(String businessId);
 
@@ -65,12 +70,22 @@ abstract class AuthRepository {
   /// Crea el negocio y sus sedes del usuario autenticado.
   /// Devuelve el id del negocio o `null` si falló.
   Future<String?> registerBusiness(Map<String, dynamic> payload);
+
+  /// Guarda nombre y teléfono del perfil en el backend.
+  Future<void> saveProfile(String userId, {String? name, String? phone});
+
+  /// Guarda el perfil de repartidor del usuario en el backend.
+  Future<void> saveCourierProfile(String userId, CourierProfile profile);
+
+  /// Verifica el correo universitario contra el backend y devuelve su código.
+  Future<String?> verifyUniversity(String universityId, String email);
 }
 
 /// Autenticación de demostración con usuarios y contraseñas en memoria.
 class InMemoryAuthRepository implements AuthRepository {
   /// Registra las cuentas semilla con la contraseña de demo.
-  InMemoryAuthRepository(List<AppUser> seedUsers) {    for (final u in seedUsers) {
+  InMemoryAuthRepository(List<AppUser> seedUsers) {
+    for (final u in seedUsers) {
       _users[u.email.toLowerCase()] = u;
       _passwords[u.email.toLowerCase()] = kDemoPassword;
     }
@@ -192,4 +207,24 @@ class InMemoryAuthRepository implements AuthRepository {
   @override
   Future<String?> registerBusiness(Map<String, dynamic> payload) async =>
       throw AuthException('El alta de negocios necesita Supabase.');
+
+  /// La demo guarda el perfil solo en memoria.
+  @override
+  Future<void> saveProfile(
+    String userId, {
+    String? name,
+    String? phone,
+  }) async {}
+
+  /// La demo guarda el perfil de repartidor solo en memoria.
+  @override
+  Future<void> saveCourierProfile(
+    String userId,
+    CourierProfile profile,
+  ) async {}
+
+  /// La verificación universitaria de la demo es local.
+  @override
+  Future<String?> verifyUniversity(String universityId, String email) async =>
+      null;
 }

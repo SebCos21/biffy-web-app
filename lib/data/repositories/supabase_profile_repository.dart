@@ -15,6 +15,26 @@ class SupabaseProfileRepository {
 
   final sb.SupabaseClient _client;
 
+  // ------------------------------------------------------ Verificación
+
+  /// Lee la verificación universitaria guardada en `profiles`.
+  Future<({bool verified, String? universityId, String? universityEmail})>
+  verification(String userId) async {
+    final row = await _client
+        .from('profiles')
+        .select('verified, university_id, university_email')
+        .eq('id', userId)
+        .maybeSingle();
+    if (row == null) {
+      return (verified: false, universityId: null, universityEmail: null);
+    }
+    return (
+      verified: (row['verified'] as bool?) ?? false,
+      universityId: row['university_id'] as String?,
+      universityEmail: row['university_email'] as String?,
+    );
+  }
+
   // ------------------------------------------------------- Preferencias
 
   /// Lee preferencias y sus banderas de encuesta completada/recompensada.
@@ -76,7 +96,9 @@ class SupabaseProfileRepository {
   Future<AppSettings?> settings(String userId) async {
     final row = await _client
         .from('app_settings')
-        .select('notifications, promotions, email_summary, dark_mode, demo_lunch')
+        .select(
+          'notifications, promotions, email_summary, dark_mode, demo_lunch',
+        )
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -226,7 +248,9 @@ class SupabaseProfileRepository {
   Future<List<Coupon>> coupons(String userId) async {
     final rows = await _client
         .from('user_coupons')
-        .select('used_at, coupon:coupons(id,title,kind,amount,active,valid_until)')
+        .select(
+          'used_at, coupon:coupons(id,title,kind,amount,active,valid_until)',
+        )
         .eq('user_id', userId);
 
     final out = <Coupon>[];

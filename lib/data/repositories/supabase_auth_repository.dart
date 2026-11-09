@@ -180,6 +180,21 @@ class SupabaseAuthRepository implements AuthRepository {
     _ => Vehicle.moto,
   };
 
+  /// Traduce el vehículo del perfil al valor de la base.
+  static String _vehicleValue(Vehicle value) => switch (value) {
+    Vehicle.bicycle => 'bicycle',
+    Vehicle.scooter => 'scooter',
+    Vehicle.walking => 'walking',
+    Vehicle.moto => 'moto',
+  };
+
+  /// Mensaje en español para los códigos de `register_business`.
+  static String _businessMessage(Object? result) => switch (result) {
+    'not_authenticated' => 'Inicia sesión para registrar tu negocio.',
+    'no_branches' => 'Agrega al menos una sede para tu negocio.',
+    _ => 'No pudimos crear el negocio. Revisa los datos o tu conexión.',
+  };
+
   @override
   Future<String?> registerBusiness(Map<String, dynamic> payload) async {
     try {
@@ -188,10 +203,81 @@ class SupabaseAuthRepository implements AuthRepository {
         params: {'p_payload': payload},
       );
       final map = res is Map ? res : const {};
-      if (map['result'] != 'ok') return null;
+      final result = map['result'];
+      if (result != 'ok') {
+        throw AuthException(_businessMessage(result));
+      }
       return map['business_id'] as String?;
+    } on AuthException {
+      rethrow;
     } on Object {
-      return null;
+      throw AuthException(
+        'No pudimos crear el negocio. Revisa los datos o tu conexión.',
+      );
+    }
+  }
+
+  /// Persiste nombre y teléfono en `profiles` y actualiza la caché local.
+  @override
+  Future<void> saveProfile(String userId, {String? name, String? phone}) async {
+    final values = <String, dynamic>{};
+    if (name != null && name.trim().isNotEmpty) {
+      values['full_name'] = name.trim();
+    }
+    if (phone != null) values['phone'] = phone.trim();
+    if (values.isEmpty) return;
+
+    try {
+      await _client.from('profiles').update(values).eq('id', userId);
+      final cached = _cache[userId];
+      if (cached != null) {
+        if (values['full_name'] != null) {
+          cached.name = values['full_name'] as String;
+        }
+        if (values['phone'] != null) cached.phone = values['phone'] as String;
+      }
+    } on Object {
+      throw AuthException('No pudimos guardar tus datos. Intenta de nuevo.');
+    }
+  }
+
+  /// Crea o actualiza la fila de `courier_profiles` del usuario.
+  @override
+  Future<void> saveCourierProfile(String userId, CourierProfile profile) async {
+    try {
+      await _client.from('courier_profiles').upsert({
+        'user_id': userId,
+        'full_name': profile.fullName,
+        'doc_type': profile.docType,
+        'doc_number': profile.docNumber,
+        'phone': profile.phone,
+        'vehicle': _vehicleValue(profile.vehicle),
+        'plate': profile.plate,
+        'university_id': profile.universityId,
+      });
+    } on Object {
+      throw AuthException(
+        'No pudimos guardar tu perfil de repartidor. Intenta de nuevo.',
+      );
+    }
+  }
+
+  /// Llama al RPC `verify_university` y devuelve su código de resultado.
+  @override
+  Future<String?> verifyUniversity(String universityId, String email) async {
+    try {
+      final res = await _client.rpc(
+        'verify_university',
+        params: {
+          'p_payload': {'university_id': universityId, 'email': email},
+        },
+      );
+      final map = res is Map ? res : const {};
+      return map['result'] as String?;
+    } on Object {
+      throw AuthException(
+        'No pudimos verificar tu correo. Revisa tu conexión e intenta de nuevo.',
+      );
     }
   }
 

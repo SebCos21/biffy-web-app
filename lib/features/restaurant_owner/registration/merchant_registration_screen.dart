@@ -215,50 +215,56 @@ class _MerchantRegistrationScreenState
 
     if (_session.auth.isRemote) {
       // Alta real: el negocio y sus sedes se crean en la base.
-      final businessId = await _session.auth.registerBusiness({
-        'brand': biz.brand,
-        'legal_name': biz.legalName,
-        'nit': biz.nit,
-        'cuisine': biz.cuisine,
-        'description': biz.description,
-        'owner_name': biz.ownerName,
-        'owner_doc': biz.ownerDoc,
-        'owner_phone': biz.ownerPhone,
-        'owner_email': biz.ownerEmail,
-        'bank_name': biz.bankName,
-        'account_type': biz.accountType,
-        'account_number': biz.accountNumber,
-        'legal_docs': biz.legalDocs,
-        'nutrition_info': biz.nutritionInfo,
-        'branches': [
-          {
-            'name': branch.name,
-            'branch_name': branch.branchName,
-            'address': branch.address,
-            'city': branch.campusId == 'icesi' ? 'Cali' : 'Bogotá',
-            'lat': branch.lat,
-            'lng': branch.lng,
-            'radius_km': branch.radiusKm,
-            'open_hour': branch.openHour,
-            'close_hour': branch.closeHour,
-            'campus_id': branch.campusId,
-            'student_discount': branch.studentDiscount,
-            'emoji': branch.emoji,
-            'tagline': branch.tagline,
-          },
-        ],
-      });
-      if (!mounted) return;
-      if (businessId == null) {
-        showSnack(
-          context,
-          'No pudimos crear el negocio. Revisa los datos o tu conexión.',
-          error: true,
-        );
+      try {
+        final businessId = await _session.auth.registerBusiness({
+          'brand': biz.brand,
+          'legal_name': biz.legalName,
+          'nit': biz.nit,
+          'cuisine': biz.cuisine,
+          'description': biz.description,
+          'owner_name': biz.ownerName,
+          'owner_doc': biz.ownerDoc,
+          'owner_phone': biz.ownerPhone,
+          'owner_email': biz.ownerEmail,
+          'bank_name': biz.bankName,
+          'account_type': biz.accountType,
+          'account_number': biz.accountNumber,
+          'legal_docs': biz.legalDocs,
+          'nutrition_info': biz.nutritionInfo,
+          'branches': [
+            {
+              'name': branch.name,
+              'branch_name': branch.branchName,
+              'address': branch.address,
+              'city': branch.campusId == 'icesi' ? 'Cali' : 'Bogotá',
+              'lat': branch.lat,
+              'lng': branch.lng,
+              'radius_km': branch.radiusKm,
+              'open_hour': branch.openHour,
+              'close_hour': branch.closeHour,
+              'campus_id': branch.campusId,
+              'student_discount': branch.studentDiscount,
+              'emoji': branch.emoji,
+              'tagline': branch.tagline,
+            },
+          ],
+        });
+        if (!mounted) return;
+        if (businessId == null) {
+          showSnack(
+            context,
+            'No pudimos crear el negocio. Revisa los datos o tu conexión.',
+            error: true,
+          );
+          return;
+        }
+        _session.linkBusiness(businessId);
+        await catalog.refresh();
+      } on AuthException catch (e) {
+        if (!mounted) return;
+        showSnack(context, e.message, error: true);
         return;
       }
-      _session.linkBusiness(businessId);
-      await catalog.refresh();
     } else {
       catalog.registerBusiness(biz, [branch]);
       _session.linkBusiness(biz.id);

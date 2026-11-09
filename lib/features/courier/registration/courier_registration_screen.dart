@@ -201,22 +201,29 @@ class _CourierRegistrationScreenState extends State<CourierRegistrationScreen> {
               PrimaryButton(
                 key: const Key('c-save'),
                 label: 'Guardar y empezar',
-                onPressed: () {
+                onPressed: () async {
                   if (!_form.currentState!.validate()) return;
-                  _s.saveCourierProfile(
-                    CourierProfile(
-                      fullName: _name.text.trim(),
-                      docType: _docType,
-                      docNumber: _doc.text.trim(),
-                      phone: _phone.text.trim(),
-                      vehicle: _vehicle,
-                      plate: _vehicle == Vehicle.moto
-                          ? _plate.text.trim().toUpperCase()
-                          : null,
-                      universityId: _uni,
-                      contactEmail: _email.text.trim(),
-                    ),
-                  );
+                  try {
+                    await _s.saveCourierProfile(
+                      CourierProfile(
+                        fullName: _name.text.trim(),
+                        docType: _docType,
+                        docNumber: _doc.text.trim(),
+                        phone: _phone.text.trim(),
+                        vehicle: _vehicle,
+                        plate: _vehicle == Vehicle.moto
+                            ? _plate.text.trim().toUpperCase()
+                            : null,
+                        universityId: _uni,
+                        contactEmail: _email.text.trim(),
+                      ),
+                    );
+                  } on Object catch (e) {
+                    if (!context.mounted) return;
+                    showSnack(context, '$e', error: true);
+                    return;
+                  }
+                  if (!context.mounted) return;
                   showSnack(context, 'Datos de repartidor guardados');
                   context.go('/repartidor');
                 },
