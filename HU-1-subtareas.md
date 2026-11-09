@@ -33,6 +33,8 @@
 
 ### Evidencia de las cuentas demo (exportada del SQL Editor)
 
+Archivo versionado: `tool/evidence/hu1_cuentas_demo.csv`.
+
 | Correo | Rol | Gotas | Negocio | Perfil de repartidor | Movimientos |
 |---|---|---:|---|---|---:|
 | `andres.repartidor@demo.biffy.co` | courier | 450 | — | ✅ | 1 |

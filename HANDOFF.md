@@ -104,6 +104,7 @@ recogido y entregado (6 eventos, evidencia en Storage, +12 Gotas).
 - ✅ 13 pruebas de RLS contra el proyecto real (se saltan sin credenciales).
 - ✅ Cuentas demo verificadas en el SQL Editor: Andrés y Qbano conservan 450
   Gotas con una sola bienvenida; Diego tiene 332 porque gastó en pruebas.
+  Evidencia: `tool/evidence/hu1_cuentas_demo.csv`.
 - ⏳ Adjuntar al informe la salida literal de `0099_verify.sql` (la consulta ya
   se ejecutó en el SQL Editor; falta el pantallazo/texto).
 
