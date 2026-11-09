@@ -106,7 +106,7 @@ recogido y entregado (6 eventos, evidencia en Storage, +12 Gotas).
   se ejecutó en el SQL Editor; falta el pantallazo/texto).
 
 Calidad actual: `flutter analyze` limpio · `flutter test` **122/122**
-(17 pruebas se saltan sin credenciales de Supabase).
+(21 pruebas de integración se saltan sin credenciales de Supabase).
 
 ---
 

@@ -15,6 +15,26 @@
 3. Crear las 3 cuentas demo con `service_role` desde un script local.
 4. Perfiles, direcciones, preferencias, ajustes y verificación universitaria.
 
+## Estado de avance (al 9 de noviembre de 2026)
+
+| Subtarea | Estado | Evidencia principal |
+|---|---|---|
+| HU-1.1 · Esquema y verificación | ✅ | 28/28 tablas responden; semillas contadas por REST; `0099_verify.sql` ejecutado en el SQL Editor |
+| HU-1.2 · Auth por correo | ✅ | `mailer_autoconfirm = true` en demo; proveedor email activo y registro habilitado |
+| HU-1.3 · Cuentas demo con `service_role` | ✅ | `tool/admin_seed.dart` idempotente; las 3 cuentas inician sesión |
+| HU-1.4 · Registro, rol y 450 Gotas | ✅ | Pruebas reales con cuentas nuevas: rol correcto y una sola bienvenida |
+| HU-1.5 · Repartidor y negocio | ✅ | `courier_profiles` persiste; `register_business` crea negocio y sede |
+| HU-1.6 · Verificación universitaria | ✅ | La app llama al RPC; dominio distinto y universidad desconocida devuelven error |
+| HU-1.7 · Guardas de perfil | ✅ | Las pruebas de RLS rechazan cambios de rol, Gotas y verificación |
+| HU-1.8 · Direcciones, preferencias y ajustes | ✅ | Lecturas aisladas y escrituras ajenas rechazadas por RLS |
+| HU-1.9 · Sesión persistente | ✅ | `restoreAsync` y `logoutAsync` cubiertos por pruebas unitarias |
+| HU-1.10 · Demo y secretos | ✅ | `flutter analyze` limpio; la app arranca en demo sin variables y no hay claves privadas versionadas |
+| HU-1.11 · Pruebas y cierre | ✅ | 122 tests verdes; 17 pruebas de integración (con credenciales); docs actualizadas |
+
+Pendientes de cierre (no bloquean la funcionalidad):
+- Adjuntar al informe la salida literal de `0099_verify.sql`.
+- Ejecutar `tool/cleanup_hu1.sql` para borrar las cuentas de prueba `hu1.qa.*`.
+
 ## Subtareas
 
 ### HU-1.1 · Aplicar el esquema y verificar la base
