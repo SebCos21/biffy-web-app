@@ -141,6 +141,26 @@ void main() {
       expect(s.activeRole, UserRole.courier);
       expect(s.hasCourierProfile, isTrue);
     });
+
+    test('restoreAsync recupera la sesión persistida', () async {
+      final auth = _FakeRemoteAuth();
+      final s = _session(auth);
+
+      final restored = await s.restoreAsync();
+
+      expect(restored?.id, auth.user.id);
+      expect(s.isLoggedIn, isTrue);
+    });
+
+    test('logoutAsync limpia la sesión', () async {
+      final auth = _FakeRemoteAuth();
+      final s = _session(auth)..loginAs(auth.user);
+
+      await s.logoutAsync();
+
+      expect(s.isLoggedIn, isFalse);
+      expect(s.user, isNull);
+    });
   });
 
   group('Verificación universitaria remota', () {

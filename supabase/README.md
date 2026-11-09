@@ -7,8 +7,8 @@ Proyecto: `jwdzpwsfwtkdeeuceaco` · URL: `https://jwdzpwsfwtkdeeuceaco.supabase.
 | Fase | Estado |
 |---|---|
 | Esquema, RLS, RPC, Storage y seed de referencia | ✅ escrito en `supabase/migrations/` |
-| Aplicado al proyecto remoto | ⏳ pendiente (requiere credenciales de administración) |
-| App conectada (`supabase_flutter`) | ⏳ siguiente fase |
+| Aplicado al proyecto remoto | ✅ aplicado; 28 tablas y cuentas demo verificadas por REST y pruebas RLS |
+| App conectada (`supabase_flutter`) | ✅ auth, perfiles, catálogo, pedidos y Storage reales |
 
 La app **sigue funcionando en modo demo local**: sin `SUPABASE_URL` no hace
 ninguna petición de red.
@@ -249,11 +249,13 @@ update public.branches set campus_delivery_only = true where campus_id = 'icesi'
 > `Qbano · Icesi` ya viene con `campus_delivery_only = true`, así que la
 > geocerca está activa ahí.
 
-## Pendiente para cerrar la base1. Aplicar `apply_all.sql` (o `supabase db push`).
-2. Crear las cuentas demo en Auth y cargar el catálogo semilla
-   (`businesses`, `branches`, `dishes`) con la `service_role` desde un script
-   de administración, nunca desde la app.
-3. Activar respaldos/PITR en el plan del proyecto.
+## Pendiente para cerrar la base
+
+1. ✅ Aplicar `apply_all.sql` (o `supabase db push`) al proyecto remoto.
+2. ✅ Crear las cuentas demo en Auth y cargar el catálogo semilla con
+   `service_role` desde scripts locales (`tool/admin_seed.dart` y
+   `tool/seed_supabase.dart`), nunca desde la app.
+3. ⏳ Activar respaldos/PITR según el plan del proyecto.
 
 ## Al desplegar (checklist)
 

@@ -63,14 +63,14 @@ Reglas que **no** se negocian:
 
 | Pieza | Detalle |
 |---|---|
-| Esquema | 27 tablas, FKs, `CHECK`, índices, `updated_at` por trigger |
-| RLS | 43 políticas: catálogo público, datos por dueño, pedidos por rol |
+| Esquema | 28 tablas físicas (24 de negocio + auxiliares), FKs, `CHECK`, índices, `updated_at` por trigger |
+| RLS | Políticas por dueño y por rol; probadas con dos usuarios reales |
 | RPC | `place_order`, `restaurant_accept/reject/ready`, `buyer_cancel`, `courier_accept/decline/pickup/deliver`, `redeem_reward`, `verify_university`, `register_business` |
 | Storage | `dish-images` (público), `delivery-evidence` y `merchant-docs` (privados por carpeta) |
-| Datos | 4 universidades, 8 puntos con geometría, 9 categorías, 4 recompensas con premios, 1 negocio (Qbano Icesi) con 4 platos |
-| Cuentas | 3 cuentas demo reales, 450 Gotas cada una |
+| Datos | 4 universidades, 8 puntos con geometría, 9 categorías, 5 recompensas con 18 premios, 15 sedes y 32 platos |
+| Cuentas | 3 cuentas demo reales con bienvenida de 450 Gotas |
 
-Migraciones en `supabase/migrations/` (`0000`–`0011`). El bootstrap para pegar
+Migraciones en `supabase/migrations/` (`0000`–`0018`). El bootstrap para pegar
 en el SQL Editor es `supabase/apply_all.sql` (generado concatenando las
 migraciones).
 
@@ -84,13 +84,29 @@ migraciones).
 | `lib/data/repositories/supabase_catalog_repository.dart` | Catálogo con caché hidratada + Realtime |
 | `lib/data/repositories/supabase_order_repository.dart` | Pedidos: cache, mapeo y RPC; sube evidencia |
 | `lib/shared/state/app_services.dart` | `AppServices.demo()` y `AppServices.supabase()` |
-| `lib/shared/state/session_controller.dart` | `loginAsync`, `registerAsync`, `restoreAsync`, hidratación remota |
+| `lib/shared/state/session_controller.dart` | `loginAsync`, `registerAsync`, `restoreAsync`, hidratación remota y persistencia de perfil |
 | `lib/shared/state/order_service.dart` | Réplica de cada transición por RPC |
+| `tool/admin_seed.dart` | Crea/actualiza las 3 cuentas demo con `service_role` (idempotente) |
+| `test/integration/hu1_supabase_test.dart` | 13 pruebas de perfil, verificación y RLS con usuarios reales |
 
 Verificado con un pedido real: `BF-2041` creado, aceptado, listo, asignado,
 recogido y entregado (6 eventos, evidencia en Storage, +12 Gotas).
 
-Calidad actual: `flutter analyze` limpio · `flutter test` **104/104**.
+### HU-1 · Autenticación y perfiles reales
+
+- ✅ Esquema aplicado en el proyecto remoto; cuentas demo y catálogo semilla cargados.
+- ✅ `tool/admin_seed.dart` crea/actualiza las 3 cuentas demo sin duplicar datos.
+- ✅ Nombre y teléfono se guardan en `profiles`; el perfil de repartidor se
+  guarda en `courier_profiles`.
+- ✅ `verify_university` se llama desde la app; el estado verificado se
+  rehidrata al volver a iniciar sesión.
+- ✅ Errores de `register_business` y de conexión se muestran en español.
+- ✅ 13 pruebas de RLS contra el proyecto real (se saltan sin credenciales).
+- ⏳ Adjuntar al informe la salida literal de `0099_verify.sql` (la consulta ya
+  se ejecutó en el SQL Editor; falta el pantallazo/texto).
+
+Calidad actual: `flutter analyze` limpio · `flutter test` **122/122**
+(17 pruebas se saltan sin credenciales de Supabase).
 
 ---
 
@@ -151,11 +167,11 @@ Orden sugerido. Cada punto tiene criterio de aceptación.
 - ✅ Notificaciones persistentes (`notifications`) para el propio usuario.
 - **Hecho cuando:** cerrar sesión y volver conserva todo.
 
-> **Pendiente asignado a otra persona:** verificación universitaria desde la
-> pantalla. El RPC `verify_university` ya existe y valida el dominio; falta que
-> `SessionController.verifyUniversity` lo llame y refresque
-> `profiles.verified` / `university_email`. Ver el TODO en
-> `lib/shared/state/session_controller.dart`.
+- ⏳ **Verificación universitaria:** ✅ `SessionController.verifyUniversityAsync`
+  llama al RPC `verify_university`, guarda `profiles.verified` /
+  `university_email` y se rehidrata al iniciar sesión. Falta probar el camino
+  feliz con una cuenta nueva desde la app (requiere `service_role` para
+  limpiar la cuenta de prueba).
 
 ### Fase 5 · Robustez (2–3 días)
 
