@@ -102,6 +102,8 @@ recogido y entregado (6 eventos, evidencia en Storage, +12 Gotas).
   rehidrata al volver a iniciar sesión.
 - ✅ Errores de `register_business` y de conexión se muestran en español.
 - ✅ 13 pruebas de RLS contra el proyecto real (se saltan sin credenciales).
+- ✅ Cuentas demo verificadas en el SQL Editor: Andrés y Qbano conservan 450
+  Gotas con una sola bienvenida; Diego tiene 332 porque gastó en pruebas.
 - ⏳ Adjuntar al informe la salida literal de `0099_verify.sql` (la consulta ya
   se ejecutó en el SQL Editor; falta el pantallazo/texto).
 

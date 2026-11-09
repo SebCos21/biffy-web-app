@@ -29,11 +29,26 @@
 | HU-1.8 · Direcciones, preferencias y ajustes | ✅ | Lecturas aisladas y escrituras ajenas rechazadas por RLS |
 | HU-1.9 · Sesión persistente | ✅ | `restoreAsync` y `logoutAsync` cubiertos por pruebas unitarias |
 | HU-1.10 · Demo y secretos | ✅ | `flutter analyze` limpio; la app arranca en demo sin variables y no hay claves privadas versionadas |
-| HU-1.11 · Pruebas y cierre | ✅ | 122 tests verdes; 17 pruebas de integración (con credenciales); docs actualizadas |
+| HU-1.11 · Pruebas y cierre | ✅ | 122 tests verdes; 17 pruebas de integración con credenciales; docs actualizadas |
 
-Pendientes de cierre (no bloquean la funcionalidad):
-- Adjuntar al informe la salida literal de `0099_verify.sql`.
-- Ejecutar `tool/cleanup_hu1.sql` para borrar las cuentas de prueba `hu1.qa.*`.
+### Evidencia de las cuentas demo (exportada del SQL Editor)
+
+| Correo | Rol | Gotas | Negocio | Perfil de repartidor | Movimientos |
+|---|---|---:|---|---|---:|
+| `andres.repartidor@demo.biffy.co` | courier | 450 | — | ✅ | 1 |
+| `diego.demo@icesi.edu.co` | buyer | 332 | — | — | 5 |
+| `qbano@demo.biffy.co` | restaurant | 450 | ✅ | — | 1 |
+
+Andrés y Qbano conservan las **450 Gotas de bienvenida** en un único movimiento.
+Diego tiene 332 porque gastó Gotas en pruebas anteriores; su bienvenida sigue
+siendo un solo registro en `gotas_ledger`.
+
+Pendientes administrativos (no bloquean la funcionalidad):
+- Anexar al informe la captura del resumen de `0099_verify.sql`. La forma más
+  fácil es ejecutar la **consulta 0** de `tool/verify_hu1.sql`, que devuelve una
+  fila con `Biffy OK · N tablas · N políticas RLS · N funciones`.
+- Ejecutar `tool/cleanup_hu1.sql` para borrar las cuentas de prueba `hu1.qa.*`
+  (todavía existen; se comprobó con un intento de login).
 
 ## Subtareas
 
@@ -187,3 +202,19 @@ Pendientes de cierre (no bloquean la funcionalidad):
 - Hay pruebas de RLS con al menos dos usuarios distintos.
 - `flutter analyze` y los tests están en verde y `full_flow.dart` pasa en demo.
 - `HANDOFF.md` actualizado al cerrar la historia.
+
+## Cierre técnico
+
+- [x] Esquema aplicado y verificado (28 tablas, semillas y cuentas demo).
+- [x] Registro real de los tres roles con rol correcto y 450 Gotas una sola vez.
+- [x] Perfil, repartidor y verificación universitaria persistidos en la base.
+- [x] Guardas de perfil y aislamiento RLS probados con usuarios reales.
+- [x] `flutter analyze` limpio y `flutter test` 122/122.
+- [x] Documentación (`HANDOFF.md`, `supabase/README.md`, este archivo) actualizada.
+- [ ] Captura del resumen de `0099_verify.sql` anexada al informe.
+- [ ] `tool/cleanup_hu1.sql` ejecutado antes de la sustentación.
+
+**Rama de la historia:** `hu1-base-datos-auth-perfiles`.
+**Commits:** `8b1534f`, `29ae00d`, `cbf08aa`, `3dd0119`, `85e7c10`, `95be5bd`,
+`b193c2f`.
+
