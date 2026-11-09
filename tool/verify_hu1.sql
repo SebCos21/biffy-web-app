@@ -11,6 +11,21 @@
 -- ============================================================================
 
 
+-- 0) Resumen en una sola fila: úsalo para la captura de pantalla.
+--    Devuelve el mismo texto que el aviso de 0099, pero como resultado de tabla.
+select format(
+  'Biffy OK · %s tablas · %s políticas RLS · %s funciones',
+  (select count(*) from pg_tables where schemaname = 'public'),
+  (select count(*) from pg_policies where schemaname = 'public'),
+  (
+    select count(*)
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+  )
+) as resultado;
+
+
 -- 1) Las 28 tablas esperadas por 0099 y si tienen RLS activo.
 with esperadas(tabla) as (
   values
