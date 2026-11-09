@@ -41,7 +41,7 @@ void applyDemoSeed(SessionController session, OrderService orders) {
       now.subtract(const Duration(days: 7)),
     ),
   ]);
-  diego.addresses.addAll(const [
+  diego.addresses.addAll([
     Address(
       id: 'addr-diego-1',
       label: 'Biblioteca Icesi',
@@ -95,6 +95,7 @@ void applyDemoSeed(SessionController session, OrderService orders) {
   );
 
   final campusAddress = diego.addresses.first;
+  /// Construye e inserta un pedido semilla con el estado indicado.
   Order seed(
     String id,
     String buyerId,

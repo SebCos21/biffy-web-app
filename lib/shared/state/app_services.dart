@@ -12,6 +12,7 @@ import '../../data/repositories/order_repository.dart';
 import '../../data/repositories/supabase_auth_repository.dart';
 import '../../data/repositories/supabase_catalog_repository.dart';
 import '../../data/repositories/supabase_order_repository.dart';
+import '../../data/repositories/supabase_profile_repository.dart';
 import 'cart_controller.dart';
 import 'catalog_controller.dart';
 import 'notification_center.dart';
@@ -21,6 +22,7 @@ import 'session_controller.dart';
 /// Contenedor de dependencias. Para conectar Firebase en el futuro basta con
 /// sustituir los repositorios en memoria por implementaciones remotas.
 class AppServices {
+  /// Constructor privado: las instancias se crean con las factorías.
   AppServices._({
     required this.clock,
     required this.notifications,
@@ -30,6 +32,7 @@ class AppServices {
     required this.orders,
   });
 
+  /// Contenedor completo con datos de demostración en memoria.
   factory AppServices.demo({Clock? clock, int? randomSeed, bool seed = true}) {
     final c = clock ?? Clock();
     final catalogRepo = InMemoryCatalogRepository();
@@ -77,8 +80,18 @@ class AppServices {
     final remoteAuth = auth ?? SupabaseAuthRepository();
     final repo = catalogRepo ?? await SupabaseCatalogRepository.load();
     final orderStore = orderRepo ?? await SupabaseOrderRepository.load();
-    final notifications = NotificationCenter(c);
-    final session = SessionController(remoteAuth, notifications, c);
+    final profileRepo = SupabaseProfileRepository();
+    final notifications = NotificationCenter(
+      c,
+      persist: profileRepo.saveNotification,
+      onRead: profileRepo.markNotificationRead,
+    );
+    final session = SessionController(
+      remoteAuth,
+      notifications,
+      c,
+      profile: profileRepo,
+    );
     final catalog = CatalogController(repo, session, c);
     final cart = CartController(repo);
     final orders = OrderService(
@@ -105,6 +118,7 @@ class AppServices {
   final CartController cart;
   final OrderService orders;
 
+  /// Proveedores que publican los controladores en el árbol.
   List<SingleChildWidget> get providers => [
     Provider<Clock>.value(value: clock),
     ChangeNotifierProvider<NotificationCenter>.value(value: notifications),

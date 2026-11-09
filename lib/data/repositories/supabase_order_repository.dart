@@ -17,6 +17,7 @@ import 'order_repository.dart';
 /// Las escrituras pasan por los RPC de `0003_functions.sql`: el estado local
 /// es optimista y se reconcilia con la base.
 class SupabaseOrderRepository implements OrderRepository {
+  /// Usa el cliente de Supabase indicado.
   SupabaseOrderRepository(this._client);
 
   final sb.SupabaseClient _client;
@@ -26,8 +27,10 @@ class SupabaseOrderRepository implements OrderRepository {
   sb.RealtimeChannel? _channel;
   StreamSubscription<sb.AuthState>? _authSub;
 
+  /// Emite cuando Realtime trae cambios.
   Stream<void> get changes => _changes.stream;
 
+  /// Carga los pedidos, se suscribe a Realtime y devuelve el repositorio.
   static Future<SupabaseOrderRepository> load({
     sb.SupabaseClient? client,
   }) async {
@@ -39,9 +42,11 @@ class SupabaseOrderRepository implements OrderRepository {
 
   // ------------------------------------------------------------- Lectura
 
+  /// Pedidos en caché (solo lectura).
   @override
   List<Order> get all => List.unmodifiable(_orders);
 
+  /// Pedido por código o uuid.
   @override
   Order? byId(String id) {
     for (final o in _orders) {
@@ -50,9 +55,11 @@ class SupabaseOrderRepository implements OrderRepository {
     return null;
   }
 
+  /// `true` si el pedido ya está en la caché.
   @override
   bool exists(String id) => byId(id) != null;
 
+  /// Inserta un pedido local si no está repetido.
   @override
   void insert(Order order) {
     if (order.dbId != null && byId(order.dbId!) != null) return;
@@ -104,6 +111,7 @@ class SupabaseOrderRepository implements OrderRepository {
     }
   }
 
+  /// Fusiona lo remoto con lo local conservando objetos vivos.
   void _merge(List<Order> incoming) {
     final byDbId = <String, Order>{
       for (final o in _orders)
@@ -145,20 +153,34 @@ class SupabaseOrderRepository implements OrderRepository {
 
   // ------------------------------------------------------------ Escritura
 
-  /// Crea el pedido en la base. Devuelve el uuid o `null` si falló.
-  Future<String?> place(Map<String, dynamic> payload) async {
-    try {
-      final res = await _client.rpc(
-        'place_order',
-        params: {'p_payload': payload},
-      );
-      final map = res is Map ? res : const {};
-      if (map['result'] != 'ok') return null;
-      final order = map['order'];
-      return order is Map ? order['id'] as String? : null;
-    } on Object {
-      return null;
+  /// Crea el pedido en la base. Devuelve el uuid o el motivo del rechazo.
+  ///
+  /// Reintenta hasta 3 veces si falla la red: la `client_key` hace que el
+  /// servidor devuelva el mismo pedido en vez de duplicarlo.
+  Future<({String? id, String? error})> place(
+    Map<String, dynamic> payload,
+  ) async {
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      try {
+        final res = await _client.rpc(
+          'place_order',
+          params: {'p_payload': payload},
+        );
+        final map = res is Map ? res : const {};
+        if (map['result'] != 'ok') {
+          return (id: null, error: map['result'] as String?);
+        }
+        final order = map['order'];
+        return (
+          id: order is Map ? order['id'] as String? : null,
+          error: null,
+        );
+      } on Object {
+        if (attempt == 3) return (id: null, error: 'network');
+        await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
+      }
     }
+    return (id: null, error: 'network');
   }
 
   /// Ejecuta una transición; el estado se reconcilia con Realtime.
@@ -206,6 +228,7 @@ class SupabaseOrderRepository implements OrderRepository {
 
   // ------------------------------------------------------------ Realtime
 
+  /// Abre el canal de Realtime y escucha los cambios de sesión.
   void _subscribe() {
     try {
       _channel = _client
@@ -229,10 +252,12 @@ class SupabaseOrderRepository implements OrderRepository {
     _authSub = _client.auth.onAuthStateChange.listen((_) => _reload());
   }
 
+  /// Recarga los pedidos desde la base.
   Future<void> _reload() async {
     await refresh();
   }
 
+  /// Libera el canal de Realtime y el stream de cambios.
   Future<void> dispose() async {
     await _authSub?.cancel();
     final channel = _channel;
@@ -245,6 +270,7 @@ class SupabaseOrderRepository implements OrderRepository {
 
   // --------------------------------------------------------------- Mapeo
 
+  /// Convierte una fila de `orders` al modelo.
   static Order _order(
     Map<String, dynamic> row,
     List<OrderLine> lines,
@@ -306,6 +332,7 @@ class SupabaseOrderRepository implements OrderRepository {
     return order;
   }
 
+  /// Convierte una fila de `order_items` al modelo.
   static OrderLine _line(Map<String, dynamic> row) {
     final selection = row['selection'];
     final sizeId = selection is Map ? selection['sizeId'] as String? : null;
@@ -330,6 +357,7 @@ class SupabaseOrderRepository implements OrderRepository {
     );
   }
 
+  /// Lee un número de la base como entero.
   static int _int(Object? value) => (value as num?)?.toInt() ?? 0;
 
   /// `timestamptz` llega en UTC; las pantallas comparan días y muestran horas
@@ -337,6 +365,7 @@ class SupabaseOrderRepository implements OrderRepository {
   static DateTime? _date(Object? value) =>
       DateTime.tryParse((value as String?) ?? '')?.toLocal();
 
+  /// Traduce el estado guardado al enum local.
   static OrderStatus _status(String? value) => switch (value) {
     'preparing' => OrderStatus.preparing,
     'ready' => OrderStatus.ready,
@@ -346,6 +375,7 @@ class SupabaseOrderRepository implements OrderRepository {
     _ => OrderStatus.pending,
   };
 
+  /// Traduce el medio de pago guardado al enum local.
   static PaymentMethod _payment(String? value) => switch (value) {
     'nequi' => PaymentMethod.nequi,
     'daviplata' => PaymentMethod.daviplata,

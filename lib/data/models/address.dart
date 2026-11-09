@@ -1,6 +1,6 @@
 /// Dirección de entrega guardada (dato local de demostración).
 class Address {
-  const Address({
+  Address({
     required this.id,
     required this.label,
     required this.line,
@@ -22,6 +22,10 @@ class Address {
   /// Zona de cobertura simulada asociada a la dirección.
   final String pointId;
 
+  /// Identificador en Supabase (uuid). `null` en demo o hasta que se guarde.
+  String? dbId;
+
+  /// Devuelve una copia con los campos indicados reemplazados.
   Address copyWith({
     String? label,
     String? line,
@@ -38,9 +42,10 @@ class Address {
       neighborhood: neighborhood ?? this.neighborhood,
       reference: reference ?? this.reference,
       pointId: pointId ?? this.pointId,
-    );
+    )..dbId = dbId;
   }
 
+  /// Dirección completa en una sola línea legible.
   String get full =>
       [line, if (details.isNotEmpty) details, neighborhood].join(' · ');
 }
