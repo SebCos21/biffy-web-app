@@ -4,7 +4,7 @@
 -- Uso: Supabase Dashboard -> SQL Editor -> New query -> pegar todo -> Run.
 -- Se genera concatenando supabase/migrations/*.sql. No editar a mano.
 -- Proyecto: jwdzpwsfwtkdeeuceaco
--- Generado: 2026-11-10 13:33
+-- Generado: 2026-11-10 18:16
 --
 -- AVISO: la migración 0000 reemplaza las tablas de public. Las tablas con
 -- filas NO se borran: se conservan como legacy_<nombre> con RLS activo.
@@ -5296,13 +5296,14 @@ declare
     ['gotas_rewards', 'cooldown_hours'], ['box_items', 'reward_id'],
     ['reward_redemptions', 'claim_code'],
     ['branches', 'location'], ['universities', 'boundary_polygon'],
-    ['order_events', 'from_status'], ['orders', 'client_key']
+    ['order_events', 'from_status'], ['orders', 'client_key'],
+    ['notifications', 'role'], ['notifications', 'order_id']
   ];
   expected_functions text[] := array[
     'place_order', 'restaurant_accept', 'restaurant_reject', 'restaurant_ready',
     'buyer_cancel', 'courier_accept', 'courier_decline', 'courier_pickup',
     'courier_deliver', 'verify_university', 'register_business', 'redeem_reward',
-    'distance_km', 'refund_order', 'order_json'
+    'distance_km', 'refund_order', 'order_json', 'rate_order', 'notify'
   ];
 begin
   foreach v_table in array expected_tables loop
@@ -5394,6 +5395,15 @@ begin
     raise warning 'Hay cajas sin premios activos; revisa 0008_reward_boxes.sql';
   end if;
 
+  -- HU-4: el envío gratis debe costar 5 Gotas (0024).
+  if not exists (
+    select 1 from public.gotas_rewards
+    where code = 'free_shipping' and gotas_cost = 5
+  ) then
+    raise exception 'free_shipping debe costar 5 Gotas; revisa 0024_free_shipping_5_gotas.sql';
+  end if;
+
   raise notice 'Biffy OK · % tablas · % políticas RLS · % funciones en public',
     v_tables, v_policies, v_functions;
 end $$;
+

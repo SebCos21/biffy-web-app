@@ -30,13 +30,14 @@ declare
     ['gotas_rewards', 'cooldown_hours'], ['box_items', 'reward_id'],
     ['reward_redemptions', 'claim_code'],
     ['branches', 'location'], ['universities', 'boundary_polygon'],
-    ['order_events', 'from_status'], ['orders', 'client_key']
+    ['order_events', 'from_status'], ['orders', 'client_key'],
+    ['notifications', 'role'], ['notifications', 'order_id']
   ];
   expected_functions text[] := array[
     'place_order', 'restaurant_accept', 'restaurant_reject', 'restaurant_ready',
     'buyer_cancel', 'courier_accept', 'courier_decline', 'courier_pickup',
     'courier_deliver', 'verify_university', 'register_business', 'redeem_reward',
-    'distance_km', 'refund_order', 'order_json'
+    'distance_km', 'refund_order', 'order_json', 'rate_order', 'notify'
   ];
 begin
   foreach v_table in array expected_tables loop
@@ -126,6 +127,14 @@ begin
       )
   ) then
     raise warning 'Hay cajas sin premios activos; revisa 0008_reward_boxes.sql';
+  end if;
+
+  -- HU-4: el envío gratis debe costar 5 Gotas (0024).
+  if not exists (
+    select 1 from public.gotas_rewards
+    where code = 'free_shipping' and gotas_cost = 5
+  ) then
+    raise exception 'free_shipping debe costar 5 Gotas; revisa 0024_free_shipping_5_gotas.sql';
   end if;
 
   raise notice 'Biffy OK · % tablas · % políticas RLS · % funciones en public',

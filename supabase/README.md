@@ -7,7 +7,7 @@ Proyecto: `jwdzpwsfwtkdeeuceaco` · URL: `https://jwdzpwsfwtkdeeuceaco.supabase.
 | Fase | Estado |
 |---|---|
 | Esquema, RLS, RPC, Storage y seed de referencia | ✅ escrito en `supabase/migrations/` |
-| Aplicado al proyecto remoto | ✅ aplicado; 28 tablas y cuentas demo verificadas por REST y pruebas RLS |
+| Aplicado al proyecto remoto | ⚠️ HU-1 aplicada (0000–0020); faltan `0021`–`0024` (reseñas, notificaciones y envío gratis a 5 Gotas) |
 | App conectada (`supabase_flutter`) | ✅ auth, perfiles, catálogo, pedidos y Storage reales |
 
 La app **sigue funcionando en modo demo local**: sin `SUPABASE_URL` no hace
@@ -42,6 +42,18 @@ supabase db push          # aplica supabase/migrations/*.sql
 
 Desde ahí, **todo cambio futuro es una migración nueva**. No se edita el
 esquema desde el panel: así la base queda versionada y reproducible.
+
+### Orden recomendado de ejecución en el SQL Editor
+
+1. **`apply_all.sql`** completo (incluye `0000`–`0024` y `0099_verify.sql`).
+   Debe terminar con el aviso `Biffy OK · N tablas · N políticas RLS`.
+2. **`tool/verify_hu1.sql`** completo: evidencia de tablas, RLS, semillas y
+   cuentas demo. La consulta 0 devuelve el resumen como fila de tabla.
+3. **`tool/cleanup_hu1.sql`** al terminar la sustentación: borra las cuentas
+   temporales `hu1.qa.*` y el negocio `QA HU-1`.
+
+La consulta 0 de `tool/verify_hu1.sql` sirve como captura del resultado de
+`0099` porque `RAISE NOTICE` no aparece como fila en el SQL Editor.
 
 ## Estructura
 
@@ -122,7 +134,7 @@ Decisiones pensadas para no volver a tocar la base:
 
 ## Seguridad
 
-- RLS activo en las 24 tablas. Sin política = sin acceso.
+- RLS activo en las 24 tablas de negocio (29 tablas físicas con auxiliares). Sin política = sin acceso.
 - El catálogo es público solo en lectura y solo si está activo.
 - Las cuentas bancarias y documentos del negocio **no** son públicos
   (`businesses_public` solo expone marca, cocina y descripción).

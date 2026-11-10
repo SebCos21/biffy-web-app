@@ -80,7 +80,7 @@ Reglas que **no** se negocian:
 
 | Pieza | Detalle |
 |---|---|
-| Esquema | 28 tablas físicas (24 de negocio + auxiliares), FKs, `CHECK`, índices, `updated_at` por trigger |
+| Esquema | 29 tablas físicas (24 de negocio + auxiliares), FKs, `CHECK`, índices, `updated_at` por trigger |
 | RLS | Políticas por dueño y por rol; probadas con dos usuarios reales |
 | RPC | `place_order`, `restaurant_accept/reject/ready`, `buyer_cancel`, `courier_accept/decline/pickup/deliver`, `redeem_reward`, `verify_university`, `register_business` |
 | Storage | `dish-images` (público), `delivery-evidence` y `merchant-docs` (privados por carpeta) |
@@ -353,7 +353,7 @@ falta aplicar `0019`.
 ### Probar la HU-3 (ciclo del pedido)
 
 1. **Base:** SQL Editor → pegar `supabase/apply_all.sql` → Run (debe terminar
-   con `Biffy OK · 28 tablas …`). Si solo falta lo nuevo, basta
+   con `Biffy OK · 29 tablas …`). Si solo falta lo nuevo, basta
    `supabase/migrations/0019_order_cycle.sql`.
 2. **Prueba SQL:** pegar `supabase/tests/hu3_order_cycle.sql` → Run. Debe
    imprimir ~87 líneas `PASS` y ningún `FALLO`; no deja datos (`ROLLBACK`).
