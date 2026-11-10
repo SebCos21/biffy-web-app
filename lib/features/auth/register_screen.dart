@@ -77,6 +77,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final remote = context.watch<SessionController>().auth.isRemote;
     return Scaffold(
       appBar: AppBar(title: const Text('Crear cuenta')),
       body: MobileFrame(
@@ -149,10 +150,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     key: const Key('reg-email'),
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Correo',
-                      helperText:
-                          'Si es universitario podrás verificarlo (simulado) en Campus.',
+                      helperText: remote
+                          ? 'Si es universitario podrás verificarlo en Campus.'
+                          : 'Si es universitario podrás verificarlo (simulado) en Campus.',
                     ),
                     validator: (v) =>
                         (v == null ||
@@ -167,10 +169,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     key: const Key('reg-password'),
                     controller: _password,
                     obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Contraseña de demostración',
-                      helperText:
-                          'Solo vive en memoria durante la demo. No uses una real.',
+                    decoration: InputDecoration(
+                      labelText: remote
+                          ? 'Contraseña'
+                          : 'Contraseña de demostración',
+                      helperText: remote
+                          ? 'Mínimo 6 caracteres.'
+                          : 'Solo vive en memoria durante la demo. No uses una real.',
                     ),
                     validator: (v) => (v == null || v.length < 6)
                         ? 'Mínimo 6 caracteres'

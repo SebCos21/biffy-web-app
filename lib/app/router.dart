@@ -287,7 +287,13 @@ GoRouter buildRouter(
         ],
       ),
       // Cajas de Gotas que el negocio puede llenar con sus platos.
-      _r('/negocio/cajas', (_) => const MerchantBoxesScreen()),
+      _r(
+        '/negocio/cajas',
+        (_) => const RoleScope(
+          role: UserRole.restaurant,
+          child: MerchantBoxesScreen(),
+        ),
+      ),
     ],
   );
 }

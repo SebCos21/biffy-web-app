@@ -77,7 +77,8 @@ class SessionController extends ChangeNotifier {
     ProfileRepository? profile,
     NotificationRepository? notificationsRepo,
   }) : _profile = profile, // ignore: prefer_initializing_formals
-       _notificationsRepo = notificationsRepo; // ignore: prefer_initializing_formals
+       // ignore: prefer_initializing_formals
+       _notificationsRepo = notificationsRepo;
 
   final AuthRepository _auth;
   final NotificationCenter _notifications;
@@ -328,8 +329,18 @@ class SessionController extends ChangeNotifier {
     }
   }
 
-  /// Trae saldo, direcciones y perfil de repartidor del backend.
+  /// Trae saldo, direcciones y perfil del backend sin romper la sesión si
+  /// falla la red: la sesión ya es válida y se conserva la caché local.
   Future<void> _hydrateRemote(AppUser u) async {
+    try {
+      await _hydrateRemoteData(u);
+    } on Object {
+      // Sin red o con RLS caída: se mantiene lo que ya había en memoria.
+    }
+  }
+
+  /// Lecturas remotas de la hidratación (pueden lanzar si falla la red).
+  Future<void> _hydrateRemoteData(AppUser u) async {
     // Las tres lecturas base van en paralelo.
     final balanceF = _auth.gotasBalance(u.id);
     final savedF = _auth.addresses(u.id);

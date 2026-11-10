@@ -100,6 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final remote = context.watch<SessionController>().auth.isRemote;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -122,7 +123,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text('Inicia sesión', style: t.headlineSmall),
                 const SizedBox(height: 4),
                 Text(
-                  'Autenticación simulada y local: no uses una contraseña real.',
+                  remote
+                      ? 'Ingresa con tu cuenta de Biffy.'
+                      : 'Autenticación simulada y local: no uses una contraseña real.',
                   style: t.bodySmall,
                 ),
                 const SizedBox(height: 16),
@@ -141,7 +144,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _password,
                   obscureText: _obscure,
                   decoration: InputDecoration(
-                    labelText: 'Contraseña de demostración',
+                    labelText: remote
+                        ? 'Contraseña'
+                        : 'Contraseña de demostración',
                     suffixIcon: IconButton(
                       tooltip: _obscure
                           ? 'Mostrar contraseña'
