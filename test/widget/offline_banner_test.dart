@@ -46,6 +46,7 @@ Future<void> pumpBanner(
   );
 }
 
+/// Pruebas del aviso de catálogo sin conexión en sus tres estados.
 void main() {
   testWidgets('con red no muestra nada', (tester) async {
     final repo = SupabaseCatalogRepository.forTest(

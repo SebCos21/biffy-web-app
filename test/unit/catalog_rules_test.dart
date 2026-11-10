@@ -38,6 +38,7 @@ void main() {
         lng: -76.53,
         campusId: 'icesi',
       );
+      /// Sede de prueba junto al punto, ajustable por cada causa de cobertura.
       Restaurant sede({
         int couriers = 2,
         double lat = 3.34,

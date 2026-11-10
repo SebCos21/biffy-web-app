@@ -108,6 +108,7 @@ CatalogRows fixture({bool withOwner = false}) => CatalogRows(
   ],
 );
 
+/// Pruebas del catálogo sin conexión: copia en disco, borrado lógico y red.
 void main() {
   group('Catálogo sin conexión (HU-2)', () {
     test('guarda la copia sin datos bancarios y la vuelve a leer', () async {
