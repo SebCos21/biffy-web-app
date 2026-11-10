@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
@@ -55,6 +56,7 @@ class _MerchantMenuScreenState extends State<MerchantMenuScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
           children: [
+            const OfflineBanner(),
             Text('Mi menú', style: t.headlineSmall),
             const SizedBox(height: 8),
             Align(
@@ -189,7 +191,10 @@ class _MerchantMenuScreenState extends State<MerchantMenuScreen> {
                                     try {
                                       await catalog.saveDish(d);
                                     } on Object {
+                                      // La base no lo guardó: se revierte.
+                                      d.active = !v;
                                       if (!context.mounted) return;
+                                      setState(() {});
                                       showSnack(
                                         context,
                                         'No pudimos guardar el cambio.',

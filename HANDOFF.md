@@ -70,7 +70,7 @@ Reglas que **no** se negocian:
 | Datos | 4 universidades, 8 puntos con geometría, 9 categorías, 5 recompensas con 18 premios, 15 sedes y 32 platos |
 | Cuentas | 3 cuentas demo reales con bienvenida de 450 Gotas |
 
-Migraciones en `supabase/migrations/` (`0000`–`0018`). El bootstrap para pegar
+Migraciones en `supabase/migrations/` (`0000`–`0019`). El bootstrap para pegar
 en el SQL Editor es `supabase/apply_all.sql` (generado concatenando las
 migraciones).
 
@@ -108,8 +108,61 @@ recogido y entregado (6 eventos, evidencia en Storage, +12 Gotas).
 - ⏳ Adjuntar al informe la salida literal de `0099_verify.sql` (la consulta ya
   se ejecutó en el SQL Editor; falta el pantallazo/texto).
 
-Calidad actual: `flutter analyze` limpio · `flutter test` **122/122**
-(21 pruebas de integración se saltan sin credenciales de Supabase).
+### HU-2 · Catálogo y gestión del comercio en tiempo real
+
+Rama `feat/hu2-catalogo-comercio`. La parte de la base está en
+`supabase/migrations/0019_catalog_hu2.sql` (idempotente). **⏳ Falta aplicarla
+en el proyecto remoto** y correr las dos verificaciones de abajo; hasta
+entonces los criterios de base quedan "listos en código".
+
+| # | Criterio | Estado | Dónde |
+|---|---|---|---|
+| 1 | Los cambios del comercio (crear, editar, agotar, pausar, eliminar) llegan al comprador sin reabrir la app | ✅ código · ⏳ aplicar 0019 | `0019` §1 (`catalog_revision` + `dish_options` en Realtime), `supabase_catalog_repository.dart` (`_subscribe`, recarga agrupada 300 ms) |
+| 2 | Pausar o eliminar un plato lo oculta junto con sus opciones | ✅ código · ⏳ aplicar 0019 | `0019` §4 (`dish_options_read` pasa por `dishes_read`), `_apply` |
+| 3 | Un comercio no edita ni crea en sedes, platos u opciones de otro, ni mueve platos a otra sede | ✅ (RLS de `0004`) | `supabase/tests/hu2_rls.sql` (1), `test/integration/hu2_supabase_test.dart` |
+| 4 | Borrado solo lógico (`deleted_at`); el DELETE duro de negocio, sede y plato falla | ✅ código · ⏳ aplicar 0019 | `0019` §2, `deleteDish`, `test/unit/hu2_guards_test.dart` |
+| 5 | El comprador solo recibe datos públicos del negocio (sin banco ni documentos) | ✅ código · ⏳ aplicar 0019 | `0019` §3 (`businesses_public` = id, brand, cuisine, description), `_fetchRows` + `CatalogRows.businesses` |
+| 6 | Sin red el catálogo abre con la última copia y avisa; sin copia muestra error con reintento | ✅ | `lib/data/repositories/catalog_snapshot.dart`, `lib/core/widgets/offline_banner.dart`, `test/unit/catalog_offline_test.dart`, `test/widget/offline_banner_test.dart` |
+| 7 | Una escritura que RLS rechaza (0 filas) no se muestra como guardada | ✅ | `CatalogWriteDenied` (`.select('id')` en update/delete/agotado/pausa), switch «Disponible» revierte en `merchant_menu_screen.dart` |
+| 8 | Favoritos privados y sin "fantasmas" si falla la escritura | ✅ | `SessionController._revertFavorite`, `hu2_rls.sql` (6) |
+| 9 | Fotos de platos solo en la carpeta del propio negocio, máx. 5 MiB e imágenes | ✅ código · ⏳ aplicar 0019 | `0019` §5 (`dish_images_update` con `WITH CHECK`), `hu2_rls.sql` (7) |
+
+**Decisiones**
+
+- Realtime no envía eventos de filas que RLS deja de mostrar (pausar u ocultar
+  un plato). En vez de abrir RLS se añadió `catalog_revision`: una fila pública
+  que un trigger por sentencia sube en cada cambio de `branches`, `dishes` y
+  `dish_options`; la app solo la usa como señal para recargar.
+- `branches_write` y `dishes_write` siguen siendo `for all`: así el dueño puede
+  marcar `deleted_at` y seguir viendo la fila. El borrado duro se cierra con
+  `revoke delete`, no con políticas. Por eso el dueño recibe sus filas
+  borradas y `_apply` las descarta (junto con las opciones de esos platos).
+- La copia en disco (`shared_preferences`, clave `biffy.catalog.v1`) guarda
+  solo filas públicas: `CatalogRows.toJson` omite `ownBusinesses` (banco y
+  documentos nunca van al equipo). Una copia dañada o de otra versión se ignora.
+- `refresh()` nunca lanza; marca `offline` y lee la copia del disco **una sola
+  vez** y solo si la memoria está vacía. Al volver Realtime (`subscribed`)
+  estando sin red, recarga.
+- `CatalogSyncStatus` es una interfaz aparte: `CatalogRepository` no cambió, y
+  la demo en memoria nunca está "sin conexión".
+- La regla de cobertura expone el motivo con `coverageGap` (solo campus → sin
+  repartidores → fuera de radio); `isReachable` es `coverageGap == null`.
+
+**Cómo verificar**
+
+1. Aplicar `0019_catalog_hu2.sql` (o `apply_all.sql`) en el SQL Editor y
+   correr `0099_verify.sql` (ahora espera `catalog_revision`).
+2. Pegar `supabase/tests/hu2_rls.sql` en el SQL Editor: corre en
+   `begin … rollback` y debe terminar con el aviso `OK n` (cualquier fallo se
+   detiene con `FALLO: …`).
+3. `flutter test test/integration/hu2_supabase_test.dart --dart-define-from-file=env.json`
+   (usa `qbano@demo.biffy.co`, `horno@demo.biffy.co` y `diego.demo@icesi.edu.co`).
+4. Manual: con la app del comprador abierta, pausar un plato desde
+   `/negocio/menu` en otra sesión; debe desaparecer en ~1 s. Cortar la red y
+   reabrir: aparece la franja «Sin conexión · mostrando el menú guardado».
+
+Calidad actual: `flutter analyze` limpio · `flutter test` **140/140**
+(30 pruebas de integración se saltan sin credenciales de Supabase).
 
 ---
 
@@ -237,8 +290,10 @@ Orden sugerido. Cada punto tiene criterio de aceptación.
 | Escritura optimista | `place_order` se dispara después de crear el pedido local. Si el RPC falla, el pedido queda solo en memoria (gap de Fase 5). |
 | `dbId` tardío | Se asigna cuando responde el RPC. Una transición en ese primer segundo puede no replicarse. |
 | Alcance | `isReachable` exige `couriersNearby > 0`. Es un valor simulado (default 1); la sede demo tiene 3. |
-| Realtime | Requiere `0010_realtime.sql` aplicado (publica `branches`, `dishes`, `orders`, `order_events`). Sin él todo funciona, pero hay que reabrir la app. |
-| `businesses` | Tiene RLS de dueño: el comprador no ve negocios (solo sedes y platos). `businessById` solo lo usan pantallas de comercio. |
+| Realtime | Requiere `0010_realtime.sql` (publica `branches`, `dishes`, `orders`, `order_events`) y `0019` (`dish_options`, `catalog_revision`). Realtime **no** emite eventos de filas que RLS oculta: pausar/borrar un plato solo llega al comprador por el UPDATE de `catalog_revision`. No quitar sus triggers. Sin Realtime todo funciona, pero hay que reabrir la app. |
+| `businesses` | Tiene RLS de dueño. El comprador lee **`businesses_public`** (id, brand, cuisine, description); el dueño recibe además su fila completa y `CatalogRows.businesses` la mezcla por id. La vista corre con permisos de su dueño a propósito: no añadirle columnas privadas. |
+| Copia sin conexión | `biffy.catalog.v1` en `shared_preferences`, formato `{'v':1,…}`. Si cambia el formato, subir `v`: las copias viejas se ignoran solas. |
+| Escrituras de catálogo | Un UPDATE que RLS filtra devuelve 0 filas **sin error**. Toda escritura de catálogo usa `.select('id')` y lanza `CatalogWriteDenied` si vuelve vacía. |
 | Evidencia | Se sube a `delivery-evidence/<order_uuid>/`. El bucket es privado: para mostrarla hace falta URL firmada. |
 | Fechas | `timestamptz` llega en UTC: el mapeo usa `.toLocal()` y `scheduled_for` se envía con `.toUtc()`. Sin eso las horas y los días (ganancias, seguimiento) salen corridos 5 h. |
 | Imágenes | `image_url` acepta una ruta `assets/...` o una URL de Storage; `catalogImage` en `lib/core/widgets/ui.dart` elige asset o red. Hoy las 4 filas de Qbano tienen `null` (se ve el emoji). |

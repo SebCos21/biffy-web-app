@@ -51,13 +51,23 @@ class CatalogController extends ChangeNotifier {
   /// Hora actual según el reloj de la app.
   DateTime get now => clock.now();
 
-  /// Sede por id.
   /// Vuelve a leer el catálogo del backend (no-op en demo).
   Future<void> refresh() async {
     await repo.refresh();
     notifyListeners();
   }
 
+  /// `true` si la última lectura remota falló (se muestra la copia guardada).
+  bool get offline {
+    // `Object` para que `is` promueva: el estado no es parte del contrato.
+    final Object r = repo;
+    return r is CatalogSyncStatus && r.offline;
+  }
+
+  /// `true` si hay sedes en memoria para mostrar.
+  bool get hasCatalog => repo.restaurants.isNotEmpty;
+
+  /// Sede por id.
   Restaurant? restaurantById(String id) => repo.restaurantById(id);
   /// Plato por id.
   Dish? dishById(String id) => repo.dishById(id);

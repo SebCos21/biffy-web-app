@@ -114,6 +114,12 @@ Decisiones pensadas para no volver a tocar la base:
   `security definer`.
 - Storage: `dish-images` público; `delivery-evidence` y `merchant-docs`
   privados por carpeta (pedido / negocio).
+- Catálogo con borrado lógico obligatorio (0019): `authenticated` no tiene
+  `DELETE` sobre `businesses`, `branches` ni `dishes`; se marca `deleted_at`.
+- `catalog_revision` (0019) sube con cada cambio de sedes, platos u opciones
+  para que Realtime avise también de filas que RLS oculta; es de solo lectura.
+- `dish-images` (0019): máx. 5 MiB, solo JPEG/PNG/WebP, y renombrar exige que
+  el destino siga en la carpeta del propio negocio. Prueba: `supabase/tests/hu2_rls.sql`.
 - La app solo lleva la **clave publicable**. La `service_role` y la contraseña
   de la base nunca van al repositorio.
 

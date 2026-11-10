@@ -541,9 +541,19 @@ class SessionController extends ChangeNotifier {
     final on = !f.contains(id);
     on ? f.add(id) : f.remove(id);
     final u = _user;
-    if (u != null && _profile != null) _profile.setFavoriteDish(u.id, id, on);
+    if (u != null && _profile != null) {
+      _profile
+          .setFavoriteDish(u.id, id, on)
+          .catchError((Object _) => _revertFavorite(f, id, on));
+    }
     notifyListeners();
     return true;
+  }
+
+  /// Deshace un favorito cuya escritura remota falló y avisa a la vista.
+  void _revertFavorite(Set<String> favorites, String id, bool wasAdded) {
+    wasAdded ? favorites.remove(id) : favorites.add(id);
+    notifyListeners();
   }
 
   /// Agrega o quita un restaurante de favoritos.
@@ -554,7 +564,9 @@ class SessionController extends ChangeNotifier {
     on ? f.add(id) : f.remove(id);
     final u = _user;
     if (u != null && _profile != null) {
-      _profile.setFavoriteBranch(u.id, id, on);
+      _profile
+          .setFavoriteBranch(u.id, id, on)
+          .catchError((Object _) => _revertFavorite(f, id, on));
     }
     notifyListeners();
     return true;

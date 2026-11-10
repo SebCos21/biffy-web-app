@@ -5,6 +5,28 @@ import '../mock/seed_catalog.dart';
 import '../models/business.dart';
 import '../models/catalog.dart';
 
+/// Error de una escritura del catálogo que la base rechazó (RLS dejó 0 filas).
+class CatalogWriteDenied implements Exception {
+  /// Crea el error con la acción que se intentó.
+  const CatalogWriteDenied(this.action);
+
+  /// Acción que no se pudo hacer (p. ej. «editar el plato»).
+  final String action;
+
+  /// Mensaje legible del error.
+  @override
+  String toString() => 'Sin permiso para $action';
+}
+
+/// Estado de sincronización de un catálogo remoto (lo implementa Supabase).
+abstract interface class CatalogSyncStatus {
+  /// `true` si la última lectura falló y se muestra la copia guardada.
+  bool get offline;
+
+  /// Momento de la última lectura correcta, o `null` si no hubo ninguna.
+  DateTime? get lastSync;
+}
+
 /// Contrato del catálogo. En un sprint posterior puede implementarse con
 /// Firebase/Firestore sin cambiar las pantallas.
 abstract class CatalogRepository {

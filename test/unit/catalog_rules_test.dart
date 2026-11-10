@@ -1,5 +1,6 @@
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_catalog.dart';
+import 'package:biffy/data/models/catalog.dart';
 import 'package:biffy/domain/catalog_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,6 +27,73 @@ void main() {
         isReachable(restaurants['dulce-panal']!, pointById('biblio')),
         isFalse,
       );
+    });
+
+    test('coverageGap explica por qué no llega (y en qué orden)', () {
+      const point = DeliveryPoint(
+        id: 'p',
+        name: 'Punto',
+        detail: '',
+        lat: 3.34,
+        lng: -76.53,
+        campusId: 'icesi',
+      );
+      Restaurant sede({
+        int couriers = 2,
+        double lat = 3.34,
+        bool campusOnly = false,
+        String campus = 'icesi',
+      }) => Restaurant(
+        id: 'r',
+        businessId: 'b',
+        name: 'Sede',
+        emoji: '🍽️',
+        tagline: '',
+        cuisine: 'almuerzo',
+        address: '',
+        rating: 4.5,
+        prepMin: 10,
+        lat: lat,
+        lng: -76.53,
+        radiusKm: 3,
+        couriersNearby: couriers,
+        openHour: 8,
+        closeHour: 22,
+        campusId: campus,
+        campusDeliveryOnly: campusOnly,
+      );
+
+      expect(coverageGap(sede(), point), isNull);
+      expect(coverageGap(sede(couriers: 0), point), CoverageGap.noCouriers);
+      expect(coverageGap(sede(lat: 3.6), point), CoverageGap.tooFar);
+      expect(
+        coverageGap(sede(campusOnly: true, campus: 'unal'), point),
+        CoverageGap.campusOnly,
+      );
+      // Solo campus va primero, luego repartidores y al final el radio.
+      expect(
+        coverageGap(
+          sede(campusOnly: true, campus: 'unal', couriers: 0, lat: 3.6),
+          point,
+        ),
+        CoverageGap.campusOnly,
+      );
+      expect(
+        coverageGap(sede(couriers: 0, lat: 3.6), point),
+        CoverageGap.noCouriers,
+      );
+    });
+
+    test('isReachable equivale a coverageGap == null', () {
+      for (final r in restaurants.values) {
+        for (final p in kDeliveryPoints) {
+          expect(
+            isReachable(r, p),
+            coverageGap(r, p) == null,
+            reason: '${r.id} → ${p.id}',
+          );
+        }
+      }
     });
 
     test('horario y días cerrados', () {

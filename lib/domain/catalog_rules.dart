@@ -7,12 +7,32 @@ import '../data/models/catalog.dart';
 double distanceTo(Restaurant r, DeliveryPoint p) =>
     distanceKm(r.lat, r.lng, p.lat, p.lng);
 
+/// Motivo por el que una sede no llega al punto de entrega.
+enum CoverageGap {
+  /// La sede solo entrega dentro de su campus y el punto es de otro lugar.
+  campusOnly,
+
+  /// No hay repartidores cerca de la sede.
+  noCouriers,
+
+  /// El punto está fuera del radio de entrega.
+  tooFar,
+}
+
+/// Primer motivo por el que la sede no llega al punto, o `null` si llega.
+/// Orden: solo campus, sin repartidores y fuera del radio.
+CoverageGap? coverageGap(Restaurant r, DeliveryPoint p) {
+  if (r.campusDeliveryOnly && p.campusId != r.campusId) {
+    return CoverageGap.campusOnly;
+  }
+  if (r.couriersNearby <= 0) return CoverageGap.noCouriers;
+  if (distanceTo(r, p) > r.radiusKm) return CoverageGap.tooFar;
+  return null;
+}
+
 /// Regla única de cobertura: el punto está dentro del radio del restaurante,
 /// hay repartidores cerca y, si es solo campus, el punto pertenece al campus.
-bool isReachable(Restaurant r, DeliveryPoint p) {
-  if (r.campusDeliveryOnly && p.campusId != r.campusId) return false;
-  return r.couriersNearby > 0 && distanceTo(r, p) <= r.radiusKm;
-}
+bool isReachable(Restaurant r, DeliveryPoint p) => coverageGap(r, p) == null;
 
 /// Indica si el restaurante está abierto en ese momento.
 bool isOpenAt(Restaurant r, DateTime t) =>

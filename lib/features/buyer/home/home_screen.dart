@@ -6,6 +6,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
 import '../../../core/widgets/actions.dart';
 import '../../../core/widgets/catalog_cards.dart';
+import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/order.dart';
 import '../../../domain/recommendation.dart';
@@ -51,6 +52,7 @@ class HomeScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),
           children: [
+            const OfflineBanner(),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(

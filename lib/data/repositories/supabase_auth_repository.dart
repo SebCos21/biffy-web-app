@@ -38,7 +38,7 @@ class SupabaseAuthRepository implements AuthRepository {
       if (user == null) {
         throw AuthException('No pudimos iniciar sesión.');
       }
-      return _loadProfile(user.id, fallbackEmail: user.email ?? email);
+      return await _loadProfile(user.id, fallbackEmail: user.email ?? email);
     } on sb.AuthException catch (e) {
       throw AuthException(_message(e.message));
     } on sb.PostgrestException catch (e) {
@@ -75,7 +75,7 @@ class SupabaseAuthRepository implements AuthRepository {
           'Revisa tu correo para confirmar la cuenta antes de entrar.',
         );
       }
-      return _loadProfile(user.id, fallbackEmail: user.email ?? email);
+      return await _loadProfile(user.id, fallbackEmail: user.email ?? email);
     } on sb.AuthException catch (e) {
       throw AuthException(_message(e.message));
     } on sb.PostgrestException catch (e) {
