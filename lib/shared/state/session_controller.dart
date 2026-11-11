@@ -59,11 +59,18 @@ const kBenefits = [
 /// Resultado de verificar el correo universitario.
 enum VerifyResult {
   ok,
+  codeSent,
   invalidEmail,
   domainMismatch,
   unknownUniversity,
   notAuthenticated,
   notLoggedIn,
+  invalidToken,
+  expiredToken,
+  tooManyAttempts,
+  notFound,
+  rateLimited,
+  tokenRequired,
   rpcError,
 }
 
@@ -101,6 +108,7 @@ class SessionController extends ChangeNotifier {
   AppSettings _settings = const AppSettings();
   String _pointId = 'icesi-biblioteca';
   int _seq = 0;
+  String? _pendingDemoCode;
 
   /// Usuario con sesión iniciada, si hay.
   AppUser? get user => _user;
@@ -129,11 +137,19 @@ class SessionController extends ChangeNotifier {
   /// Saldo de Gotas del usuario activo.
   int get gotas => data.gotas;
 
-  /// Universidad verificada, si la hay.
-  String? get verifiedUniversityId => data.verifiedUniversityId;
+  /// Universidad verificada, si la verificación sigue vigente.
+  String? get verifiedUniversityId =>
+      isVerifiedStudent ? data.verifiedUniversityId : null;
 
-  /// `true` si el comprador verificó su universidad.
-  bool get isVerifiedStudent => data.verifiedUniversityId != null;
+  /// Fecha en la que vence la verificación institucional.
+  DateTime? get verificationExpiresAt => data.verificationExpiresAt;
+
+  /// `true` si el comprador tiene una verificación activa y no vencida.
+  bool get isVerifiedStudent {
+    if (data.verifiedUniversityId == null) return false;
+    final until = data.verificationExpiresAt;
+    return until == null || until.isAfter(_clock.now());
+  }
 
   /// Universidad verificada o la elegida en preferencias.
   String? get universityId =>
@@ -407,9 +423,21 @@ class SessionController extends ChangeNotifier {
 
       // Verificación universitaria guardada en el perfil.
       final v = await verificationF;
-      if (v.verified && v.universityId != null) {
+      final expired =
+          v.expiresAt != null && !v.expiresAt!.isAfter(_clock.now());
+      if (v.verified && v.universityId != null && !expired) {
         d.verifiedUniversityId = v.universityId;
         d.universityEmail = v.universityEmail;
+        d.verificationExpiresAt = v.expiresAt;
+        if (d.prefs.universityId != v.universityId) {
+          d.prefs = d.prefs.copyWith(universityId: v.universityId);
+        }
+      } else if (v.universityId != null) {
+        // Vencida o revocada: se conserva el correo para poder revalidar,
+        // pero Campus y el descuento quedan deshabilitados.
+        d.verifiedUniversityId = null;
+        d.universityEmail = v.universityEmail;
+        d.verificationExpiresAt = v.expiresAt;
         if (d.prefs.universityId != v.universityId) {
           d.prefs = d.prefs.copyWith(universityId: v.universityId);
         }
@@ -547,10 +575,97 @@ class SessionController extends ChangeNotifier {
         return VerifyResult.unknownUniversity;
       case 'not_authenticated':
         return VerifyResult.notAuthenticated;
+      case 'token_required':
+        return VerifyResult.tokenRequired;
       default:
         return VerifyResult.rpcError;
     }
   }
+
+  /// Envía el código al correo institucional (producción = Edge Function).
+  Future<VerifyResult> sendUniversityCodeAsync(
+    String universityId,
+    String email, {
+    bool renewal = false,
+  }) async {
+    final u = _user;
+    if (u == null) return VerifyResult.notLoggedIn;
+    final e = email.trim().toLowerCase();
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(e)) {
+      return VerifyResult.invalidEmail;
+    }
+    final uni = universityById(universityId);
+    if (uni == null) return VerifyResult.unknownUniversity;
+    if (!e.endsWith('@${uni.domain}')) {
+      return VerifyResult.domainMismatch;
+    }
+
+    final res = await _auth.sendUniversityCode(
+      userId: u.id,
+      universityId: universityId,
+      email: e,
+      renewal: renewal,
+    );
+    _pendingDemoCode = res.demoCode;
+    return switch (res.result) {
+      'ok' => VerifyResult.codeSent,
+      'rate_limited' => VerifyResult.rateLimited,
+      'domain_mismatch' => VerifyResult.domainMismatch,
+      'unknown_university' => VerifyResult.unknownUniversity,
+      'not_authenticated' => VerifyResult.notAuthenticated,
+      _ => VerifyResult.rpcError,
+    };
+  }
+
+  /// Confirma el código recibido en el correo institucional.
+  Future<VerifyResult> confirmUniversityCodeAsync({
+    required String universityId,
+    required String email,
+    required String code,
+  }) async {
+    final u = _user;
+    if (u == null) return VerifyResult.notLoggedIn;
+    final e = email.trim().toLowerCase();
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(e)) {
+      return VerifyResult.invalidEmail;
+    }
+
+    final result = await _auth.confirmUniversityCode(
+      userId: u.id,
+      email: e,
+      code: code,
+    );
+    switch (result) {
+      case 'ok':
+      case 'already_active':
+        final uni = universityById(universityId);
+        _pendingDemoCode = null;
+        _markVerified(
+          universityId,
+          e,
+          uni?.name ?? 'tu universidad',
+          simulated: !_auth.isRemote,
+        );
+        return VerifyResult.ok;
+      case 'invalid_token':
+        return VerifyResult.invalidToken;
+      case 'expired_token':
+        return VerifyResult.expiredToken;
+      case 'too_many_attempts':
+        return VerifyResult.tooManyAttempts;
+      case 'not_found':
+        return VerifyResult.notFound;
+      case 'rate_limited':
+        return VerifyResult.rateLimited;
+      case 'not_authenticated':
+        return VerifyResult.notAuthenticated;
+      default:
+        return VerifyResult.rpcError;
+    }
+  }
+
+  /// Código de demostración cuando no hay proveedor de correo configurado.
+  String? get pendingUniversityCode => _pendingDemoCode;
 
   /// Guarda la verificación en memoria y avisa al usuario.
   void _markVerified(
@@ -562,6 +677,7 @@ class SessionController extends ChangeNotifier {
     final d = data;
     d.verifiedUniversityId = universityId;
     d.universityEmail = email;
+    d.verificationExpiresAt = _clock.now().add(const Duration(days: 30));
     d.prefs = d.prefs.copyWith(universityId: universityId);
     _notifications.push(
       title: simulated

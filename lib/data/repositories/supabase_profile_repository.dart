@@ -17,22 +17,43 @@ class SupabaseProfileRepository implements ProfileRepository {
 
   // ------------------------------------------------------ Verificación
 
-  /// Lee la verificación universitaria guardada en `profiles`.
+  /// Lee la verificación universitaria y su fecha de vencimiento.
   @override
-  Future<({bool verified, String? universityId, String? universityEmail})>
+  Future<
+    ({
+      bool verified,
+      String? universityId,
+      String? universityEmail,
+      String? status,
+      DateTime? expiresAt,
+    })
+  >
   verification(String userId) async {
     final row = await _client
         .from('profiles')
-        .select('verified, university_id, university_email')
+        .select(
+          'verified, university_id, university_email, '
+          'university_status, university_expires_at',
+        )
         .eq('id', userId)
         .maybeSingle();
     if (row == null) {
-      return (verified: false, universityId: null, universityEmail: null);
+      return (
+        verified: false,
+        universityId: null,
+        universityEmail: null,
+        status: null,
+        expiresAt: null,
+      );
     }
     return (
       verified: (row['verified'] as bool?) ?? false,
       universityId: row['university_id'] as String?,
       universityEmail: row['university_email'] as String?,
+      status: row['university_status'] as String?,
+      expiresAt: DateTime.tryParse(
+        (row['university_expires_at'] as String?) ?? '',
+      ),
     );
   }
 

@@ -5,8 +5,16 @@ import '../entities/user.dart';
 /// ajustes, favoritos, direcciones y cupones. El dominio no sabe que detrás
 /// está Supabase; en modo demo no hay repositorio (todo vive en memoria).
 abstract interface class ProfileRepository {
-  /// Lee la verificación universitaria guardada en el perfil.
-  Future<({bool verified, String? universityId, String? universityEmail})>
+  /// Lee la verificación universitaria y su fecha de vencimiento.
+  Future<
+    ({
+      bool verified,
+      String? universityId,
+      String? universityEmail,
+      String? status,
+      DateTime? expiresAt,
+    })
+  >
   verification(String userId);
 
   /// Lee preferencias y sus banderas de encuesta completada/recompensada.

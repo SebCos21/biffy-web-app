@@ -21,12 +21,13 @@ declare
     'favorite_dishes', 'favorite_branches', 'notifications', 'courier_profiles',
     'orders', 'order_items', 'order_events', 'order_declines', 'reviews',
     'gotas_rewards', 'reward_redemptions', 'gotas_reward_prizes', 'box_items',
-    'order_secrets'
+    'order_secrets', 'university_verifications'
   ];
   expected_columns text[][] := array[
     ['dishes', 'active'], ['dishes', 'sold_out'], ['dishes', 'branch_id'],
     ['branches', 'paused'], ['orders', 'delivery_code'], ['orders', 'gotas_used'],
     ['profiles', 'gotas'], ['profiles', 'business_id'],
+    ['profiles', 'university_status'], ['profiles', 'university_expires_at'],
     ['gotas_rewards', 'cooldown_hours'], ['box_items', 'reward_id'],
     ['reward_redemptions', 'claim_code'],
     ['branches', 'location'], ['universities', 'boundary_polygon'],
@@ -37,7 +38,9 @@ declare
     'place_order', 'restaurant_accept', 'restaurant_reject', 'restaurant_ready',
     'buyer_cancel', 'courier_accept', 'courier_decline', 'courier_pickup',
     'courier_deliver', 'verify_university', 'register_business', 'redeem_reward',
-    'distance_km', 'refund_order', 'order_json', 'rate_order', 'notify'
+    'distance_km', 'refund_order', 'order_json', 'rate_order', 'notify',
+    'create_university_verification', 'confirm_university_verification',
+    'revoke_university_verification', 'expire_university_verifications'
   ];
 begin
   foreach v_table in array expected_tables loop

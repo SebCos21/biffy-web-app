@@ -104,7 +104,13 @@ begin
   perform set_config('t.opt_extra', (select id::text from public.dish_options where dish_id = v_dish.id and kind = 'extra'), false);
 
   -- Diego: verificado en Icesi, dirección en el campus y otra lejana.
-  update public.profiles set verified = true, university_id = 'icesi'
+  update public.profiles
+     set verified = true,
+         university_id = 'icesi',
+         university_email = 'diego@icesi.edu.co',
+         university_status = 'active',
+         university_verified_at = now(),
+         university_expires_at = now() + interval '30 days'
    where id = current_setting('t.diego')::uuid;
   update public.addresses set is_default = false
    where user_id = current_setting('t.diego')::uuid;

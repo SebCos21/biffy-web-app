@@ -184,9 +184,10 @@ class UserData {
   PaymentMethod defaultPayment = PaymentMethod.nequi;
   final List<Coupon> coupons = [];
 
-  /// Verificación universitaria simulada (no comprueba control del correo).
+  /// Verificación universitaria (el correo se comprueba con un código).
   String? verifiedUniversityId;
   String? universityEmail;
+  DateTime? verificationExpiresAt;
 
   CourierProfile? courierProfile;
   bool courierOnline = false;

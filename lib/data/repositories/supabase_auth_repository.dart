@@ -281,6 +281,54 @@ class SupabaseAuthRepository implements AuthRepository {
     }
   }
 
+  /// Envía el código al correo institucional mediante la Edge Function.
+  @override
+  Future<({String result, String? demoCode})> sendUniversityCode({
+    required String userId,
+    required String universityId,
+    required String email,
+    bool renewal = false,
+  }) async {
+    try {
+      final res = await _client.functions.invoke(
+        'send-university-code',
+        body: {
+          'universityId': universityId,
+          'email': email.trim().toLowerCase(),
+          'mode': renewal ? 'renew' : 'initial',
+        },
+      );
+      final map = res.data is Map
+          ? Map<String, dynamic>.from(res.data as Map)
+          : const <String, dynamic>{};
+      return (
+        result: (map['result'] as String?) ?? 'rpc_error',
+        demoCode: map['demoCode'] as String?,
+      );
+    } on Object {
+      return (result: 'rpc_error', demoCode: null);
+    }
+  }
+
+  /// Confirma el código del correo institucional con el RPC.
+  @override
+  Future<String?> confirmUniversityCode({
+    required String userId,
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final res = await _client.rpc(
+        'confirm_university_verification',
+        params: {'p_email': email.trim().toLowerCase(), 'p_token': code.trim()},
+      );
+      final map = res is Map ? res : const {};
+      return map['result'] as String?;
+    } on Object {
+      return 'rpc_error';
+    }
+  }
+
   // --------------------------------------------------------- Lectura local
 
   /// Usuario cacheado por id.

@@ -103,6 +103,34 @@ void main() {
       expect(s.verifiedUniversityId, 'icesi');
     });
 
+    test('código institucional en modo demo', () async {
+      s.login(kDemoNewBuyerEmail, kDemoPassword);
+
+      expect(
+        await s.sendUniversityCodeAsync('icesi', 'a@icesi.edu.co'),
+        VerifyResult.codeSent,
+      );
+      expect(s.pendingUniversityCode, '123456');
+      expect(
+        await s.confirmUniversityCodeAsync(
+          universityId: 'icesi',
+          email: 'a@icesi.edu.co',
+          code: '000000',
+        ),
+        VerifyResult.invalidToken,
+      );
+      expect(
+        await s.confirmUniversityCodeAsync(
+          universityId: 'icesi',
+          email: 'a@icesi.edu.co',
+          code: '123456',
+        ),
+        VerifyResult.ok,
+      );
+      expect(s.isVerifiedStudent, isTrue);
+      expect(s.verificationExpiresAt, isNotNull);
+    });
+
     test('favoritos requieren sesión', () {
       expect(s.toggleFavoriteDish('capuchino'), isFalse);
       s.login(kDemoNewBuyerEmail, kDemoPassword);

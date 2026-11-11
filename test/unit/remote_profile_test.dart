@@ -100,6 +100,27 @@ class _FakeRemoteAuth implements AuthRepository {
     verifyCalls++;
     return verifyCode;
   }
+
+  /// Resultado configurable de `sendUniversityCode`.
+  String sendCodeResult = 'ok';
+
+  /// Resultado configurable de `confirmUniversityCode`.
+  String confirmCodeResult = 'ok';
+
+  @override
+  Future<({String result, String? demoCode})> sendUniversityCode({
+    required String userId,
+    required String universityId,
+    required String email,
+    bool renewal = false,
+  }) async => (result: sendCodeResult, demoCode: null);
+
+  @override
+  Future<String?> confirmUniversityCode({
+    required String userId,
+    required String email,
+    required String code,
+  }) async => confirmCodeResult;
 }
 
 /// Crea un controlador de sesión con el repositorio remoto falso.
@@ -203,6 +224,60 @@ void main() {
       final result = await s.verifyUniversityAsync('icesi', 'ana@icesi.edu.co');
 
       expect(result, VerifyResult.rpcError);
+    });
+  });
+
+  group('Código institucional', () {
+    test('enviar el código devuelve codeSent', () async {
+      final auth = _FakeRemoteAuth();
+      final s = _session(auth)..loginAs(auth.user);
+
+      final result = await s.sendUniversityCodeAsync(
+        'icesi',
+        'ana@icesi.edu.co',
+      );
+
+      expect(result, VerifyResult.codeSent);
+    });
+
+    test('un código correcto activa la verificación por 30 días', () async {
+      final auth = _FakeRemoteAuth();
+      final s = _session(auth)..loginAs(auth.user);
+
+      final result = await s.confirmUniversityCodeAsync(
+        universityId: 'icesi',
+        email: 'ana@icesi.edu.co',
+        code: '123456',
+      );
+
+      expect(result, VerifyResult.ok);
+      expect(s.isVerifiedStudent, isTrue);
+      expect(s.verificationExpiresAt, isNotNull);
+    });
+
+    test('un código incorrecto devuelve invalidToken', () async {
+      final auth = _FakeRemoteAuth()..confirmCodeResult = 'invalid_token';
+      final s = _session(auth)..loginAs(auth.user);
+
+      final result = await s.confirmUniversityCodeAsync(
+        universityId: 'icesi',
+        email: 'ana@icesi.edu.co',
+        code: '000000',
+      );
+
+      expect(result, VerifyResult.invalidToken);
+      expect(s.isVerifiedStudent, isFalse);
+    });
+
+    test('una verificación vencida deja de contar', () async {
+      final auth = _FakeRemoteAuth();
+      final s = _session(auth)..loginAs(auth.user);
+      s.data
+        ..verifiedUniversityId = 'icesi'
+        ..verificationExpiresAt = DateTime(2025);
+
+      expect(s.isVerifiedStudent, isFalse);
+      expect(s.verifiedUniversityId, isNull);
     });
   });
 }

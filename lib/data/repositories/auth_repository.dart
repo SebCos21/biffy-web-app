@@ -79,6 +79,23 @@ abstract class AuthRepository {
 
   /// Verifica el correo universitario contra el backend y devuelve su código.
   Future<String?> verifyUniversity(String universityId, String email);
+
+  /// Envía un código al correo institucional (Edge Function + Resend).
+  ///
+  /// En modo demo devuelve el código en `demoCode`; en producción solo `ok`.
+  Future<({String result, String? demoCode})> sendUniversityCode({
+    required String userId,
+    required String universityId,
+    required String email,
+    bool renewal = false,
+  });
+
+  /// Confirma el código recibido en el correo institucional.
+  Future<String?> confirmUniversityCode({
+    required String userId,
+    required String email,
+    required String code,
+  });
 }
 
 /// Autenticación de demostración con usuarios y contraseñas en memoria.
@@ -93,6 +110,7 @@ class InMemoryAuthRepository implements AuthRepository {
 
   final Map<String, AppUser> _users = {};
   final Map<String, String> _passwords = {};
+  final Map<String, String> _uniCodes = {};
   int _seq = 1;
 
   /// La demo nunca habla con un backend.
@@ -227,4 +245,28 @@ class InMemoryAuthRepository implements AuthRepository {
   @override
   Future<String?> verifyUniversity(String universityId, String email) async =>
       null;
+
+  /// En la demo el código siempre es 123456 y se muestra en la app.
+  @override
+  Future<({String result, String? demoCode})> sendUniversityCode({
+    required String userId,
+    required String universityId,
+    required String email,
+    bool renewal = false,
+  }) async {
+    _uniCodes[userId] = '123456';
+    return (result: 'ok', demoCode: '123456');
+  }
+
+  /// Valida el código de demostración.
+  @override
+  Future<String?> confirmUniversityCode({
+    required String userId,
+    required String email,
+    required String code,
+  }) async {
+    if (_uniCodes[userId] != code.trim()) return 'invalid_token';
+    _uniCodes.remove(userId);
+    return 'ok';
+  }
 }
