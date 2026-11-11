@@ -10,7 +10,7 @@ import 'package:biffy/features/buyer/notifications/notifications_cubit.dart';
 import 'package:biffy/features/buyer/tracking/rate_order_cubit.dart';
 import 'package:biffy/features/courier/earnings/earnings_cubit.dart';
 import 'package:biffy/features/orders/bloc/orders_bloc.dart';
-import 'package:biffy/shared/state/cart_controller.dart';
+import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
 import 'package:biffy/shared/state/catalog_controller.dart';
 import 'package:biffy/shared/state/notification_center.dart';
 import 'package:biffy/shared/state/session_controller.dart';
@@ -44,7 +44,7 @@ void main() {
       expect(getIt<OrderRepository>(), same(getIt<OrderRepository>()));
       expect(getIt<SessionController>(), same(getIt<SessionController>()));
       expect(getIt<CatalogController>(), same(getIt<CatalogController>()));
-      expect(getIt<CartController>(), same(getIt<CartController>()));
+      expect(getIt<CartCubit>(), same(getIt<CartCubit>()));
       expect(getIt<NotificationCenter>(), same(getIt<NotificationCenter>()));
       expect(getIt<OrdersBloc>(), same(getIt<OrdersBloc>()));
     });
@@ -69,7 +69,11 @@ void main() {
 
       final order = getIt<OrdersBloc>().all.first;
       final rate = getIt<RateOrderCubit>(
-        param1: RateOrderArgs(order: order, userId: order.buyerId, initialStars: 3),
+        param1: RateOrderArgs(
+          order: order,
+          userId: order.buyerId,
+          initialStars: 3,
+        ),
       );
       addTearDown(rate.close);
       expect(rate.order, same(order));
@@ -78,15 +82,18 @@ void main() {
   });
 
   group('Dobles de prueba', () {
-    test('se puede sustituir el repositorio de pedidos por uno falso', () async {
-      final fake = FakeOrderRepository();
-      await makeServices(seed: false);
-      getIt.registerLazySingleton<OrderRepository>(() => fake);
+    test(
+      'se puede sustituir el repositorio de pedidos por uno falso',
+      () async {
+        final fake = FakeOrderRepository();
+        await makeServices(seed: false);
+        getIt.registerLazySingleton<OrderRepository>(() => fake);
 
-      expect(getIt<OrderRepository>(), same(fake));
-      // Los casos de uso y el Bloc nuevos usan el doble sin tocar nada más.
-      expect(getIt<OrderUseCases>().repo, same(fake));
-    });
+        expect(getIt<OrderRepository>(), same(fake));
+        // Los casos de uso y el Bloc nuevos usan el doble sin tocar nada más.
+        expect(getIt<OrderUseCases>().repo, same(fake));
+      },
+    );
 
     test('reset deja el contenedor vacío para la prueba siguiente', () async {
       await getIt.reset();

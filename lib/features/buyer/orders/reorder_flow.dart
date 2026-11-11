@@ -6,7 +6,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/order.dart';
 import '../../../domain/reorder.dart';
 import '../../../domain/usecases/orders/checkout_draft.dart';
-import '../../../shared/state/cart_controller.dart';
+import '../cart/bloc/cart_cubit.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
@@ -17,7 +17,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// Evalúa si un pedido anterior se puede repetir en el catálogo actual.
 ReorderCheck _check(BuildContext context, Order order) {
   final catalog = getIt<CatalogController>();
-  final cart = getIt<CartController>();
+  final cart = getIt<CartCubit>();
   final r = catalog.restaurantById(order.restaurantId);
   return checkReorder(
     order,
@@ -64,7 +64,7 @@ Future<void> reorderToCart(BuildContext context, Order order) async {
   final c = _check(context, order);
   if (!await _showWarnings(context, c, confirm: 'Agregar al carrito')) return;
   if (!context.mounted) return;
-  final cart = getIt<CartController>();
+  final cart = getIt<CartCubit>();
   if (!cart.isEmpty) {
     final ok = await showConfirm(
       context,

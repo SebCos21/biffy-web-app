@@ -8,10 +8,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
 
+/// Pruebas de los cubits de autenticación: login, registro y Campus.
 void main() {
+  late TestServices services;
+
+  setUp(() async {
+    services = await makeServices();
+  });
+
   group('LoginCubit', () {
     test('login correcto publica el usuario', () async {
-      final services = makeServices();
       final cubit = LoginCubit(services.session);
 
       final user = await cubit.submit(kDemoBuyerEmail, kDemoPassword);
@@ -22,7 +28,6 @@ void main() {
     });
 
     test('contraseña incorrecta publica el error', () async {
-      final services = makeServices();
       final cubit = LoginCubit(services.session);
 
       final user = await cubit.submit(kDemoBuyerEmail, 'incorrecta');
@@ -33,7 +38,7 @@ void main() {
     });
 
     test('alterna la visibilidad de la contraseña', () {
-      final cubit = LoginCubit(makeServices().session);
+      final cubit = LoginCubit(services.session);
       expect(cubit.state.obscure, isTrue);
       cubit.toggleObscure();
       expect(cubit.state.obscure, isFalse);
@@ -42,7 +47,7 @@ void main() {
 
   group('RegisterCubit', () {
     test('comprador nuevo queda listo para volver al login', () async {
-      final cubit = RegisterCubit(makeServices().session);
+      final cubit = RegisterCubit(services.session);
 
       final result = await cubit.submit(
         name: 'Nuevo Comprador',
@@ -57,7 +62,7 @@ void main() {
     });
 
     test('repartidor nuevo continúa al registro de vehículo', () async {
-      final cubit = RegisterCubit(makeServices().session)
+      final cubit = RegisterCubit(services.session)
         ..roleChanged(UserRole.courier);
 
       final result = await cubit.submit(
@@ -72,7 +77,7 @@ void main() {
     });
 
     test('restaurante pasa al formulario ampliado sin crear cuenta', () async {
-      final cubit = RegisterCubit(makeServices().session)
+      final cubit = RegisterCubit(services.session)
         ..roleChanged(UserRole.restaurant);
 
       final result = await cubit.submit(
@@ -87,7 +92,7 @@ void main() {
     });
 
     test('correo duplicado publica el error', () async {
-      final cubit = RegisterCubit(makeServices().session);
+      final cubit = RegisterCubit(services.session);
 
       final result = await cubit.submit(
         name: 'Diego',
@@ -104,7 +109,6 @@ void main() {
 
   group('UniversityVerificationCubit', () {
     test('envía el código demo y lo deja visible', () async {
-      final services = makeServices();
       services.session.login(kDemoNewBuyerEmail, kDemoPassword);
       final cubit = UniversityVerificationCubit(services.session);
 
@@ -120,7 +124,6 @@ void main() {
     });
 
     test('un código incorrecto no activa Campus', () async {
-      final services = makeServices();
       services.session.login(kDemoNewBuyerEmail, kDemoPassword);
       final cubit = UniversityVerificationCubit(services.session);
       await cubit.sendCode(
@@ -140,7 +143,6 @@ void main() {
     });
 
     test('el código correcto activa Campus y fija vencimiento', () async {
-      final services = makeServices();
       services.session.login(kDemoNewBuyerEmail, kDemoPassword);
       final cubit = UniversityVerificationCubit(services.session);
       await cubit.sendCode(

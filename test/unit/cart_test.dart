@@ -1,12 +1,12 @@
 import 'package:biffy/data/models/cart.dart';
-import 'package:biffy/shared/state/cart_controller.dart';
+import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
 
 void main() {
   late TestServices s;
-  late CartController cart;
+  late CartCubit cart;
   setUp(() async {
     s = await makeServices();
     cart = s.cart;

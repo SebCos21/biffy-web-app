@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../features/orders/bloc/orders_bloc.dart';
-import '../shared/state/cart_controller.dart';
+import '../features/buyer/cart/bloc/cart_cubit.dart';
 import '../shared/state/catalog_controller.dart';
 import '../shared/state/controller_scope.dart';
 import '../shared/state/notification_center.dart';
@@ -89,11 +89,13 @@ class _BiffyAppState extends State<BiffyApp> {
       controllers: {
         SessionController: getIt<SessionController>(),
         CatalogController: getIt<CatalogController>(),
-        CartController: getIt<CartController>(),
         NotificationCenter: getIt<NotificationCenter>(),
       },
-      child: BlocProvider<OrdersBloc>.value(
-        value: getIt<OrdersBloc>(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<OrdersBloc>.value(value: getIt<OrdersBloc>()),
+          BlocProvider<CartCubit>.value(value: getIt<CartCubit>()),
+        ],
         child: _DarkModeBuilder(
           session: getIt<SessionController>(),
           builder: (dark) => MaterialApp.router(

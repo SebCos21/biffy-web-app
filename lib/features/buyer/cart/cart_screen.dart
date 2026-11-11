@@ -10,7 +10,7 @@ import '../../../data/models/cart.dart';
 import '../../../data/models/catalog.dart';
 import '../../../domain/catalog_rules.dart';
 import '../../../domain/pricing.dart';
-import '../../../shared/state/cart_controller.dart';
+import 'bloc/cart_cubit.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
@@ -32,7 +32,7 @@ class CartScreen extends StatefulWidget {
 /// Estado que mantiene la nota del pedido.
 class _CartScreenState extends State<CartScreen> {
   late final TextEditingController _note = TextEditingController(
-    text: getIt<CartController>().restaurantNote,
+    text: getIt<CartCubit>().restaurantNote,
   );
 
   /// Inicializa la nota con el contexto activo.
@@ -52,7 +52,7 @@ class _CartScreenState extends State<CartScreen> {
   /// Construye las opciones del carrito o el estado vacío.
   @override
   Widget build(BuildContext context) {
-    final cart = context.watchController<CartController>();
+    final cart = context.watch<CartCubit>();
     final session = context.watchController<SessionController>();
     final catalog = context.watchController<CatalogController>();
     final orders = context.read<OrdersBloc>();
@@ -75,7 +75,7 @@ class _CartScreenState extends State<CartScreen> {
     final address = session.isLoggedIn ? cartAddress(session, cart) : null;
     final point = address == null ? session.point : pointById(address.pointId);
     final reachable = isReachable(r, point);
-    final draft = draftFromCart(context);
+    final draft = draftFromCart(session, cart);
     final totals = orders.preview(draft);
     final payment = cart.payment ?? session.data.defaultPayment;
     final coupons = session.data.coupons.where((c) => !c.used).toList();
@@ -345,7 +345,7 @@ class _CartScreenState extends State<CartScreen> {
 
   /// Abre el selector de día y hora para programar el pedido.
   Future<void> _schedule(BuildContext context, Restaurant r) async {
-    final cart = getIt<CartController>();
+    final cart = getIt<CartCubit>();
     final when = await showScheduleSheet(
       context,
       restaurant: r,
@@ -358,7 +358,7 @@ class _CartScreenState extends State<CartScreen> {
   /// Abre la hoja para elegir la dirección de entrega.
   Future<void> _pickAddress(BuildContext context) async {
     final session = getIt<SessionController>();
-    final cart = getIt<CartController>();
+    final cart = getIt<CartCubit>();
     await showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -411,7 +411,7 @@ class _CartLine extends StatelessWidget {
   /// Dibuja el producto, su detalle y los controles de la línea.
   @override
   Widget build(BuildContext context) {
-    final cart = getIt<CartController>();
+    final cart = getIt<CartCubit>();
     final d = line.dish;
     final it = line.item;
     final detail = selectionDetail(d, it.selection);

@@ -36,7 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    _cubit = RegisterCubit(getIt<SessionController>());
+    _cubit = getIt<RegisterCubit>();
   }
 
   /// Libera los controladores y el cubit.

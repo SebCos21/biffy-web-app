@@ -166,9 +166,13 @@ remoto** (ver «Cómo probarlo» abajo).
   sesión sigue en `SessionController` para no romper las otras 45 pantallas.
 - `test/architecture_test.dart` impide que los cubits de auth importen `data/`
   o Supabase.
+- **Fase 2 completada:** `CartCubit` reemplaza a `CartController` (se eliminó el
+  archivo) y `CheckoutCubit` maneja el envío, la idempotencia y los errores.
+  El checkout sigue usando `OrdersBloc` como única fuente de pedidos.
 - **Pendiente 1b:** `SessionBloc` que reemplace `SessionController` y migre sus
   consumidores; se hará como slice independiente.
-- Calidad de la rama: `flutter analyze` limpio · **219/219** tests ·
+- **Pendiente 3:** `CatalogBloc`/`ExploreCubit` y el resto de pantallas.
+- Calidad de la rama: `flutter analyze` limpio · **222/222** tests ·
   17 pruebas de integración con credenciales.
 
 ### HU-4 · Gotas, recompensas, cupones, reseñas y notificaciones

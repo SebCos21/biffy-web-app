@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _cubit = LoginCubit(context.read<SessionController>());
+    _cubit = getIt<LoginCubit>();
   }
 
   /// Libera los controladores y el cubit.

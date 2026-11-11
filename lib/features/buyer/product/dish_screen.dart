@@ -9,7 +9,7 @@ import '../../../data/models/cart.dart';
 import '../../../data/models/catalog.dart';
 import '../../../domain/catalog_rules.dart';
 import '../../../domain/pricing.dart';
-import '../../../shared/state/cart_controller.dart';
+import '../cart/bloc/cart_cubit.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
@@ -47,7 +47,7 @@ class _DishScreenState extends State<DishScreen> {
     _initialized = true;
     final line = widget.editLineId == null
         ? null
-        : getIt<CartController>().lineById(widget.editLineId!);
+        : getIt<CartCubit>().lineById(widget.editLineId!);
     if (line != null) {
       _sel = line.selection;
       _qty = line.qty;
@@ -365,7 +365,7 @@ class _DishScreenState extends State<DishScreen> {
                       ? null
                       : () async {
                           if (editing) {
-                            getIt<CartController>().updateLine(
+                            getIt<CartCubit>().updateLine(
                               widget.editLineId!,
                               selection: sel,
                               qty: _qty,

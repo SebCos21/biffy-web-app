@@ -37,7 +37,7 @@ class _CampusScreenState extends State<CampusScreen> {
     super.initState();
     final session = getIt<SessionController>();
     _email.text = session.data.universityEmail ?? '';
-    _verification = UniversityVerificationCubit(session);
+    _verification = getIt<UniversityVerificationCubit>();
   }
 
   /// Libera los controladores del correo, del código y el cubit.
