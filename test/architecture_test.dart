@@ -52,6 +52,14 @@ void main() {
     expect(bad, isEmpty, reason: bad.join('\n'));
   });
 
+  test('los cubits de autenticación no importan data ni Supabase', () {
+    final bad = _violations(
+      'lib/features/auth/bloc',
+      RegExp(r"(\.\./)+data/|supabase"),
+    );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
   test('los repositorios de pedidos implementan la interfaz del dominio', () {
     for (final f in [
       'lib/data/repositories/in_memory_order_repository.dart',

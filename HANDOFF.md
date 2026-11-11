@@ -157,6 +157,20 @@ remoto** (ver «Cómo probarlo» abajo).
 - ⏳ Adjuntar al informe la salida literal de `0099_verify.sql` (la consulta ya
   se ejecutó en el SQL Editor; falta el pantallazo/texto).
 
+### Migración a Bloc · rama `blocs`
+
+- **Fase 1a completada:** `LoginCubit`, `RegisterCubit` y
+  `UniversityVerificationCubit`; `AuthRepository`/`AuthException` viven en
+  `lib/domain/repositories/` con re-export de compatibilidad.
+- Las pantallas de login, registro y Campus usan los cubits; la lógica de
+  sesión sigue en `SessionController` para no romper las otras 45 pantallas.
+- `test/architecture_test.dart` impide que los cubits de auth importen `data/`
+  o Supabase.
+- **Pendiente 1b:** `SessionBloc` que reemplace `SessionController` y migre sus
+  consumidores; se hará como slice independiente.
+- Calidad de la rama: `flutter analyze` limpio · **219/219** tests ·
+  17 pruebas de integración con credenciales.
+
 ### HU-4 · Gotas, recompensas, cupones, reseñas y notificaciones
 
 Rama `hu4-gotas-recompensas-notificaciones`.
