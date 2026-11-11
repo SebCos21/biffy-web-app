@@ -51,7 +51,7 @@
 
 - **Respuesta:** `SessionController`: usuario, rol activo, Gotas, direcciones, preferencias, ajustes y verificación.
 - **Ubicación:** `lib/shared/state/session_controller.dart`
-- **Línea de inicio:** **71**.
+- **Línea de inicio:** **78**.
 
 ### 9. ¿Dónde está el login y qué hace `navigateAfterAuth`?
 
@@ -75,11 +75,11 @@
 
 ### 12. ¿Dónde se verifica el correo universitario y qué RPC llama?
 
-- **Respuesta:** `SessionController.verifyUniversityAsync()` valida el formato y llama `AuthRepository.verifyUniversity()`, que ejecuta `verify_university`.
+- **Respuesta:** `sendUniversityCodeAsync()` envía el código a través de la Edge Function; `confirmUniversityCodeAsync()` confirma el código con el RPC `confirm_university_verification`. La validación antigua es `verifyUniversityAsync`.
 - **Ubicación:** `lib/shared/state/session_controller.dart`
-- **Línea de inicio:** **522**.
-- **Repositorio:** `lib/data/repositories/supabase_auth_repository.dart`, línea **267**.
-- **RPC en SQL:** `supabase/migrations/0003_functions.sql`, línea **218**.
+- **Líneas de inicio:** **550** (`verifyUniversityAsync`), **586** (`sendUniversityCodeAsync`) y **621** (`confirmUniversityCodeAsync`).
+- **Repositorio:** `lib/data/repositories/supabase_auth_repository.dart`, métodos en **267**, **286** y **315**.
+- **RPC en SQL:** `supabase/migrations/0025_university_revalidation.sql` (código, confirmación, revocación y vencimiento).
 
 ### 13. ¿Dónde está la regla de distancia `isReachable`?
 
