@@ -24,7 +24,7 @@
 | HU-1.3 · Cuentas demo con `service_role` | ✅ | `tool/admin_seed.dart` idempotente; las 3 cuentas inician sesión |
 | HU-1.4 · Registro, rol y 450 Gotas | ✅ | Pruebas reales con cuentas nuevas: rol correcto y una sola bienvenida |
 | HU-1.5 · Repartidor y negocio | ✅ | `courier_profiles` persiste; `register_business` crea negocio y sede |
-| HU-1.6 · Verificación universitaria | ✅ | La app llama al RPC; dominio distinto y universidad desconocida devuelven error |
+| HU-1.6 · Verificación universitaria | ✅ | Código de 6 dígitos al correo institucional, vencimiento a 30 días, revalidación y revocación de Campus |
 | HU-1.7 · Guardas de perfil | ✅ | Las pruebas de RLS rechazan cambios de rol, Gotas y verificación |
 | HU-1.8 · Direcciones, preferencias y ajustes | ✅ | Lecturas aisladas y escrituras ajenas rechazadas por RLS |
 | HU-1.9 · Sesión persistente | ✅ | `restoreAsync` y `logoutAsync` cubiertos por pruebas unitarias |
@@ -46,6 +46,11 @@ Diego tiene 332 porque gastó Gotas en pruebas anteriores; su bienvenida sigue
 siendo un solo registro en `gotas_ledger`.
 
 Pendientes administrativos (no bloquean la funcionalidad):
+- Aprobar el correo `FROM_EMAIL` en Resend y configurar `RESEND_API_KEY`,
+  `RESEND_WEBHOOK_SECRET` y `REVALIDATION_SECRET` como secrets de Supabase.
+- Desplegar las Edge Functions `send-university-code`,
+  `university-revalidation` y `resend-webhook`.
+- Programar `university-revalidation` una vez al día en Supabase Cron.
 - Anexar al informe la captura del resumen de `0099_verify.sql`. La forma más
   fácil es ejecutar la **consulta 0** de `tool/verify_hu1.sql`, que devuelve una
   fila con `Biffy OK · N tablas · N políticas RLS · N funciones`.

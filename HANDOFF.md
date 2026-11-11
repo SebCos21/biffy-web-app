@@ -80,7 +80,7 @@ Reglas que **no** se negocian:
 
 | Pieza | Detalle |
 |---|---|
-| Esquema | 29 tablas físicas (24 de negocio + auxiliares), FKs, `CHECK`, índices, `updated_at` por trigger |
+| Esquema | 30 tablas físicas (24 de negocio + auxiliares), FKs, `CHECK`, índices, `updated_at` por trigger |
 | RLS | Políticas por dueño y por rol; probadas con dos usuarios reales |
 | RPC | `place_order`, `restaurant_accept/reject/ready`, `buyer_cancel`, `courier_accept/decline/pickup/deliver`, `redeem_reward`, `verify_university`, `register_business` |
 | Storage | `dish-images` (público), `delivery-evidence` y `merchant-docs` (privados por carpeta) |
@@ -112,6 +112,8 @@ migraciones).
 | `lib/domain/repositories/order_repository.dart` | Interfaz `OrderRepository` + `OrderResult` (mismos códigos en demo y servidor) |
 | `lib/shared/adapters/order_adapters.dart` | Conectan los puertos del dominio con `CatalogController`, `SessionController` y `NotificationCenter` |
 | `tool/admin_seed.dart` | Crea/actualiza las 3 cuentas demo con `service_role` (idempotente) |
+| `supabase/functions/send-university-code/` | Envía el código al correo institucional con Resend |
+| `supabase/functions/university-revalidation/` | Cron: revalida, revoca Campus y avisa |
 | `test/integration/hu1_supabase_test.dart` | 13 pruebas de perfil, verificación y RLS con usuarios reales |
 
 Verificado con un pedido real: `BF-2041` creado, aceptado, listo, asignado,
@@ -144,7 +146,11 @@ remoto** (ver «Cómo probarlo» abajo).
 - ✅ `verify_university` se llama desde la app; el estado verificado se
   rehidrata al volver a iniciar sesión.
 - ✅ Errores de `register_business` y de conexión se muestran en español.
+- ✅ Correo institucional separado del correo personal: código de 6 dígitos,
+  vencimiento a 30 días y revocación de Campus sin bloquear la app.
 - ✅ 13 pruebas de RLS contra el proyecto real (se saltan sin credenciales).
+- ⏳ Configurar `RESEND_API_KEY`/`FROM_EMAIL` y desplegar las Edge Functions;
+  hasta entonces la app usa el código demo visible en la pantalla.
 - ✅ Cuentas demo verificadas en el SQL Editor: Andrés y Qbano conservan 450
   Gotas con una sola bienvenida; Diego tiene 332 porque gastó en pruebas.
   Evidencia: `tool/evidence/hu1_cuentas_demo.csv`.
@@ -179,7 +185,7 @@ Rama `hu4-gotas-recompensas-notificaciones`.
   `supabase/README.md`; prueba final con datos reales.
 
 Calidad actual (HU-3 + HU-4): `flutter analyze` limpio · `flutter test`
-**203/203** (21 pruebas de integración se saltan sin credenciales de Supabase) ·
+**208/208** (21 pruebas de integración se saltan sin credenciales de Supabase) ·
 pruebas SQL **158/158** (HU-3: 87, HU-4: 71).
 
 ---
@@ -353,7 +359,7 @@ falta aplicar `0019`.
 ### Probar la HU-3 (ciclo del pedido)
 
 1. **Base:** SQL Editor → pegar `supabase/apply_all.sql` → Run (debe terminar
-   con `Biffy OK · 29 tablas …`). Si solo falta lo nuevo, basta
+   con `Biffy OK · 30 tablas …`). Si solo falta lo nuevo, basta
    `supabase/migrations/0019_order_cycle.sql`.
 2. **Prueba SQL:** pegar `supabase/tests/hu3_order_cycle.sql` → Run. Debe
    imprimir ~87 líneas `PASS` y ningún `FALLO`; no deja datos (`ROLLBACK`).

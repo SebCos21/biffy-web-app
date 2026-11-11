@@ -7,7 +7,7 @@ Proyecto: `jwdzpwsfwtkdeeuceaco` · URL: `https://jwdzpwsfwtkdeeuceaco.supabase.
 | Fase | Estado |
 |---|---|
 | Esquema, RLS, RPC, Storage y seed de referencia | ✅ escrito en `supabase/migrations/` |
-| Aplicado al proyecto remoto | ⚠️ HU-1 aplicada (0000–0020); faltan `0021`–`0024` (reseñas, notificaciones y envío gratis a 5 Gotas) |
+| Aplicado al proyecto remoto | ⚠️ HU-1 aplicada (0000–0020); faltan `0021`–`0025` (reseñas, notificaciones, envío gratis y revalidación institucional) |
 | App conectada (`supabase_flutter`) | ✅ auth, perfiles, catálogo, pedidos y Storage reales |
 
 La app **sigue funcionando en modo demo local**: sin `SUPABASE_URL` no hace
@@ -55,6 +55,48 @@ esquema desde el panel: así la base queda versionada y reproducible.
 La consulta 0 de `tool/verify_hu1.sql` sirve como captura del resultado de
 `0099` porque `RAISE NOTICE` no aparece como fila en el SQL Editor.
 
+### Verificación del correo institucional (opción B)
+
+La cuenta puede usar un correo personal; el correo institucional es adicional y
+solo habilita Campus. El flujo es:
+
+1. La app llama a la Edge Function `send-university-code`.
+2. La función pide el código al RPC `create_university_verification`
+   (solo `service_role`) y lo envía con **Resend**.
+3. El usuario escribe el código; el RPC `confirm_university_verification`
+   activa `profiles.verified` por **30 días**.
+4. La función programada `university-revalidation` envía un código nuevo antes
+   del vencimiento. Si no se confirma en 7 días, o el correo rebota,
+   `revoke_university_verification` deshabilita Campus y avisa a la cuenta.
+   La app sigue funcionando sin Campus.
+
+**Secrets de Supabase (Edge Functions):**
+
+| Secret | Uso |
+|---|---|
+| `RESEND_API_KEY` | Enviar códigos y avisos con Resend |
+| `FROM_EMAIL` | Remitente verificado en Resend |
+| `UNIVERSITY_DEMO_MODE` | `true` solo para demo: devuelve el código a la app si no hay Resend |
+| `REVALIDATION_SECRET` | Header `x-cron-secret` para invocar la revalidación |
+| `RESEND_WEBHOOK_SECRET` | Firma de los webhooks de Resend (rebotes) |
+
+**Despliegue:**
+
+```bash
+supabase functions deploy send-university-code
+supabase functions deploy university-revalidation
+supabase functions deploy resend-webhook
+```
+
+Programa `university-revalidation` una vez al día (por ejemplo 08:00) desde
+**Supabase → Cron** o con `pg_cron` + `pg_net`. No guardes la `service_role` en
+el repositorio.
+
+En Resend, agrega un webhook hacia
+`https://<ref>.supabase.co/functions/v1/resend-webhook` con los eventos de
+rebote/fallo. Si el correo institucional rebota, Campus se deshabilita en el
+acto y se avisa al correo personal.
+
 ## Estructura
 
 ```text
@@ -87,11 +129,19 @@ supabase/
     0022_order_notifications.sql  # avisos por cambio de pedido + Realtime (HU-4)
     0023_gotas_no_negative.sql    # credit_gotas no descuadra el saldo (HU-4)
     0024_free_shipping_5_gotas.sql # envío gratis cuesta 5 Gotas (HU-4)
+    0025_university_revalidation.sql # código al correo institucional, vencimiento
+                                  # a 30 días y revocación de Campus
     0099_verify.sql               # verifica tablas, columnas y RPC clave
+  functions/
+    send-university-code/         # envía el código al correo con Resend
+    university-revalidation/      # cron: revalida, revoca y avisa
+    resend-webhook/               # rebotes: revoca Campus y avisa
+    _shared/                      # CORS y envío de correo compartido
   tests/
     _supabase_stubs.sql           # auth/storage/roles mínimos para Postgres local
     _demo_accounts.sql            # Diego, Andrés y Qbano para la base local
     hu3_order_cycle.sql           # prueba SQL del ciclo completo (con ROLLBACK)
+    hu1_university.sql            # código, verificación, revalidación y revocación
     hu4_*.sql                     # pruebas de RLS y RPC de HU-4 (con ROLLBACK)
 ```
 
@@ -134,7 +184,7 @@ Decisiones pensadas para no volver a tocar la base:
 
 ## Seguridad
 
-- RLS activo en las 24 tablas de negocio (29 tablas físicas con auxiliares). Sin política = sin acceso.
+- RLS activo en las 24 tablas de negocio (30 tablas físicas con auxiliares). Sin política = sin acceso.
 - El catálogo es público solo en lectura y solo si está activo.
 - Las cuentas bancarias y documentos del negocio **no** son públicos
   (`businesses_public` solo expone marca, cocina y descripción).
@@ -199,9 +249,13 @@ Cada transición escribe en `order_events` quién la hizo y de qué estado a cu�
 (`from_status` → `status`).
 | `redeem_reward(payload)` | comprador | Canjea con Gotas; en cajas sortea un premio ponderado |
 | `use_reward_redemption(code)` | restaurante | Valida el código del plato ganado y lo marca como reclamado |
-| `verify_university(payload)` | comprador | Verifica el correo contra el dominio de la universidad |
+| `verify_university(payload)` | comprador | Valida el dominio; devuelve `token_required` (ya no marca verificado) |
 | `register_business(payload)` | restaurante | Crea negocio + sedes y lo vincula al perfil |
 | `rate_order(payload)` | comprador | Califica un pedido entregado propio (1–5, una vez) y recalcula `branches.rating` |
+| `create_university_verification(...)` | `service_role` | Genera el código y lo entrega solo a la Edge Function |
+| `confirm_university_verification(email, code)` | comprador | Activa Campus por 30 días si el código es correcto |
+| `revoke_university_verification(user, reason)` | `service_role` | Deshabilita Campus por rebote o falta de confirmación |
+| `expire_university_verifications()` | `service_role` | Revoca en lote las verificaciones vencidas |
 
 Todas devuelven `jsonb` con `result` (`ok`, `invalid_state`, `forbidden`,
 `already_assigned`, `wrong_code`, `missing_evidence`, …) para mapear directo a
@@ -270,6 +324,7 @@ existente; así corre en el CI (job `sql-tests`).
 | `hu4_canjes.sql` | cajas, enfriamiento, saldo insuficiente, envío gratis → cupón usable |
 | `hu4_resenas.sql` | solo pedidos propios entregados, una vez, promedio de la sede |
 | `hu4_notificaciones.sql` | avisos por rol en cada estado, privacidad y `read_at` |
+| `hu1_university.sql` | código de 6 dígitos, verificación, revalidación y revocación de Campus |
 
 ## Cuentas demo
 
