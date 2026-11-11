@@ -26,7 +26,7 @@ select format(
 ) as resultado;
 
 
--- 1) Las 28 tablas esperadas por 0099 y si tienen RLS activo.
+-- 1) Las 30 tablas esperadas por 0099 y si tienen RLS activo.
 with esperadas(tabla) as (
   values
     ('_biffy_meta'), ('universities'), ('delivery_points'), ('categories'),
@@ -35,7 +35,8 @@ with esperadas(tabla) as (
     ('coupons'), ('user_coupons'), ('favorite_dishes'), ('favorite_branches'),
     ('notifications'), ('courier_profiles'), ('orders'), ('order_items'),
     ('order_events'), ('order_declines'), ('reviews'), ('gotas_rewards'),
-    ('reward_redemptions'), ('gotas_reward_prizes'), ('box_items')
+    ('reward_redemptions'), ('gotas_reward_prizes'), ('box_items'),
+    ('order_secrets'), ('university_verifications')
 )
 select
   e.tabla,
@@ -127,3 +128,15 @@ from public.businesses b
 where not exists (
   select 1 from public.branches br where br.business_id = b.id
 );
+
+-- 8) Verificación institucional: estado y vencimiento por cuenta.
+select
+  p.email,
+  p.university_email,
+  p.university_status,
+  p.university_expires_at,
+  (p.university_expires_at > now()) as vigente
+from public.profiles p
+where p.university_email is not null
+order by p.email;
+
