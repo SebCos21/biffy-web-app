@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Sin este permiso la versión release no puede hablar con Supabase
+         (solo las builds de depuración lo traen por defecto). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Biffy"
         android:name="${applicationName}"

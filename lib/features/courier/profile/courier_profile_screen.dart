@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -10,6 +9,7 @@ import '../../../data/mock/seed_users.dart';
 import '../../../data/models/user.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../buyer/profile/profile_screen.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Perfil del repartidor con sus datos y accesos de cuenta.
 class CourierProfileScreen extends StatelessWidget {
@@ -18,7 +18,7 @@ class CourierProfileScreen extends StatelessWidget {
   /// Lista los datos de registro y las opciones de sesión.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
+    final session = context.watchController<SessionController>();
     final p = session.data.courierProfile!;
     final t = Theme.of(context).textTheme;
     return Scaffold(

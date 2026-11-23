@@ -8,12 +8,20 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// El dominio es Dart puro: no conoce la UI, Flutter, Supabase ni la capa de
 /// datos. El Bloc solo conoce el dominio.
-List<String> _violations(String dir, RegExp forbidden) {
+List<String> _violations(
+  String dir,
+  RegExp forbidden, {
+  List<String> except = const [],
+}) {
   final bad = <String>[];
   final files = Directory(dir)
       .listSync(recursive: true)
       .whereType<File>()
-      .where((f) => f.path.endsWith('.dart'));
+      .where((f) => f.path.endsWith('.dart'))
+      .where((f) {
+        final path = f.path.replaceAll(r'\', '/');
+        return !except.any(path.contains);
+      });
   for (final f in files) {
     for (final line in f.readAsLinesSync()) {
       final t = line.trimLeft();
@@ -30,7 +38,7 @@ void main() {
       'lib/domain',
       RegExp(
         r"(\.\./)+(data|features|shared|app)/"
-        r"|package:(flutter|flutter_bloc|supabase_flutter|provider|go_router)",
+        r"|package:(flutter|flutter_bloc|supabase_flutter|provider|go_router|get_it)",
       ),
     );
     expect(bad, isEmpty, reason: bad.join('\n'));
@@ -64,6 +72,75 @@ void main() {
       'lib/features',
       RegExp(r"data/repositories/\w*order"),
     );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+
+  test('solo lib/app/di conoce las implementaciones concretas', () {
+    // Ninguna pantalla, controlador ni caso de uso importa un repositorio en
+    // memoria o de Supabase: los piden a GetIt por su interfaz.
+    final bad = _violations(
+      'lib',
+      RegExp(
+        r"(in_memory_\w+|supabase_\w*repository|review_repository_impl)\.dart",
+      ),
+      except: ['lib/app/di/', 'lib/data/'],
+    );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test('Supabase solo lo conocen la capa de datos y el módulo de datos', () {
+    final bad = _violations(
+      'lib',
+      RegExp(r"package:supabase_flutter"),
+      except: ['lib/data/', 'lib/app/di/modules/data_module.dart'],
+    );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test('no queda Provider ni AppServices: todo sale de GetIt', () {
+    final bad = _violations('lib', RegExp(r"package:provider|app_services"));
+    expect(bad, isEmpty, reason: bad.join('\n'));
+    expect(
+      File('lib/shared/state/app_services.dart').existsSync(),
+      isFalse,
+      reason: 'AppServices fue reemplazado por lib/app/di/injection.dart',
+    );
+  });
+
+  test('los módulos de GetIt separan núcleo, datos, dominio y presentación', () {
+    for (final m in ['core', 'data', 'domain', 'presentation']) {
+      expect(
+        File('lib/app/di/modules/${m}_module.dart').existsSync(),
+        isTrue,
+        reason: 'falta el módulo $m',
+      );
+    }
+    final injection = File('lib/app/di/injection.dart').readAsStringSync();
+    expect(injection, contains('registerCoreModule'));
+    expect(injection, contains('registerDataModule'));
+    expect(injection, contains('registerDomainModule'));
+    expect(injection, contains('registerPresentationModule'));
+  });
+
+  test('la única decisión de entorno vive en el módulo de datos', () {
+    final bad = <String>[];
+    final files = Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .where((f) {
+          final path = f.path.replaceAll(r'\', '/');
+          return !path.contains('lib/app/di/modules/data_module.dart') &&
+              !path.contains('lib/core/config/');
+        });
+    for (final f in files) {
+      for (final line in f.readAsLinesSync()) {
+        final code = line.trimLeft();
+        if (code.startsWith('//')) continue; // comentarios y /// no cuentan
+        if (code.contains('AppConfig.hasSupabase')) bad.add('${f.path}: $code');
+      }
+    }
     expect(bad, isEmpty, reason: bad.join('\n'));
   });
 }

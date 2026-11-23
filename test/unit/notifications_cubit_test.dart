@@ -1,17 +1,16 @@
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:biffy/features/buyer/notifications/notifications_cubit.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
 
 void main() {
-  late AppServices s;
+  late TestServices s;
   late NotificationsCubit c;
 
-  setUp(() {
-    s = makeServices();
+  setUp(() async {
+    s = await makeServices();
     s.session.login(kDemoBuyerEmail, kDemoPassword);
     c = NotificationsCubit(center: s.notifications, session: s.session);
   });

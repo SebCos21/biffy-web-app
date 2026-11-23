@@ -15,8 +15,8 @@ void main() {
   late FakeOrderRepository repo;
   late OrdersBloc bloc;
 
-  Order pending() {
-    final s = makeServices();
+  Future<Order> pending() async {
+    final s = await makeServices();
     final base = s.orders.all.firstWhere((o) => o.status == OrderStatus.pending);
     final o = Order(
       id: 'BF-3001',
@@ -46,8 +46,8 @@ void main() {
     return o;
   }
 
-  setUp(() {
-    final s = makeServices();
+  setUp(() async {
+    final s = await makeServices();
     repo = FakeOrderRepository();
     final session = SessionOrderAdapter(s.session);
     bloc = OrdersBloc(
@@ -67,8 +67,8 @@ void main() {
     repo.dispose();
   });
 
-  test('estado inicial: pedidos del repositorio y sin resultado', () {
-    repo.insertSeed(pending());
+  test('estado inicial: pedidos del repositorio y sin resultado', () async {
+    repo.insertSeed(await pending());
     final fresh = OrdersBloc(bloc.useCases);
     addTearDown(fresh.close);
     expect(fresh.state.orders, hasLength(1));
@@ -77,7 +77,7 @@ void main() {
 
   test('un cambio del repositorio refresca la lista y la revisión', () async {
     final first = bloc.state.revision;
-    repo.insertSeed(pending());
+    repo.insertSeed(await pending());
     repo.notifyChanged();
     final state = await bloc.stream.first;
     expect(state.orders, hasLength(1));
@@ -86,7 +86,7 @@ void main() {
   });
 
   test('request devuelve el resultado de la acción y lo deja en el estado', () async {
-    final o = pending();
+    final o = await pending();
     repo.insertSeed(o);
     final outcome = await bloc.request(OrderAccepted(o.id));
 
@@ -98,7 +98,7 @@ void main() {
   });
 
   test('cada resultado tiene un id creciente (para BlocListener)', () async {
-    final o = pending();
+    final o = await pending();
     repo.insertSeed(o);
     final a = await bloc.request(OrderAccepted(o.id));
     final b = await bloc.request(OrderMarkedReady(o.id));
@@ -106,7 +106,7 @@ void main() {
   });
 
   test('un fallo del servidor llega como resultado con mensaje en español', () async {
-    final o = pending();
+    final o = await pending();
     repo.insertSeed(o);
     repo.responses['accept:BF-3001'] = const OrderResult('forbidden');
     final outcome = await bloc.request(OrderAccepted(o.id));
@@ -117,7 +117,7 @@ void main() {
   });
 
   test('doble toque: la segunda petición idéntica se ignora', () async {
-    final o = pending();
+    final o = await pending();
     repo.insertSeed(o);
     repo.gate = Completer<void>();
 
@@ -138,7 +138,7 @@ void main() {
   });
 
   test('acciones sobre pedidos distintos no se bloquean entre sí', () async {
-    final a = pending();
+    final a = await pending();
     repo.insertSeed(a);
     final other = Order(
       id: 'BF-3002',
@@ -175,7 +175,7 @@ void main() {
   });
 
   test('una excepción inesperada no se muestra cruda', () async {
-    final o = pending();
+    final o = await pending();
     repo.insertSeed(o);
     repo.throws = true;
     final outcome = await bloc.request(OrderAccepted(o.id));
@@ -186,8 +186,8 @@ void main() {
     expect(outcome.result.message, contains('Intenta de nuevo'));
   });
 
-  test('las lecturas ven el cambio sin esperar al siguiente estado', () {
-    final o = pending();
+  test('las lecturas ven el cambio sin esperar al siguiente estado', () async {
+    final o = await pending();
     repo.insertSeed(o);
     expect(bloc.byId(o.id), same(o));
     expect(bloc.all, hasLength(1));

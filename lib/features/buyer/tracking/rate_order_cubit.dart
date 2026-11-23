@@ -51,6 +51,21 @@ class RateOrderState {
   String toString() => 'RateOrderState($stars, $status, $error)';
 }
 
+/// Datos de la calificación en curso: el pedido, quién califica y las
+/// estrellas con las que se abre la hoja. Se pasa a GetIt al crear el cubit.
+class RateOrderArgs {
+  /// Agrupa los datos que el cubit necesita además del caso de uso.
+  const RateOrderArgs({
+    required this.order,
+    required this.userId,
+    this.initialStars = 0,
+  });
+
+  final Order order;
+  final String userId;
+  final int initialStars;
+}
+
 /// Cubit de la hoja de calificar: la pantalla solo emite intenciones
 /// (elegir estrellas, enviar) y pinta el estado.
 ///

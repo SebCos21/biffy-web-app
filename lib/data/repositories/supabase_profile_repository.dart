@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
+import '../../domain/repositories/profile_repository.dart';
 import '../models/address.dart';
 import '../models/user.dart';
 
@@ -8,7 +9,7 @@ import '../models/user.dart';
 ///
 /// La sesión trabaja de forma optimista (actualiza memoria y luego escribe):
 /// si una escritura falla, la próxima hidratación corrige el estado.
-class SupabaseProfileRepository {
+class SupabaseProfileRepository implements ProfileRepository {
   SupabaseProfileRepository({sb.SupabaseClient? client})
     : _client = client ?? sb.Supabase.instance.client;
 
@@ -17,6 +18,7 @@ class SupabaseProfileRepository {
   // ------------------------------------------------------ Verificación
 
   /// Lee la verificación universitaria guardada en `profiles`.
+  @override
   Future<({bool verified, String? universityId, String? universityEmail})>
   verification(String userId) async {
     final row = await _client
@@ -37,6 +39,7 @@ class SupabaseProfileRepository {
   // ------------------------------------------------------- Preferencias
 
   /// Lee preferencias y sus banderas de encuesta completada/recompensada.
+  @override
   Future<({Preferences? prefs, bool completed, bool rewarded})> preferences(
     String userId,
   ) async {
@@ -62,6 +65,7 @@ class SupabaseProfileRepository {
   }
 
   /// Guarda las preferencias del usuario.
+  @override
   Future<void> savePreferences(
     String userId,
     Preferences p, {
@@ -78,6 +82,7 @@ class SupabaseProfileRepository {
   }
 
   /// Acredita las 300 Gotas de la encuesta (una sola vez, en el servidor).
+  @override
   Future<int?> completeSurvey() async {
     try {
       final res = await _client.rpc('complete_survey');
@@ -92,6 +97,7 @@ class SupabaseProfileRepository {
   // ------------------------------------------------------------ Ajustes
 
   /// Lee los ajustes de la app del usuario.
+  @override
   Future<AppSettings?> settings(String userId) async {
     final row = await _client
         .from('app_settings')
@@ -112,6 +118,7 @@ class SupabaseProfileRepository {
   }
 
   /// Guarda los ajustes de la app.
+  @override
   Future<void> saveSettings(String userId, AppSettings s) async {
     await _client.from('app_settings').upsert({
       'user_id': userId,
@@ -126,6 +133,7 @@ class SupabaseProfileRepository {
   // ---------------------------------------------------------- Favoritos
 
   /// Lee los platos y sedes favoritas del usuario.
+  @override
   Future<({Set<String> dishes, Set<String> branches})> favorites(
     String userId,
   ) async {
@@ -145,6 +153,7 @@ class SupabaseProfileRepository {
   }
 
   /// Agrega o quita un plato de favoritos.
+  @override
   Future<void> setFavoriteDish(
     String userId,
     String dishId,
@@ -165,6 +174,7 @@ class SupabaseProfileRepository {
   }
 
   /// Agrega o quita una sede de favoritos.
+  @override
   Future<void> setFavoriteBranch(
     String userId,
     String branchId,
@@ -187,6 +197,7 @@ class SupabaseProfileRepository {
   // --------------------------------------------------------- Direcciones
 
   /// Crea una dirección y devuelve su uuid.
+  @override
   Future<String?> addAddress(
     String userId,
     Address a, {
@@ -210,6 +221,7 @@ class SupabaseProfileRepository {
   }
 
   /// Actualiza una dirección existente por su uuid.
+  @override
   Future<void> updateAddress(String dbId, Address a) async {
     await _client
         .from('addresses')
@@ -225,6 +237,7 @@ class SupabaseProfileRepository {
   }
 
   /// Borrado lógico de una dirección.
+  @override
   Future<void> deleteAddress(String dbId) async {
     await _client
         .from('addresses')
@@ -233,6 +246,7 @@ class SupabaseProfileRepository {
   }
 
   /// Marca una dirección como predeterminada (y desmarca las demás).
+  @override
   Future<void> setDefaultAddress(String userId, String dbId) async {
     await _client
         .from('addresses')
@@ -244,6 +258,7 @@ class SupabaseProfileRepository {
   // ------------------------------------------------------------ Cupones
 
   /// Cupones del usuario (premios de caja ya convertidos en cupón).
+  @override
   Future<List<Coupon>> coupons(String userId) async {
     final rows = await _client
         .from('user_coupons')

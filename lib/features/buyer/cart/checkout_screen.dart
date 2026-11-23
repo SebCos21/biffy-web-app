@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -16,6 +15,9 @@ import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'cart_draft.dart';
 import 'cart_screen.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Resumen final y confirmación del pedido de demostración (sin pagos).
 class CheckoutScreen extends StatefulWidget {
@@ -35,9 +37,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<CartController>();
-    context.watch<SessionController>();
-    final catalog = context.watch<CatalogController>();
+    context.watchController<CartController>();
+    context.watchController<SessionController>();
+    final catalog = context.watchController<CatalogController>();
     final orders = context.read<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final draft = draftFromCart(context);
@@ -207,7 +209,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_placing) return;
     setState(() => _placing = true);
     final orders = context.read<OrdersBloc>();
-    final cart = context.read<CartController>();
+    final cart = getIt<CartController>();
     final draft = draftFromCart(context);
     _clientKey ??= newClientKey();
     final outcome = await orders.request(

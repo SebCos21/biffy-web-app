@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
@@ -9,6 +8,9 @@ import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'offer_widgets.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Detalle de una oferta con productos y botones para aceptar o rechazar.
 class OfferDetailScreen extends StatelessWidget {
@@ -19,8 +21,8 @@ class OfferDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
-    final session = context.watch<SessionController>();
-    final catalog = context.read<CatalogController>();
+    final session = context.watchController<SessionController>();
+    final catalog = getIt<CatalogController>();
     final o = orders.byId(id);
     final available =
         o != null && o.status == OrderStatus.ready && o.courierId == null;

@@ -1,10 +1,10 @@
 import 'package:flutter/widgets.dart';
-import 'package:provider/provider.dart';
 
 import '../../../data/models/address.dart';
 import '../../../shared/state/cart_controller.dart';
 import '../../../domain/usecases/orders/checkout_draft.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
 
 /// Dirección elegida para el carrito (o la predeterminada del usuario).
 Address? cartAddress(SessionController session, CartController cart) =>
@@ -12,8 +12,8 @@ Address? cartAddress(SessionController session, CartController cart) =>
 
 /// Construye el borrador del checkout a partir del carrito actual.
 CheckoutDraft draftFromCart(BuildContext context) {
-  final session = context.read<SessionController>();
-  final cart = context.read<CartController>();
+  final session = getIt<SessionController>();
+  final cart = getIt<CartController>();
   return CheckoutDraft(
     buyer: session.user,
     restaurant: cart.restaurant,

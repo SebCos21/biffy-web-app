@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -9,6 +8,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
 import '../../../data/models/user.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
 
 /// Encuesta opcional de 3 pasos: gustos, estilo de vida/alergias, presupuesto.
 class PreferencesScreen extends StatefulWidget {
@@ -22,7 +22,7 @@ class PreferencesScreen extends StatefulWidget {
 /// Estado con el paso actual y las preferencias en edición.
 class _PreferencesScreenState extends State<PreferencesScreen> {
   int _step = 0;
-  late Preferences _p = context.read<SessionController>().prefs;
+  late Preferences _p = getIt<SessionController>().prefs;
 
   /// Agrega o quita un valor del conjunto de selección.
   Set<String> _toggle(Set<String> s, String v) =>
@@ -31,7 +31,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   /// Construye el paso actual y los botones de navegación fijos.
   @override
   Widget build(BuildContext context) {
-    final session = context.read<SessionController>();
+    final session = getIt<SessionController>();
     final t = Theme.of(context).textTheme;
     final titles = [
       'Tus gustos',

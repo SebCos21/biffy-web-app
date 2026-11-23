@@ -10,7 +10,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('flujo completo en dispositivo', (tester) async {
-    final s = makeServices();
+    final s = await makeServices();
     await pumpBiffy(
       tester,
       services: s,

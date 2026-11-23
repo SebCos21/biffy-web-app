@@ -1,3 +1,5 @@
+import 'package:biffy/data/models/catalog.dart';
+import 'package:biffy/domain/usecases/merchant_boxes_usecases.dart';
 import 'package:biffy/data/models/rewards.dart';
 import 'package:biffy/domain/repositories/merchant_boxes_repository.dart';
 import 'package:biffy/features/restaurant_owner/boxes/merchant_boxes_cubit.dart';
@@ -68,11 +70,17 @@ class _FakeBoxes implements MerchantBoxesRepository {
 void main() {
   late _FakeBoxes repo;
   late MerchantBoxesCubit cubit;
-  final dish = makeServices().catalog.dishById('qbano-pollo')!;
+  late Dish dish;
 
-  setUp(() {
+  setUp(() async {
+    dish = (await makeServices()).catalog.dishById('qbano-pollo')!;
     repo = _FakeBoxes();
-    cubit = MerchantBoxesCubit(repo);
+    cubit = MerchantBoxesCubit(
+      repo: repo,
+      load: LoadMerchantBoxes(repo),
+      add: AddDishToBox(repo),
+      claim: ClaimBoxPrize(repo),
+    );
   });
   tearDown(() => cubit.close());
 

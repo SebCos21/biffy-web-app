@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -14,6 +13,8 @@ import '../../../shared/state/notification_center.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../ai/recommendation_input.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Página de inicio del comprador con accesos, promociones y catálogo.
 class HomeScreen extends StatelessWidget {
@@ -22,10 +23,10 @@ class HomeScreen extends StatelessWidget {
   /// Construye la cabecera, las tarjetas y los listados de comida.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
-    final catalog = context.watch<CatalogController>();
+    final session = context.watchController<SessionController>();
+    final catalog = context.watchController<CatalogController>();
     final orders = context.watch<OrdersBloc>();
-    final notifications = context.watch<NotificationCenter>();
+    final notifications = context.watchController<NotificationCenter>();
     final t = Theme.of(context).textTheme;
     final user = session.user;
     final restaurants = catalog.reachableRestaurants;

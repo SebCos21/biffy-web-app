@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../core/widgets/ui.dart';
@@ -8,6 +7,7 @@ import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../shared/state/session_controller.dart';
 import 'login_screen.dart';
+import '../../app/di/injection.dart';
 
 /// Registro con selección de rol. El restaurante abre un formulario ampliado.
 class RegisterScreen extends StatefulWidget {
@@ -51,7 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   /// Crea la cuenta y continúa el flujo según el rol elegido.
   Future<void> _runRegister() async {
     try {
-      final u = await context.read<SessionController>().registerAsync(
+      final u = await getIt<SessionController>().registerAsync(
         name: _name.text,
         email: _email.text,
         password: _password.text,

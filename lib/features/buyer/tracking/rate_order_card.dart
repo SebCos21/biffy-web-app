@@ -5,10 +5,10 @@ import '../../../app/theme/app_colors.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../domain/entities/order.dart';
 import '../../../domain/order_rules.dart';
-import '../../../domain/usecases/rate_order.dart';
 import '../../orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'rate_order_cubit.dart';
+import '../../../app/di/injection.dart';
 
 /// Tarjeta para calificar un pedido entregado, o la calificación ya enviada.
 class RateOrderCard extends StatelessWidget {
@@ -115,19 +115,19 @@ Future<void> showRateOrderSheet(
   Order order,
   int initial,
 ) {
-  final user = context.read<SessionController>().user;
+  final user = getIt<SessionController>().user;
   if (user == null) return Future.value();
-  final rateOrder = context.read<RateOrder>();
   final orders = context.read<OrdersBloc>();
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     builder: (_) => BlocProvider(
-      create: (_) => RateOrderCubit(
-        rateOrder: rateOrder,
-        order: order,
-        userId: user.id,
-        initialStars: initial,
+      create: (_) => getIt<RateOrderCubit>(
+        param1: RateOrderArgs(
+          order: order,
+          userId: user.id,
+          initialStars: initial,
+        ),
       ),
       child: const _RateSheet(),
     ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -12,6 +11,7 @@ import '../../../domain/catalog_rules.dart';
 import '../../../domain/pricing.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Menú de un restaurante con portada, filtros de sección y platos.
 class RestaurantScreen extends StatefulWidget {
@@ -30,8 +30,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   /// Construye la portada, los datos del local y su menú.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watch<CatalogController>();
-    final session = context.watch<SessionController>();
+    final catalog = context.watchController<CatalogController>();
+    final session = context.watchController<SessionController>();
     final t = Theme.of(context).textTheme;
     final r = catalog.restaurantById(widget.id);
     if (r == null) {

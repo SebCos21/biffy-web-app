@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -10,6 +9,8 @@ import '../../../data/models/order.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Describe el pago del pedido tal como lo ve el repartidor.
 String paymentForCourier(Order o) => o.payment == PaymentMethod.cash
@@ -18,7 +19,7 @@ String paymentForCourier(Order o) => o.payment == PaymentMethod.cash
 
 /// Aceptar una oferta: asignación atómica en el estado compartido.
 Future<void> acceptOffer(BuildContext context, Order o) async {
-  final session = context.read<SessionController>();
+  final session = getIt<SessionController>();
   final outcome = await context.read<OrdersBloc>().request(
     OfferAccepted(
       o.id,
@@ -45,7 +46,7 @@ Future<void> acceptOffer(BuildContext context, Order o) async {
 
 /// Rechaza la oferta para este repartidor y avisa al usuario.
 void declineOffer(BuildContext context, Order o) {
-  final session = context.read<SessionController>();
+  final session = getIt<SessionController>();
   context.read<OrdersBloc>().add(OfferDeclined(o.id, session.user!.id));
   showSnack(context, 'Oferta rechazada · no afecta tu nivel');
 }
@@ -59,7 +60,7 @@ class OfferCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final o = order;
-    final catalog = context.read<CatalogController>();
+    final catalog = getIt<CatalogController>();
     final r = catalog.restaurantById(o.restaurantId);
     final t = Theme.of(context).textTheme;
     return Padding(

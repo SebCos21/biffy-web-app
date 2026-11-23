@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/address.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Lista las direcciones guardadas y permite crear, editar o borrar.
 class AddressesScreen extends StatelessWidget {
@@ -15,7 +16,7 @@ class AddressesScreen extends StatelessWidget {
   /// Construye la lista de direcciones con sus acciones.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
+    final session = context.watchController<SessionController>();
     final list = session.data.addresses;
     final def = session.data.defaultAddress?.id;
     return Scaffold(
@@ -149,7 +150,7 @@ class AddressFormScreen extends StatefulWidget {
 /// Estado con los controladores del formulario de dirección.
 class _AddressFormScreenState extends State<AddressFormScreen> {
   final _form = GlobalKey<FormState>();
-  late final SessionController _session = context.read<SessionController>();
+  late final SessionController _session = getIt<SessionController>();
   late final Address? _orig = _session.addressById(widget.id);
   late final _label = TextEditingController(text: _orig?.label);
   late final _line = TextEditingController(text: _orig?.line);

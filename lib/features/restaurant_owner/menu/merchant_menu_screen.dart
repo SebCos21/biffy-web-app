@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -8,6 +7,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Menú del negocio con búsqueda, filtros y acciones por producto.
 class MerchantMenuScreen extends StatefulWidget {
@@ -25,8 +25,8 @@ class _MerchantMenuScreenState extends State<MerchantMenuScreen> {
   /// Lista los productos filtrados con interruptores de disponibilidad.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
-    final catalog = context.watch<CatalogController>();
+    final session = context.watchController<SessionController>();
+    final catalog = context.watchController<CatalogController>();
     final t = Theme.of(context).textTheme;
     final branches = catalog.branchesOf(session.businessId!);
     final all = catalog.productsOf(session.businessId!);

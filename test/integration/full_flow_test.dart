@@ -10,7 +10,7 @@ void main() {
   testWidgets(
     'flujo completo Comprador → Restaurante → Repartidor → Historial',
     (tester) async {
-      final s = makeServices();
+      final s = await makeServices();
       await pumpBiffy(
         tester,
         services: s,
@@ -24,7 +24,7 @@ void main() {
   testWidgets('dos repartidores no pueden tomar el mismo pedido', (
     tester,
   ) async {
-    final s = makeServices();
+    final s = await makeServices();
     final o = await placeQbano(s);
     await s.orders.useCases.acceptOrder(o.id);
     await s.orders.useCases.markOrderReady(o.id);

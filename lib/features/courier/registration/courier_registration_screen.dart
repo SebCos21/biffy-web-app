@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/constants/catalog_constants.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/user.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
 
 /// Placa colombiana de moto: 3 letras, 2 números y 1 letra (p. ej. ABC12D).
 bool isValidMotoPlate(String v) =>
@@ -24,7 +24,7 @@ class CourierRegistrationScreen extends StatefulWidget {
 /// Estado del formulario de registro del repartidor.
 class _CourierRegistrationScreenState extends State<CourierRegistrationScreen> {
   final _form = GlobalKey<FormState>();
-  late final SessionController _s = context.read<SessionController>();
+  late final SessionController _s = getIt<SessionController>();
   late final CourierProfile? _p = _s.data.courierProfile;
   late final _name = TextEditingController(text: _p?.fullName ?? _s.user?.name);
   late final _doc = TextEditingController(text: _p?.docNumber);

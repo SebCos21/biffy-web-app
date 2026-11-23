@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -10,6 +9,8 @@ import '../../../core/widgets/ui.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Campus Live: restaurantes populares de la universidad que entregan en el
 /// punto actual, más la verificación universitaria SIMULADA.
@@ -37,8 +38,8 @@ class _CampusScreenState extends State<CampusScreen> {
   /// Construye el selector de universidad, la verificación y los populares.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
-    final catalog = context.watch<CatalogController>();
+    final session = context.watchController<SessionController>();
+    final catalog = context.watchController<CatalogController>();
     final orders = context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final uniId = _uniId ?? session.universityId ?? 'icesi';

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
@@ -17,6 +16,9 @@ import '../../../shared/state/session_controller.dart';
 import '../cart/cart_screen.dart';
 import '../orders/reorder_flow.dart';
 import 'rate_order_card.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Seguimiento del pedido con línea de tiempo, código y resumen.
 class TrackingScreen extends StatelessWidget {
@@ -27,7 +29,7 @@ class TrackingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
-    final session = context.watch<SessionController>();
+    final session = context.watchController<SessionController>();
     final t = Theme.of(context).textTheme;
     final o = orders.byId(id);
     if (o == null || (session.user != null && o.buyerId != session.user!.id)) {
@@ -334,8 +336,8 @@ class _DemoControls extends StatelessWidget {
   /// Dibuja los atajos según la etapa del pedido.
   @override
   Widget build(BuildContext context) {
-    final session = context.read<SessionController>();
-    final catalog = context.read<CatalogController>();
+    final session = getIt<SessionController>();
+    final catalog = getIt<CatalogController>();
     final r = catalog.restaurantById(order.restaurantId);
     final owner = r == null ? null : session.auth.byBusiness(r.businessId);
     final kitchen =

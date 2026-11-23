@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../core/navigation/shells.dart';
 import '../core/widgets/ui.dart';
@@ -45,6 +44,8 @@ import '../features/restaurant_owner/profile/merchant_profile_screen.dart';
 import '../features/restaurant_owner/registration/merchant_registration_screen.dart';
 import '../features/restaurant_owner/statistics/merchant_stats_screen.dart';
 import '../shared/state/session_controller.dart';
+import 'di/injection.dart';
+import '../shared/state/controller_scope.dart';
 
 /// Rutas del comprador que requieren cuenta (explorar nunca la requiere).
 const kBuyerProtected = [
@@ -100,7 +101,7 @@ class _RoleScopeState extends State<RoleScope> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final s = context.read<SessionController>();
+      final s = getIt<SessionController>();
       if (s.activeRole != widget.role) s.setActiveRole(widget.role);
     });
   }
@@ -110,7 +111,7 @@ class _RoleScopeState extends State<RoleScope> {
   Widget build(BuildContext context) {
     // Si la sesión dejó de cumplir los requisitos del rol (p. ej. al cambiar
     // de cuenta), no se construyen sus pantallas mientras el router redirige.
-    final s = context.watch<SessionController>();
+    final s = context.watchController<SessionController>();
     final allowed = switch (widget.role) {
       UserRole.buyer => true,
       UserRole.courier => s.isLoggedIn && s.hasCourierProfile,

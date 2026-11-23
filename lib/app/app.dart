@@ -3,24 +3,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../shared/state/app_services.dart';
-import '../shared/state/session_controller.dart';
 import '../features/orders/bloc/orders_bloc.dart';
+import '../shared/state/cart_controller.dart';
+import '../shared/state/catalog_controller.dart';
+import '../shared/state/controller_scope.dart';
+import '../shared/state/notification_center.dart';
+import '../shared/state/session_controller.dart';
+import 'di/injection.dart';
 import 'router.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 
-/// Raíz de la app: providers de estado, tema y router.
+/// Raíz de la app: estado (desde GetIt), tema y router.
+///
+/// Requiere que `configureDependencies()` ya se haya ejecutado.
 class BiffyApp extends StatefulWidget {
-  const BiffyApp({
-    super.key,
-    required this.services,
-    this.initialLocation = '/splash',
-  });
+  const BiffyApp({super.key, this.initialLocation = '/splash'});
 
-  final AppServices services;
   final String initialLocation;
 
   /// Crea el estado raíz de la app.
@@ -31,7 +32,7 @@ class BiffyApp extends StatefulWidget {
 /// Estado que crea el router una sola vez y escucha el modo oscuro.
 class _BiffyAppState extends State<BiffyApp> {
   late final GoRouter _router = buildRouter(
-    widget.services.session,
+    getIt<SessionController>(),
     initialLocation: widget.initialLocation,
   );
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -51,7 +52,7 @@ class _BiffyAppState extends State<BiffyApp> {
     super.initState();
     // Errores del servidor ya traducidos (aceptar, rechazar, marcar listo…):
     // los botones sin resultado propio los muestran por aquí.
-    _orderErrors = widget.services.orders.stream.listen((state) {
+    _orderErrors = getIt<OrdersBloc>().stream.listen((state) {
       final o = state.outcome;
       if (o == null || o.id <= _lastOutcome) return;
       _lastOutcome = o.id;
@@ -81,26 +82,75 @@ class _BiffyAppState extends State<BiffyApp> {
     super.dispose();
   }
 
-  /// Envuelve la app con los servicios, el tema y el router configurado.
+  /// Envuelve la app con el estado compartido, el tema y el router.
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: widget.services.providers,
-      child: Selector<SessionController, bool>(
-        selector: (_, s) => s.settings.darkMode,
-        builder: (_, dark, _) => MaterialApp.router(
-          title: 'Biffy',
-          debugShowCheckedModeBanner: false,
-          scaffoldMessengerKey: _messengerKey,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-          locale: const Locale('es', 'CO'),
-          supportedLocales: const [Locale('es', 'CO'), Locale('es')],
-          localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          routerConfig: _router,
+    return ControllerScope(
+      controllers: {
+        SessionController: getIt<SessionController>(),
+        CatalogController: getIt<CatalogController>(),
+        CartController: getIt<CartController>(),
+        NotificationCenter: getIt<NotificationCenter>(),
+      },
+      child: BlocProvider<OrdersBloc>.value(
+        value: getIt<OrdersBloc>(),
+        child: _DarkModeBuilder(
+          session: getIt<SessionController>(),
+          builder: (dark) => MaterialApp.router(
+            title: 'Biffy',
+            debugShowCheckedModeBanner: false,
+            scaffoldMessengerKey: _messengerKey,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+            locale: const Locale('es', 'CO'),
+            supportedLocales: const [Locale('es', 'CO'), Locale('es')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            routerConfig: _router,
+          ),
         ),
       ),
     );
   }
+}
+
+/// Reconstruye el tema solo cuando cambia el modo oscuro de la sesión.
+class _DarkModeBuilder extends StatefulWidget {
+  const _DarkModeBuilder({required this.session, required this.builder});
+
+  final SessionController session;
+  final Widget Function(bool dark) builder;
+
+  /// Crea el estado que escucha el ajuste.
+  @override
+  State<_DarkModeBuilder> createState() => _DarkModeBuilderState();
+}
+
+/// Estado: recuerda el último valor del modo oscuro.
+class _DarkModeBuilderState extends State<_DarkModeBuilder> {
+  late bool _dark = widget.session.settings.darkMode;
+
+  /// Empieza a escuchar la sesión.
+  @override
+  void initState() {
+    super.initState();
+    widget.session.addListener(_onSession);
+  }
+
+  /// Redibuja solo si el modo oscuro cambió.
+  void _onSession() {
+    final dark = widget.session.settings.darkMode;
+    if (dark != _dark) setState(() => _dark = dark);
+  }
+
+  /// Deja de escuchar la sesión.
+  @override
+  void dispose() {
+    widget.session.removeListener(_onSession);
+    super.dispose();
+  }
+
+  /// Construye la app con el modo actual.
+  @override
+  Widget build(BuildContext context) => widget.builder(_dark);
 }

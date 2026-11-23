@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -11,6 +10,8 @@ import '../../../data/models/catalog.dart';
 import '../../../domain/catalog_rules.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Buscador de platos y restaurantes con filtros rápidos y avanzados.
 class ExploreScreen extends StatefulWidget {
@@ -88,8 +89,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
   /// Construye el buscador, los filtros y los resultados.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watch<CatalogController>();
-    final session = context.watch<SessionController>();
+    final catalog = context.watchController<CatalogController>();
+    final session = context.watchController<SessionController>();
     final t = Theme.of(context).textTheme;
     final results = _results(catalog, session);
     final browsing = _filters.isEmpty;
@@ -393,8 +394,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   /// Abre la hoja de filtros avanzados y aplica el resultado.
   Future<void> _openFilters(BuildContext context) async {
-    final catalog = context.read<CatalogController>();
-    final session = context.read<SessionController>();
+    final catalog = getIt<CatalogController>();
+    final session = getIt<SessionController>();
     final result = await showModalBottomSheet<DishFilters>(
       context: context,
       isScrollControlled: true,

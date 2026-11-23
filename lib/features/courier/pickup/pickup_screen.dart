@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
@@ -10,6 +9,9 @@ import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../offers/offer_widgets.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Recogida: exige los tres checks antes de confirmar.
 class PickupScreen extends StatefulWidget {
@@ -28,8 +30,8 @@ class _PickupScreenState extends State<PickupScreen> {
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
-    final session = context.watch<SessionController>();
-    final catalog = context.read<CatalogController>();
+    final session = context.watchController<SessionController>();
+    final catalog = getIt<CatalogController>();
     final t = Theme.of(context).textTheme;
     final o = orders.byId(widget.id);
     if (o == null || o.courierId != session.user?.id) {

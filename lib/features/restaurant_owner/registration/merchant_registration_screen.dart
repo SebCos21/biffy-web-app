@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -14,6 +13,7 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/notification_center.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
 
 const _docs = {
   'rut': 'RUT',
@@ -38,7 +38,7 @@ class _MerchantRegistrationScreenState
   static int _seq = 0;
   final _forms = List.generate(6, (_) => GlobalKey<FormState>());
   int _step = 0;
-  late final SessionController _session = context.read<SessionController>();
+  late final SessionController _session = getIt<SessionController>();
 
   final _owner = TextEditingController();
   final _ownerDoc = TextEditingController();
@@ -150,8 +150,8 @@ class _MerchantRegistrationScreenState
 
   /// Crea la cuenta si hace falta, guarda el negocio y navega al menú.
   Future<void> _runFinish() async {
-    final catalog = context.read<CatalogController>();
-    final notifications = context.read<NotificationCenter>();
+    final catalog = getIt<CatalogController>();
+    final notifications = getIt<NotificationCenter>();
 
     try {
       if (!_session.isLoggedIn) {

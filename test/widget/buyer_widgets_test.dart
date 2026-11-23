@@ -1,6 +1,5 @@
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/core/utils/clock.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:biffy/core/utils/format.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:flutter/material.dart';
@@ -228,7 +227,7 @@ void main() {
   });
 
   testWidgets('de noche se ofrece el horario de demostración', (tester) async {
-    final s = AppServices.demo(
+    final s = await makeServices(
       clock: Clock.fixed(DateTime(2026, 10, 20, 23, 30)),
     );
     await pumpBiffy(tester, services: s);

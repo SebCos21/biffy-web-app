@@ -7,7 +7,7 @@ import '../../data/models/app_notification.dart';
 import '../../data/models/catalog.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../data/repositories/supabase_profile_repository.dart';
+import '../../domain/repositories/profile_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
 import 'notification_center.dart';
 
@@ -74,7 +74,7 @@ class SessionController extends ChangeNotifier {
     this._auth,
     this._notifications,
     this._clock, {
-    SupabaseProfileRepository? profile,
+    ProfileRepository? profile,
     NotificationRepository? notificationsRepo,
   }) : _profile = profile, // ignore: prefer_initializing_formals
        _notificationsRepo = notificationsRepo; // ignore: prefer_initializing_formals
@@ -84,7 +84,7 @@ class SessionController extends ChangeNotifier {
   final Clock _clock;
 
   /// Repositorio de datos personales; null en modo demo.
-  final SupabaseProfileRepository? _profile;
+  final ProfileRepository? _profile;
 
   /// Avisos guardados en la base; `null` en modo demo.
   final NotificationRepository? _notificationsRepo;

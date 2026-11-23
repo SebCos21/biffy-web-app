@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
@@ -12,11 +11,13 @@ import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../cart/cart_screen.dart';
+import '../../../app/di/injection.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Evalúa si un pedido anterior se puede repetir en el catálogo actual.
 ReorderCheck _check(BuildContext context, Order order) {
-  final catalog = context.read<CatalogController>();
-  final cart = context.read<CartController>();
+  final catalog = getIt<CatalogController>();
+  final cart = getIt<CartController>();
   final r = catalog.restaurantById(order.restaurantId);
   return checkReorder(
     order,
@@ -63,7 +64,7 @@ Future<void> reorderToCart(BuildContext context, Order order) async {
   final c = _check(context, order);
   if (!await _showWarnings(context, c, confirm: 'Agregar al carrito')) return;
   if (!context.mounted) return;
-  final cart = context.read<CartController>();
+  final cart = getIt<CartController>();
   if (!cart.isEmpty) {
     final ok = await showConfirm(
       context,
@@ -85,7 +86,7 @@ Future<void> orderNow(BuildContext context, Order order) async {
   final c = _check(context, order);
   if (!await _showWarnings(context, c, confirm: 'Continuar')) return;
   if (!context.mounted) return;
-  final session = context.read<SessionController>();
+  final session = getIt<SessionController>();
   final orders = context.read<OrdersBloc>();
   final draft = CheckoutDraft(
     buyer: session.user,

@@ -1,19 +1,20 @@
 import 'package:flutter/widgets.dart';
-import 'package:provider/provider.dart';
 
 import '../../../data/models/order.dart';
 import '../../../domain/recommendation.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Construye la entrada del motor de recomendaciones desde el estado actual.
 RecommendationInput buildRecommendationInput(
   BuildContext context, {
   int seed = 0,
 }) {
-  final session = context.read<SessionController>();
-  final catalog = context.read<CatalogController>();
+  final session = getIt<SessionController>();
+  final catalog = getIt<CatalogController>();
   final orders = context.read<OrdersBloc>();
   final user = session.user;
   final history = <String>[

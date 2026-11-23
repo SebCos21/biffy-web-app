@@ -5,9 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
-import '../../../shared/state/notification_center.dart';
-import '../../../shared/state/session_controller.dart';
 import 'notifications_cubit.dart';
+import '../../../app/di/injection.dart';
 
 /// Notificaciones locales del rol activo; cada una abre su pantalla.
 class NotificationsScreen extends StatelessWidget {
@@ -17,10 +16,7 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => NotificationsCubit(
-        center: context.read<NotificationCenter>(),
-        session: context.read<SessionController>(),
-      ),
+      create: (_) => getIt<NotificationsCubit>(),
       child: BlocBuilder<NotificationsCubit, NotificationsState>(
         builder: (context, state) => _NotificationsView(state: state),
       ),

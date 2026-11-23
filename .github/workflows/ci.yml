@@ -12,9 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Versión fija: la misma con la que se desarrolla (pubspec exige Dart
+      # ^3.12.2). Con `channel: stable` sin versión, un Flutter más nuevo
+      # (3.50) marca `package:flutter/material.dart` como obsoleto y
+      # `flutter analyze` falla aunque el código no haya cambiado.
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.44.8
           cache: true
 
       - name: Dependencias

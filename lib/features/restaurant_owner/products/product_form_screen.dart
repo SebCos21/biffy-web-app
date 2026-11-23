@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -11,6 +10,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
 
 /// Fila editable de un tamaño o extra del producto.
 class _OptionRow {
@@ -34,8 +34,8 @@ class ProductFormScreen extends StatefulWidget {
 /// Estado del formulario que crea o edita un producto del menú.
 class _ProductFormScreenState extends State<ProductFormScreen> {
   final _form = GlobalKey<FormState>();
-  late final CatalogController _catalog = context.read<CatalogController>();
-  late final String _biz = context.read<SessionController>().businessId!;
+  late final CatalogController _catalog = getIt<CatalogController>();
+  late final String _biz = getIt<SessionController>().businessId!;
   late final Dish? _orig = widget.id == 'nuevo'
       ? null
       : _catalog.dishById(widget.id);
