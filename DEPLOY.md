@@ -122,6 +122,62 @@ Y manualmente, con las tres cuentas demo:
 
 ---
 
+## 9. Android: generar el AAB firmado (entrega final)
+
+**Requisitos:** Android SDK (Android Studio o `cmdline-tools`) y JDK 17.
+`flutter config --android-sdk <ruta>` y `flutter doctor` deben mostrar el
+Android toolchain en verde.
+
+**Firma.** El release se firma con `android/app/biffy-release.jks` y las
+credenciales de `android/key.properties`. **Ninguno de los dos se sube a git**
+(están en `.gitignore`): guarda una copia segura del `.jks` y de sus claves; sin
+ellos no se puede publicar una actualización de la misma app. Formato de
+`key.properties`:
+
+```properties
+storePassword=<clave>
+keyPassword=<clave>
+keyAlias=biffy
+storeFile=biffy-release.jks
+```
+
+Para crear un `.jks` nuevo:
+
+```bash
+keytool -genkeypair -v -keystore android/app/biffy-release.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 -alias biffy
+```
+
+**Generar el AAB** (con las credenciales de Supabase dentro de la app):
+
+```bash
+flutter build appbundle --release --dart-define-from-file=env.json
+```
+
+Salida: `build/app/outputs/bundle/release/app-release.aab`. Sin
+`--dart-define-from-file` la app arranca en modo demo (sin red).
+
+**Instalarlo en un dispositivo.** Un `.aab` no se instala directamente; hay dos
+caminos:
+
+1. **APK universal** (lo más rápido para probar):
+   ```bash
+   flutter build apk --release --dart-define-from-file=env.json
+   adb install build/app/outputs/flutter-apk/app-release.apk
+   ```
+2. **Desde el AAB** con `bundletool`:
+   ```bash
+   java -jar bundletool.jar build-apks --bundle=app-release.aab \
+     --output=biffy.apks --mode=universal \
+     --ks=android/app/biffy-release.jks --ks-key-alias=biffy
+   java -jar bundletool.jar install-apks --apks=biffy.apks
+   ```
+
+El permiso `INTERNET` está declarado en el manifiesto principal: sin él la
+versión release no puede conectarse a Supabase (la de depuración sí).
+
+---
+
 ## Checklist final
 
 - [ ] Migraciones aplicadas y `0099_verify` en verde

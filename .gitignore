@@ -42,3 +42,6 @@ supabase/.branches/
 node_modules
 legacy_web/node_modules
 legacy_web/dist
+
+# Entregables compilados (AAB/APK firmados)
+dist/
