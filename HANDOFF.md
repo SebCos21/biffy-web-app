@@ -59,7 +59,7 @@ Pantalla ──► Cubit (lib/features/**/x_cubit.dart)
 ```
 
 Cubits de HU-4: `RateOrderCubit`, `RewardsCubit`, `MerchantBoxesCubit`,
-`NotificationsCubit`, `EarningsCubit`. Se inyectan desde `AppServices.providers`.
+`NotificationsCubit`, `EarningsCubit`. Se crean con GetIt (`getIt<…Cubit>()`), uno nuevo por pantalla.
 
 Reglas que **no** se negocian:
 
@@ -69,7 +69,8 @@ Reglas que **no** se negocian:
   `OrderRepository`; ninguna pantalla toca `Order` ni los repositorios.
 - Las reglas de negocio (precios, filtros, transiciones, horarios) son funciones
   puras en `lib/domain/` con tests.
-- `AppServices.demo()` debe seguir funcionando: **los 104 tests dependen de él**.
+- El modo demo (sin credenciales de Supabase) debe seguir funcionando: las pruebas lo
+  levantan con `makeServices()` (GetIt en memoria, reloj fijo).
 
 ---
 
@@ -102,7 +103,9 @@ migraciones).
 | `lib/data/repositories/supabase_order_repository.dart` | Pedidos: caché + RPC con resultado tipado (`RpcResult`), recarga tras cada RPC, Realtime + sondeo de 30 s, sube evidencia |
 | `lib/data/repositories/rpc_result.dart` | Respuesta normalizada de un RPC (`code`, `data`, `order`) |
 | `lib/domain/order_errors.dart` | `result` del servidor → mensaje en español (con tests) |
-| `lib/shared/state/app_services.dart` | `AppServices.demo()` y `AppServices.supabase()` |
+| `lib/app/di/injection.dart` | Raíz de composición con **GetIt**: `configureDependencies()` registra los módulos `core`, `data`, `domain` y `presentation` (`lib/app/di/modules/`) |
+| `lib/app/di/bootstrap.dart` | `bootstrapApp()`: restaura la sesión (Supabase) o carga los datos demo |
+| `lib/shared/state/controller_scope.dart` | `ControllerScope` + `context.watchController<T>()`: redibujan las pantallas cuando cambia un controlador, sin Provider |
 | `lib/shared/state/session_controller.dart` | `loginAsync`, `registerAsync`, `restoreAsync`, hidratación remota y persistencia de perfil |
 | `lib/features/orders/bloc/` | `OrdersBloc`: eventos → casos de uso → `OrdersState` (`orders`, `revision`, `outcome`). Con servidor, **el servidor decide**: llama al RPC y el estado llega con la recarga |
 | `lib/domain/usecases/orders/` | `PlaceOrder`, `CancelOrder`, `AcceptOrder`, `RejectOrder`, `MarkOrderReady`, `AcceptOffer`, `DeclineOffer`, `ConfirmPickup`, `CompleteDelivery`, `OrderQueries`; se ensamblan en `OrderUseCases` |

@@ -12,7 +12,8 @@ Biffy es una aplicación de domicilios de comida para estudiantes universitarios
 | Capa | Tecnología |
 |---|---|
 | UI | Flutter 3.44 · Material 3 · tema propio (claro/oscuro) |
-| Estado | `provider` + `ChangeNotifier` (`AppServices` como contenedor de dependencias) |
+| Estado | `flutter_bloc` (Bloc/Cubit) + controladores `ChangeNotifier` aún sin migrar |
+| Inyección de dependencias | `get_it` (`lib/app/di/`) |
 | Navegación | `go_router` con un `StatefulShellRoute` por rol y guardas por sesión |
 | Datos | Repositorios en memoria detrás de interfaces (`lib/data/repositories/`) |
 | Reglas de negocio | Funciones puras en `lib/domain/` |
@@ -82,8 +83,9 @@ Sin esas variables la app arranca igual, en **modo demo local** y sin red.
 
 ```text
 lib/
-  main.dart                  # Punto de entrada (AppServices.demo())
+  main.dart                  # Punto de entrada (configureDependencies + bootstrapApp)
   app/                       # BiffyApp, router (go_router), tema (colores, tipografía)
+    di/                      # GetIt: injection.dart, bootstrap.dart y modules/ (core, data, domain, presentation)
   core/
     constants/               # Categorías, universidades, puntos de entrega, valores demo
     navigation/              # Shells con navegación inferior por rol + barra del carrito
@@ -102,7 +104,7 @@ lib/
                              # support, payments, addresses, campus, profile
     courier/                 # registration, home, offers, pickup, delivery, earnings, profile
     restaurant_owner/        # registration, home, orders, menu, products, statistics, profile
-  shared/state/              # Controladores ChangeNotifier + AppServices (inyección)
+  shared/state/              # Controladores ChangeNotifier y ControllerScope
 test/
   unit/  widget/  integration/   # 104 pruebas (sin dispositivo)
   helpers.dart
@@ -116,11 +118,11 @@ assets/
 
 ## Arquitectura
 
-- **Estado:** `AppServices` construye y conecta `SessionController`, `CatalogController`, `CartController`, `OrderService` y `NotificationCenter` sobre repositorios. Las pruebas crean su propio `AppServices` con reloj fijo y semilla aleatoria, por lo que son deterministas.
+- **Inyección de dependencias:** GetIt registra todo en `lib/app/di/`. El módulo de datos decide entre Supabase y memoria según `AppConfig.hasSupabase`; los casos de uso son `Factory`, los repositorios y controladores `LazySingleton`. Las pruebas llaman a `makeServices()` (reinicia GetIt con reloj fijo y semilla aleatoria), por lo que son deterministas.
 - **Reglas fuera de la UI:** `pricing.dart`, `catalog_rules.dart` (regla única de cobertura `isReachable`), `order_rules.dart` (tabla `kAllowedTransitions`, pago al repartidor, métricas), `scheduling.dart`, `recommendation.dart`, `assistant.dart`, `reorder.dart`.
-- **Pedidos compartidos:** `OrderService` es el único que cambia estados. La aceptación del repartidor es atómica: si el pedido ya tiene repartidor devuelve `alreadyAssigned`.
+- **Pedidos compartidos:** `OrdersBloc` (casos de uso → `OrderRepository`) es el único que cambia estados. La aceptación del repartidor es atómica: si el pedido ya tiene repartidor devuelve `alreadyAssigned`.
 - **Navegación:** `lib/app/router.dart` concentra las rutas. El comprador explora sin sesión; checkout, pedidos, recompensas, favoritos, direcciones y pagos exigen cuenta y conservan la ruta de origen (`/login?from=…`). `/repartidor/*` exige perfil de repartidor y `/negocio/*` un negocio vinculado.
-- **Preparado para backend:** `CatalogRepository`, `OrderRepository` y `AuthRepository` son interfaces; la implementación remota se inyecta en `AppServices` sin tocar las pantallas.
+- **Preparado para backend:** `CatalogRepository`, `OrderRepository` y `AuthRepository` son interfaces; la implementación remota se registra en GetIt (`data_module.dart`) sin tocar las pantallas.
 
 ## Roles y flujo de demostración
 
