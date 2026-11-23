@@ -8,7 +8,7 @@ void main() {
   testWidgets(
     'el comprador califica su pedido entregado desde el seguimiento',
     (tester) async {
-      final s = makeServices();
+      final s = await makeServices();
       final o = await deliverQbano(s);
       await pumpBiffy(tester, services: s, initialLocation: '/pedido/${o.id}');
 
@@ -36,7 +36,7 @@ void main() {
   testWidgets('un pedido sin entregar no muestra la tarjeta de calificar', (
     tester,
   ) async {
-    final s = makeServices();
+    final s = await makeServices();
     final o = await placeQbano(s);
     expect(o.status, OrderStatus.pending);
     await pumpBiffy(tester, services: s, initialLocation: '/pedido/${o.id}');

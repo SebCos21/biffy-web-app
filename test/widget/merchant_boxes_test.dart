@@ -8,7 +8,7 @@ void main() {
   testWidgets('en modo demo las cajas avisan que requieren Supabase', (
     tester,
   ) async {
-    final s = makeServices();
+    final s = await makeServices();
     s.session.login(kDemoRestaurantEmail, kDemoPassword);
     await pumpBiffy(tester, services: s, initialLocation: '/negocio/cajas');
     expect(find.text('Solo con Supabase'), findsOneWidget);

@@ -1,6 +1,5 @@
 import 'package:biffy/data/models/order.dart';
 import 'package:biffy/domain/order_rules.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,7 +26,7 @@ Future<void> switchDemoAccount(WidgetTester tester, String userId) async {
 
 /// Flujo completo comprador → restaurante → repartidor → historial, todo
 /// mediante la interfaz y sobre el mismo estado compartido.
-Future<void> runFullOrderFlow(WidgetTester tester, AppServices s) async {
+Future<void> runFullOrderFlow(WidgetTester tester, TestServices s) async {
   // 1. El comprador abre la app y explora sin sesión.
   await tester.pump(const Duration(seconds: 2));
   await tester.pumpAndSettle();

@@ -6,19 +6,18 @@ import 'package:biffy/domain/entities/order.dart';
 import 'package:biffy/domain/entities/user.dart';
 import 'package:biffy/domain/order_rules.dart';
 import 'package:biffy/domain/usecases/orders/order_usecases.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
 
-AppUser user(AppServices s, String id) => s.session.auth.byId(id)!;
+AppUser user(TestServices s, String id) => s.session.auth.byId(id)!;
 
 /// Casos de uso del ciclo del pedido sobre el repositorio en memoria (demo).
 void main() {
-  late AppServices s;
+  late TestServices s;
   late OrderUseCases uc;
-  setUp(() {
-    s = makeServices();
+  setUp(() async {
+    s = await makeServices();
     uc = s.orders.useCases;
   });
 

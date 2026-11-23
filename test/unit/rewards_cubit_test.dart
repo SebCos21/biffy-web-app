@@ -3,6 +3,7 @@ import 'package:biffy/domain/repositories/rewards_repository.dart';
 import 'package:biffy/domain/rewards_rules.dart';
 import 'package:biffy/features/buyer/rewards/rewards_cubit.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:biffy/domain/usecases/rewards_usecases.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final _now = DateTime(2026, 11, 10, 12);
@@ -57,6 +58,18 @@ class FakeRewards implements RewardsRepository {
   }
 }
 
+/// Arma el cubit con sus casos de uso sobre un repositorio de prueba.
+RewardsCubit _cubit(
+  RewardsRepository repo, {
+  Future<void> Function()? refreshBalance,
+  DateTime Function()? now,
+}) => RewardsCubit(
+  load: LoadRewards(repo),
+  redeem: RedeemReward(repo),
+  refreshBalance: refreshBalance ?? () async {},
+  now: now,
+);
+
 void main() {
   group('Reglas de recarga', () {
     test('una caja con enfriamiento vuelve a estar disponible a las 12 h', () {
@@ -99,7 +112,7 @@ void main() {
   group('RewardsCubit', () {
     blocTest<RewardsCubit, RewardsState>(
       'carga cajas, historial y movimientos',
-      build: () => RewardsCubit(FakeRewards(), refreshBalance: () async {}),
+      build: () => _cubit(FakeRewards()),
       act: (c) => c.load(),
       verify: (c) {
         expect(c.state.status, RewardsStatus.ready);
@@ -111,7 +124,7 @@ void main() {
     blocTest<RewardsCubit, RewardsState>(
       'si la base falla queda en error',
       build: () =>
-          RewardsCubit(FakeRewards(fail: true), refreshBalance: () async {}),
+          _cubit(FakeRewards(fail: true)),
       act: (c) => c.load(),
       verify: (c) => expect(c.state.status, RewardsStatus.error),
     );
@@ -121,7 +134,7 @@ void main() {
       () async {
         final repo = FakeRewards();
         var refreshed = 0;
-        final c = RewardsCubit(
+        final c = _cubit(
           repo,
           refreshBalance: () async => refreshed++,
           now: () => _now,

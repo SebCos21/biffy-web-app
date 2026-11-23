@@ -1,14 +1,13 @@
 import 'package:biffy/domain/order_rules.dart';
 import 'package:biffy/domain/usecases/get_courier_earnings.dart';
 import 'package:biffy/features/courier/earnings/earnings_cubit.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
 
 void main() {
-  late AppServices s;
-  setUp(() => s = makeServices());
+  late TestServices s;
+  setUp(() async => s = await makeServices());
 
   group('GetCourierEarnings', () {
     test(

@@ -1,4 +1,16 @@
+import 'dart:math' as math;
+
 import 'package:biffy/app/app.dart';
+import 'package:biffy/app/di/bootstrap.dart';
+import 'package:biffy/app/di/injection.dart';
+import 'package:biffy/data/repositories/in_memory_order_repository.dart';
+import 'package:biffy/domain/repositories/rewards_repository.dart';
+import 'package:biffy/domain/usecases/rate_order.dart';
+import 'package:biffy/features/orders/bloc/orders_bloc.dart';
+import 'package:biffy/shared/state/cart_controller.dart';
+import 'package:biffy/shared/state/catalog_controller.dart';
+import 'package:biffy/shared/state/notification_center.dart';
+import 'package:biffy/shared/state/session_controller.dart';
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:biffy/data/models/cart.dart';
@@ -7,7 +19,6 @@ import 'package:biffy/data/models/order.dart';
 import 'package:biffy/domain/repositories/order_repository.dart';
 import 'package:biffy/domain/usecases/orders/checkout_draft.dart';
 import 'package:biffy/core/utils/clock.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -15,26 +26,60 @@ import 'package:go_router/go_router.dart';
 /// Martes 20 de octubre de 2026, 12:00: todos los restaurantes semilla abiertos.
 final kTestNow = DateTime(2026, 10, 20, 12, 0);
 
-AppServices makeServices() =>
-    AppServices.demo(clock: Clock.fixed(kTestNow), randomSeed: 7);
+/// Atajos a lo que las pruebas piden al contenedor (GetIt).
+class TestServices {
+  const TestServices();
+
+  Clock get clock => getIt<Clock>();
+  SessionController get session => getIt<SessionController>();
+  CatalogController get catalog => getIt<CatalogController>();
+  CartController get cart => getIt<CartController>();
+  NotificationCenter get notifications => getIt<NotificationCenter>();
+  OrdersBloc get orders => getIt<OrdersBloc>();
+  RateOrder get rateOrder => getIt<RateOrder>();
+}
+
+/// Reinicia GetIt en modo demo (sin Supabase) con reloj fijo y datos de
+/// ejemplo. [rewards] sustituye el repositorio de recompensas por un doble.
+Future<TestServices> makeServices({
+  Clock? clock,
+  int? randomSeed = 7,
+  bool seed = true,
+  RewardsRepository? rewards,
+}) async {
+  await getIt.reset();
+  getIt.allowReassignment = true;
+  // Se libera en el mismo test que lo creó (en otro, el Bloc ya no tiene zona).
+  addTearDown(getIt.reset);
+  await configureDependencies();
+  final c = clock ?? Clock.fixed(kTestNow);
+  getIt.registerSingleton<Clock>(c);
+  getIt.registerLazySingleton<OrderRepository>(
+    () => InMemoryOrderRepository(
+      c,
+      random: randomSeed == null ? null : math.Random(randomSeed),
+    ),
+  );
+  if (rewards != null) getIt.registerSingleton<RewardsRepository>(rewards);
+  bootstrapDemo(seedData: seed);
+  return const TestServices();
+}
 
 /// Monta la app con un tamaño de teléfono (400 × 860 dp).
-Future<AppServices> pumpBiffy(
+Future<TestServices> pumpBiffy(
   WidgetTester tester, {
-  AppServices? services,
+  TestServices? services,
   String initialLocation = '/',
   bool settle = true,
   bool phoneSize = true,
 }) async {
-  final s = services ?? makeServices();
+  final s = services ?? await makeServices();
   if (phoneSize) {
     tester.view.physicalSize = const Size(1200, 2580);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
   }
-  await tester.pumpWidget(
-    BiffyApp(services: s, initialLocation: initialLocation),
-  );
+  await tester.pumpWidget(BiffyApp(initialLocation: initialLocation));
   if (settle) await tester.pumpAndSettle();
   return s;
 }
@@ -72,7 +117,7 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
 
 /// Diego (demo) pide un Qbano Especial con extra queso, pago en efectivo.
 Future<Order> placeQbano(
-  AppServices s, {
+  TestServices s, {
   int qty = 1,
   bool useGotas = false,
 }) async {
@@ -109,7 +154,7 @@ Future<void> waitSnackBars(WidgetTester tester) async {
 }
 
 /// Lleva un pedido de Diego hasta «entregado» con los casos de uso reales.
-Future<Order> deliverQbano(AppServices s) async {
+Future<Order> deliverQbano(TestServices s) async {
   final o = await placeQbano(s);
   final uc = s.orders.useCases;
   final andres = s.session.auth.byId('u-andres')!;

@@ -1,7 +1,5 @@
 import 'package:biffy/core/constants/catalog_constants.dart';
-import 'package:biffy/core/utils/clock.dart';
 import 'package:biffy/data/mock/seed_users.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,11 +11,7 @@ void main() {
     tester,
   ) async {
     final repo = FakeRewards();
-    final s = AppServices.demo(
-      clock: Clock.fixed(kTestNow),
-      randomSeed: 7,
-      rewards: repo,
-    );
+    final s = await makeServices(rewards: repo);
     s.session.login(kDemoBuyerEmail, kDemoPassword);
     await pumpBiffy(tester, services: s, initialLocation: '/recompensas');
 
@@ -39,7 +33,7 @@ void main() {
   testWidgets('en modo demo sigue mostrando los beneficios locales', (
     tester,
   ) async {
-    final s = makeServices();
+    final s = await makeServices();
     s.session.login(kDemoBuyerEmail, kDemoPassword);
     await pumpBiffy(tester, services: s, initialLocation: '/recompensas');
     expect(find.text('Beneficios disponibles'), findsOneWidget);

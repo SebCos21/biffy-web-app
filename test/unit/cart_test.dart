@@ -1,15 +1,14 @@
 import 'package:biffy/data/models/cart.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:biffy/shared/state/cart_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
 
 void main() {
-  late AppServices s;
+  late TestServices s;
   late CartController cart;
-  setUp(() {
-    s = makeServices();
+  setUp(() async {
+    s = await makeServices();
     cart = s.cart;
   });
 

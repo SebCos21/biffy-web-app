@@ -3,15 +3,14 @@ import 'package:biffy/domain/order_rules.dart';
 import 'package:biffy/domain/ports/review_ports.dart';
 import 'package:biffy/domain/repositories/review_repository.dart';
 import 'package:biffy/domain/usecases/rate_order.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
 
 void main() {
   group('Reglas de calificación', () {
-    late AppServices s;
-    setUp(() => s = makeServices());
+    late TestServices s;
+    setUp(() async => s = await makeServices());
 
     test('solo el comprador califica su pedido entregado, una vez', () async {
       final pending = await placeQbano(s);
@@ -52,8 +51,8 @@ void main() {
   });
 
   group('Caso de uso RateOrder', () {
-    late AppServices s;
-    setUp(() => s = makeServices());
+    late TestServices s;
+    setUp(() async => s = await makeServices());
 
     /// Califica como lo hace la app: con el caso de uso inyectado.
     Future<RateResult> rate(

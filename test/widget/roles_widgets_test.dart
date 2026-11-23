@@ -1,7 +1,6 @@
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:biffy/data/models/order.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,7 +8,7 @@ import '../helpers.dart';
 
 /// Crea un pedido de Diego y lo deja en el estado indicado.
 Future<Order> seedOrder(
-  AppServices s, {
+  TestServices s, {
   OrderStatus until = OrderStatus.pending,
 }) async {
   final o = await placeQbano(s);
@@ -79,7 +78,7 @@ void main() {
   testWidgets('el restaurante ve el pedido creado y lo prepara', (
     tester,
   ) async {
-    final s = makeServices();
+    final s = await makeServices();
     final o = await seedOrder(s);
     s.session.login(kDemoRestaurantEmail, kDemoPassword);
     await pumpBiffy(tester, services: s, initialLocation: '/negocio/pedidos');
@@ -92,7 +91,7 @@ void main() {
   });
 
   testWidgets('el restaurante rechaza con motivo', (tester) async {
-    final s = makeServices();
+    final s = await makeServices();
     final o = await seedOrder(s);
     s.session.login(kDemoRestaurantEmail, kDemoPassword);
     await pumpBiffy(tester, services: s, initialLocation: '/negocio/pedidos');
@@ -106,7 +105,7 @@ void main() {
   });
 
   testWidgets('el repartidor acepta el pedido disponible', (tester) async {
-    final s = makeServices();
+    final s = await makeServices();
     final o = await seedOrder(s, until: OrderStatus.ready);
     s.session.login(kDemoCourierEmail, kDemoPassword);
     await pumpBiffy(tester, services: s, initialLocation: '/repartidor');
@@ -119,7 +118,7 @@ void main() {
   });
 
   testWidgets('la recogida exige los tres checks', (tester) async {
-    final s = makeServices();
+    final s = await makeServices();
     final o = await seedOrder(s, until: OrderStatus.ready);
     await s.orders.useCases.acceptOffer(o.id, s.session.auth.byId('u-andres')!);
     s.session.login(kDemoCourierEmail, kDemoPassword);
@@ -148,7 +147,7 @@ void main() {
   testWidgets('la entrega rechaza código incorrecto y exige evidencia', (
     tester,
   ) async {
-    final s = makeServices();
+    final s = await makeServices();
     final o = await seedOrder(s, until: OrderStatus.ready);
     await s.orders.useCases.acceptOffer(o.id, s.session.auth.byId('u-andres')!);
     await s.orders.useCases.confirmPickup(
@@ -193,7 +192,7 @@ void main() {
   });
 
   testWidgets('el pedido entregado aparece en el historial', (tester) async {
-    final s = makeServices();
+    final s = await makeServices();
     final o = await seedOrder(s, until: OrderStatus.ready);
     await s.orders.useCases.acceptOffer(o.id, s.session.auth.byId('u-andres')!);
     await s.orders.useCases.confirmPickup(
@@ -213,7 +212,7 @@ void main() {
   testWidgets('el restaurante crea un producto visible para el comprador', (
     tester,
   ) async {
-    final s = makeServices();
+    final s = await makeServices();
     s.session.login(kDemoRestaurantEmail, kDemoPassword);
     await pumpBiffy(
       tester,

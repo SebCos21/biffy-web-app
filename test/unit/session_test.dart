@@ -9,7 +9,7 @@ import '../helpers.dart';
 
 void main() {
   late SessionController s;
-  setUp(() => s = makeServices().session);
+  setUp(() async => s = (await makeServices()).session);
 
   group('Autenticación simulada', () {
     test('login correcto y rol', () {

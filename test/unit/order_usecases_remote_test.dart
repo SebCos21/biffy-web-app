@@ -10,7 +10,6 @@ import 'package:biffy/domain/entities/user.dart';
 import 'package:biffy/domain/repositories/order_repository.dart';
 import 'package:biffy/domain/usecases/orders/order_usecases.dart';
 import 'package:biffy/shared/adapters/order_adapters.dart';
-import 'package:biffy/shared/state/app_services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_order_repository.dart';
@@ -23,14 +22,14 @@ const _courierId = 'u-andres';
 /// Casos de uso contra un repositorio «con servidor» (falso): comprueban que
 /// la app deja decidir al servidor y traduce sus respuestas.
 void main() {
-  late AppServices s;
+  late TestServices s;
   late FakeOrderRepository repo;
   late RecordingWallet wallet;
   late RecordingNotifier notifier;
   late OrderUseCases uc;
 
-  setUp(() {
-    s = makeServices();
+  setUp(() async {
+    s = await makeServices();
     repo = FakeOrderRepository();
     wallet = RecordingWallet();
     notifier = RecordingNotifier();

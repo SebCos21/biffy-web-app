@@ -11,7 +11,7 @@ void main() {
   testWidgets('las ganancias salen de las entregas del repartidor', (
     tester,
   ) async {
-    final s = makeServices();
+    final s = await makeServices();
     final o = await deliverQbano(s);
     s.session.login(kDemoCourierEmail, kDemoPassword);
     await pumpBiffy(
