@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -11,6 +10,9 @@ import '../../../data/models/order.dart';
 import '../../../data/models/user.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Perfil del comprador con accesos a cuenta, pedidos y modos de rol.
 class ProfileScreen extends StatelessWidget {
@@ -19,7 +21,7 @@ class ProfileScreen extends StatelessWidget {
   /// Construye la cabecera del perfil y el menú de accesos.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
+    final session = context.watchController<SessionController>();
     final orders = context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final u = session.user;
@@ -261,7 +263,7 @@ class ProfileScreen extends StatelessWidget {
   Future<void> _courierMode(BuildContext context) async {
     if (!await requireLogin(context, reason: 'usar el modo repartidor')) return;
     if (!context.mounted) return;
-    final session = context.read<SessionController>();
+    final session = getIt<SessionController>();
     if (session.hasCourierProfile) {
       session.setActiveRole(UserRole.courier);
       context.go('/repartidor');
@@ -272,7 +274,7 @@ class ProfileScreen extends StatelessWidget {
 
   /// Cambia al modo restaurante o explica cómo registrar un negocio.
   void _restaurantMode(BuildContext context) {
-    final session = context.read<SessionController>();
+    final session = getIt<SessionController>();
     if (session.businessId != null) {
       session.setActiveRole(UserRole.restaurant);
       context.go('/negocio');
@@ -335,7 +337,7 @@ Future<void> logoutFlow(BuildContext context) async {
     destructive: true,
   );
   if (!ok || !context.mounted) return;
-  context.read<SessionController>().logout();
+  getIt<SessionController>().logout();
   context.go('/');
   showSnack(context, 'Sesión cerrada');
 }

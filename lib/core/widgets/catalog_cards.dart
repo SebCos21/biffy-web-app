@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/models/catalog.dart';
@@ -11,6 +10,7 @@ import '../../shared/state/session_controller.dart';
 import '../utils/format.dart';
 import 'actions.dart';
 import 'ui.dart';
+import '../../shared/state/controller_scope.dart';
 
 /// Botón circular con signo más que agrega el plato o avisa si está agotado.
 class _AddButton extends StatelessWidget {
@@ -65,7 +65,7 @@ class DishCard extends StatelessWidget {
   /// Dibuja la tarjeta con foto, nombre, precio y botón de agregar.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watch<CatalogController>();
+    final catalog = context.watchController<CatalogController>();
     final r = catalog.restaurantById(dish.restaurantId);
 
     return SizedBox(
@@ -128,8 +128,8 @@ class DishTile extends StatelessWidget {
   /// Dibuja la fila con foto, datos y avisos del plato.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watch<CatalogController>();
-    final session = context.watch<SessionController>();
+    final catalog = context.watchController<CatalogController>();
+    final session = context.watchController<SessionController>();
     final r = catalog.restaurantById(dish.restaurantId);
 
     final conflicts = dish.allergens
@@ -230,8 +230,8 @@ class RestaurantCard extends StatelessWidget {
   /// Dibuja la tarjeta y aplica el ancho si se indicó.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watch<CatalogController>();
-    final session = context.watch<SessionController>();
+    final catalog = context.watchController<CatalogController>();
+    final session = context.watchController<SessionController>();
     final r = restaurant;
 
     final open = catalog.isOpen(r);

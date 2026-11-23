@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../core/constants/catalog_constants.dart';
 import '../../core/widgets/actions.dart';
@@ -9,6 +8,7 @@ import '../../data/mock/seed_users.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../shared/state/session_controller.dart';
+import '../../app/di/injection.dart';
 
 /// Navega tras iniciar sesión: retoma la ruta de origen o el panel del rol.
 void navigateAfterAuth(BuildContext context, AppUser user, String? from) {
@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
   /// Ejecuta el login y navega según el rol autenticado.
   Future<void> _runLogin() async {
     try {
-      final u = await context.read<SessionController>().loginAsync(
+      final u = await getIt<SessionController>().loginAsync(
         _email.text,
         _password.text,
       );
@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Inicia sesión con una cuenta de demostración.
   Future<void> _quick(String email) async {
-    final session = context.read<SessionController>();
+    final session = getIt<SessionController>();
     try {
       final AppUser u;
       if (session.auth.isRemote) {
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SecondaryButton(
                   label: 'Crear cuenta',
                   onPressed: () async {
-                    final session = context.read<SessionController>();
+                    final session = getIt<SessionController>();
                     final ok = await context.push<bool>('/registro');
                     if (ok == true && context.mounted && session.user != null) {
                       navigateAfterAuth(context, session.user!, widget.from);

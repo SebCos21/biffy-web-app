@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -7,6 +6,8 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/order.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 const _filters = <(String, String, bool Function(Order))>[
   ('todos', 'Todos', _all),
@@ -62,7 +63,7 @@ class _MerchantOrdersScreenState extends State<MerchantOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
-    final session = context.watch<SessionController>();
+    final session = context.watchController<SessionController>();
     final t = Theme.of(context).textTheme;
     final all = orders.forBusiness(session.businessId!)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));

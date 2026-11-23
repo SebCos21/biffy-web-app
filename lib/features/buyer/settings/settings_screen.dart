@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/widgets/actions.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Preferencias de notificaciones, tema y punto de entrega.
 class SettingsScreen extends StatelessWidget {
@@ -12,7 +12,7 @@ class SettingsScreen extends StatelessWidget {
   /// Construye los interruptores de ajustes y el acceso al punto de entrega.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
+    final session = context.watchController<SessionController>();
     final s = session.settings;
     return Scaffold(
       appBar: AppBar(title: const Text('Configuración')),

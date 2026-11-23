@@ -63,13 +63,17 @@ class MerchantBoxesState {
 /// Flujo: pantalla → [MerchantBoxesCubit] → casos de uso →
 /// [MerchantBoxesRepository] (Supabase).
 class MerchantBoxesCubit extends Cubit<MerchantBoxesState> {
-  /// Arma los casos de uso sobre el repositorio de cajas.
-  MerchantBoxesCubit(MerchantBoxesRepository repo)
-    : _repo = repo,
-      _load = LoadMerchantBoxes(repo),
-      _add = AddDishToBox(repo),
-      _claim = ClaimBoxPrize(repo),
-      super(const MerchantBoxesState());
+  /// Recibe el repositorio y los casos de uso de las cajas.
+  MerchantBoxesCubit({
+    required MerchantBoxesRepository repo,
+    required LoadMerchantBoxes load,
+    required AddDishToBox add,
+    required ClaimBoxPrize claim,
+  }) : _repo = repo, // ignore: prefer_initializing_formals
+       _load = load, // ignore: prefer_initializing_formals
+       _add = add, // ignore: prefer_initializing_formals
+       _claim = claim, // ignore: prefer_initializing_formals
+       super(const MerchantBoxesState());
 
   final MerchantBoxesRepository _repo;
   final LoadMerchantBoxes _load;

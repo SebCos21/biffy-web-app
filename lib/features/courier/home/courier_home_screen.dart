@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -13,6 +12,9 @@ import '../../../shared/state/notification_center.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../offers/offer_widgets.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Pantalla de inicio del repartidor con estado, ofertas y entrega en curso.
 class CourierHomeScreen extends StatelessWidget {
@@ -21,10 +23,10 @@ class CourierHomeScreen extends StatelessWidget {
   /// Reúne ganancias, metas y ofertas disponibles del día.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
+    final session = context.watchController<SessionController>();
     final orders = context.watch<OrdersBloc>();
-    final center = context.watch<NotificationCenter>();
-    final now = context.read<CatalogController>().now;
+    final center = context.watchController<NotificationCenter>();
+    final now = getIt<CatalogController>().now;
     final t = Theme.of(context).textTheme;
     final u = session.user!;
     final d = session.data;

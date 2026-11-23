@@ -10,6 +10,8 @@ import '../../../data/models/rewards.dart';
 import '../../../domain/repositories/rewards_repository.dart';
 import '../../../shared/state/session_controller.dart';
 import 'rewards_cubit.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Pantalla de Gotas: saldo, cómo ganarlas, canjes e historial.
 ///
@@ -21,12 +23,11 @@ class RewardsScreen extends StatelessWidget {
   /// En demo muestra los beneficios locales; con Supabase crea el cubit.
   @override
   Widget build(BuildContext context) {
-    final repo = context.read<RewardsRepository?>();
-    if (repo == null) return const _RewardsPage(state: null);
-    final session = context.read<SessionController>();
+    if (!getIt.isRegistered<RewardsRepository>()) {
+      return const _RewardsPage(state: null);
+    }
     return BlocProvider(
-      create: (_) =>
-          RewardsCubit(repo, refreshBalance: session.refreshRemote)..load(),
+      create: (_) => getIt<RewardsCubit>()..load(),
       child: BlocConsumer<RewardsCubit, RewardsState>(
         listenWhen: (a, b) => a.redeemCount != b.redeemCount,
         listener: (context, state) =>
@@ -104,7 +105,7 @@ class _RewardsPage extends StatelessWidget {
   /// Construye el saldo, los beneficios y el historial.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
+    final session = context.watchController<SessionController>();
     final d = session.data;
     final t = Theme.of(context).textTheme;
     final now = DateTime.now();

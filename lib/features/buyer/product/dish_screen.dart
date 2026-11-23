@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -13,6 +12,8 @@ import '../../../domain/pricing.dart';
 import '../../../shared/state/cart_controller.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Detalle y personalización. Con [editLineId] edita una línea del carrito
 /// sin modificarla hasta guardar.
@@ -46,7 +47,7 @@ class _DishScreenState extends State<DishScreen> {
     _initialized = true;
     final line = widget.editLineId == null
         ? null
-        : context.read<CartController>().lineById(widget.editLineId!);
+        : getIt<CartController>().lineById(widget.editLineId!);
     if (line != null) {
       _sel = line.selection;
       _qty = line.qty;
@@ -59,8 +60,8 @@ class _DishScreenState extends State<DishScreen> {
   /// Construye el detalle, las opciones y el botón de agregar.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watch<CatalogController>();
-    final session = context.watch<SessionController>();
+    final catalog = context.watchController<CatalogController>();
+    final session = context.watchController<SessionController>();
     final t = Theme.of(context).textTheme;
     final d = catalog.dishById(widget.id);
     if (d == null) {
@@ -364,7 +365,7 @@ class _DishScreenState extends State<DishScreen> {
                       ? null
                       : () async {
                           if (editing) {
-                            context.read<CartController>().updateLine(
+                            getIt<CartController>().updateLine(
                               widget.editLineId!,
                               selection: sel,
                               qty: _qty,

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/widgets/catalog_cards.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Lista los platos y restaurantes marcados como favoritos.
 class FavoritesScreen extends StatelessWidget {
@@ -14,8 +14,8 @@ class FavoritesScreen extends StatelessWidget {
   /// Construye la lista de favoritos o el estado vacío.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
-    final catalog = context.watch<CatalogController>();
+    final session = context.watchController<SessionController>();
+    final catalog = context.watchController<CatalogController>();
     final dishes = [
       for (final id in session.data.favoriteDishes) ?catalog.dishById(id),
     ];

@@ -8,9 +8,9 @@ import '../../../core/widgets/ui.dart';
 import '../../../domain/order_rules.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
 import '../../../shared/state/catalog_controller.dart';
-import '../../orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'earnings_cubit.dart';
+import '../../../app/di/injection.dart';
 
 /// Pantalla de ganancias del repartidor con historial, semana y metas.
 class EarningsScreen extends StatelessWidget {
@@ -19,14 +19,10 @@ class EarningsScreen extends StatelessWidget {
   /// Crea el [EarningsCubit] del repartidor y pinta su resumen.
   @override
   Widget build(BuildContext context) {
-    final session = context.read<SessionController>();
-    final catalog = context.read<CatalogController>();
+    final session = getIt<SessionController>();
+    final catalog = getIt<CatalogController>();
     return BlocProvider(
-      create: (_) => EarningsCubit(
-        orders: context.read<OrdersBloc>(),
-        courierId: session.user!.id,
-        now: () => catalog.now,
-      ),
+      create: (_) => getIt<EarningsCubit>(param1: session.user!.id),
       child: BlocBuilder<EarningsCubit, EarningsSummary>(
         builder: (context, e) => _EarningsView(
           summary: e,

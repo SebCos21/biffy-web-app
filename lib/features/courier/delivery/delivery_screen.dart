@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -13,6 +12,9 @@ import '../../../data/mock/seed_users.dart';
 import '../../../data/models/order.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Entrega: requiere el código correcto y una foto de evidencia local.
 class DeliveryScreen extends StatefulWidget {
@@ -67,7 +69,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
-    final session = context.watch<SessionController>();
+    final session = context.watchController<SessionController>();
     final t = Theme.of(context).textTheme;
     final remote = orders.isRemote;
     final o = orders.byId(widget.id);
@@ -267,7 +269,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   /// Cierra la entrega validando código y evidencia, y celebra el resultado.
   Future<void> _complete(BuildContext context, Order o) async {
     if (_busy) return;
-    final session = context.read<SessionController>();
+    final session = getIt<SessionController>();
     final orders = context.read<OrdersBloc>();
     setState(() => _busy = true);
     final outcome = await orders.request(

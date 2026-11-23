@@ -68,13 +68,14 @@ class RewardsState {
 /// Flujo: pantalla → [RewardsCubit] → [LoadRewards] / [RedeemReward] →
 /// [RewardsRepository] (Supabase, RPC `redeem_reward`).
 class RewardsCubit extends Cubit<RewardsState> {
-  /// Recibe el repositorio y cómo refrescar el saldo de la sesión.
-  RewardsCubit(
-    RewardsRepository repo, {
+  /// Recibe los casos de uso y cómo refrescar el saldo de la sesión.
+  RewardsCubit({
+    required LoadRewards load,
+    required RedeemReward redeem,
     required Future<void> Function() refreshBalance,
     DateTime Function()? now,
-  }) : _load = LoadRewards(repo),
-       _redeem = RedeemReward(repo),
+  }) : _load = load, // ignore: prefer_initializing_formals
+       _redeem = redeem, // ignore: prefer_initializing_formals
        _refreshBalance = refreshBalance, // ignore: prefer_initializing_formals
        _now = now ?? DateTime.now,
        super(const RewardsState());

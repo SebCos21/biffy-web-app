@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../shared/state/controller_scope.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/models/cart.dart';
@@ -13,6 +13,7 @@ import '../../shared/state/session_controller.dart';
 import '../constants/catalog_constants.dart';
 import '../utils/format.dart';
 import 'ui.dart';
+import '../../app/di/injection.dart';
 
 /// Pide iniciar sesión para una acción restringida y, si el usuario lo hace,
 /// devuelve `true` para continuar el flujo original.
@@ -20,7 +21,7 @@ Future<bool> requireLogin(
   BuildContext context, {
   required String reason,
 }) async {
-  final session = context.read<SessionController>();
+  final session = getIt<SessionController>();
   if (session.isLoggedIn) return true;
   final go = await showModalBottomSheet<bool>(
     context: context,
@@ -74,7 +75,7 @@ Future<bool> addToCart(
   int qty = 1,
   String note = '',
 }) async {
-  final cart = context.read<CartController>();
+  final cart = getIt<CartController>();
   final result = cart.add(dish, selection: selection, qty: qty, note: note);
   switch (result) {
     case AddResult.added:
@@ -113,7 +114,7 @@ Future<void> quickAdd(BuildContext context, Dish dish) async {
 Future<void> toggleFavoriteDish(BuildContext context, Dish dish) async {
   if (!await requireLogin(context, reason: 'guardar favoritos')) return;
   if (!context.mounted) return;
-  final s = context.read<SessionController>();
+  final s = getIt<SessionController>();
   s.toggleFavoriteDish(dish.id);
   showSnack(
     context,
@@ -142,7 +143,7 @@ Future<void> showDeliveryPointSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     builder: (ctx) {
-      final session = ctx.watch<SessionController>();
+      final session = ctx.watchController<SessionController>();
       return SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -176,8 +177,7 @@ Future<void> showDeliveryPointSheet(BuildContext context) {
                     onTap: () {
                       session.setPoint(p.id);
                       Navigator.pop(ctx);
-                      final n = context
-                          .read<CatalogController>()
+                      final n = getIt<CatalogController>()
                           .reachableRestaurants
                           .length;
                       showSnack(
@@ -237,7 +237,7 @@ String homeForRole(UserRole role) => switch (role) {
 
 /// Selector de cuentas de demostración para recorrer los tres roles.
 Future<void> showDemoAccountsSheet(BuildContext context) {
-  final session = context.read<SessionController>();
+  final session = getIt<SessionController>();
   final accounts = session.auth.demoAccounts;
   return showModalBottomSheet<void>(
     context: context,

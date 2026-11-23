@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/widgets/ui.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
 
 /// Formulario para editar nombre y teléfono del usuario.
 class PersonalInfoScreen extends StatefulWidget {
@@ -17,7 +18,7 @@ class PersonalInfoScreen extends StatefulWidget {
 /// Estado con los controladores de nombre y teléfono.
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   final _form = GlobalKey<FormState>();
-  late final _session = context.read<SessionController>();
+  late final _session = getIt<SessionController>();
   late final _name = TextEditingController(text: _session.user?.name);
   late final _phone = TextEditingController(text: _session.user?.phone);
 
@@ -40,7 +41,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   /// Construye el formulario de datos personales.
   @override
   Widget build(BuildContext context) {
-    final u = context.watch<SessionController>().user;
+    final u = context.watchController<SessionController>().user;
     if (u == null) return const Scaffold();
     return Scaffold(
       appBar: AppBar(title: const Text('Información personal')),

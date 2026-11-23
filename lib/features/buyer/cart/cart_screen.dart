@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
@@ -17,6 +16,9 @@ import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'cart_draft.dart';
 import 'schedule_sheet.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Carrito con productos, horario, dirección, pago y totales.
 class CartScreen extends StatefulWidget {
@@ -30,7 +32,7 @@ class CartScreen extends StatefulWidget {
 /// Estado que mantiene la nota del pedido.
 class _CartScreenState extends State<CartScreen> {
   late final TextEditingController _note = TextEditingController(
-    text: context.read<CartController>().restaurantNote,
+    text: getIt<CartController>().restaurantNote,
   );
 
   /// Inicializa la nota con el contexto activo.
@@ -50,9 +52,9 @@ class _CartScreenState extends State<CartScreen> {
   /// Construye las opciones del carrito o el estado vacío.
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<CartController>();
-    final session = context.watch<SessionController>();
-    final catalog = context.watch<CatalogController>();
+    final cart = context.watchController<CartController>();
+    final session = context.watchController<SessionController>();
+    final catalog = context.watchController<CatalogController>();
     final orders = context.read<OrdersBloc>();
     final t = Theme.of(context).textTheme;
 
@@ -343,11 +345,11 @@ class _CartScreenState extends State<CartScreen> {
 
   /// Abre el selector de día y hora para programar el pedido.
   Future<void> _schedule(BuildContext context, Restaurant r) async {
-    final cart = context.read<CartController>();
+    final cart = getIt<CartController>();
     final when = await showScheduleSheet(
       context,
       restaurant: r,
-      now: context.read<CatalogController>().now,
+      now: getIt<CatalogController>().now,
       initial: cart.scheduledFor,
     );
     if (when != null) cart.setSchedule(when);
@@ -355,8 +357,8 @@ class _CartScreenState extends State<CartScreen> {
 
   /// Abre la hoja para elegir la dirección de entrega.
   Future<void> _pickAddress(BuildContext context) async {
-    final session = context.read<SessionController>();
-    final cart = context.read<CartController>();
+    final session = getIt<SessionController>();
+    final cart = getIt<CartController>();
     await showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -409,7 +411,7 @@ class _CartLine extends StatelessWidget {
   /// Dibuja el producto, su detalle y los controles de la línea.
   @override
   Widget build(BuildContext context) {
-    final cart = context.read<CartController>();
+    final cart = getIt<CartController>();
     final d = line.dish;
     final it = line.item;
     final detail = selectionDetail(d, it.selection);

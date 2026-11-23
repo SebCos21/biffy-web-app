@@ -10,6 +10,7 @@ import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
 import 'merchant_boxes_cubit.dart';
+import '../../../app/di/injection.dart';
 
 /// Permite al restaurante meter y sacar sus platos de las cajas de Gotas.
 ///
@@ -21,8 +22,7 @@ class MerchantBoxesScreen extends StatelessWidget {
   /// En demo avisa que requiere Supabase; con la base crea el cubit.
   @override
   Widget build(BuildContext context) {
-    final repo = context.read<MerchantBoxesRepository?>();
-    if (repo == null) {
+    if (!getIt.isRegistered<MerchantBoxesRepository>()) {
       return Scaffold(
         appBar: AppBar(title: const Text('Cajas con Gotas')),
         body: const MobileFrame(
@@ -35,7 +35,7 @@ class MerchantBoxesScreen extends StatelessWidget {
       );
     }
     return BlocProvider(
-      create: (_) => MerchantBoxesCubit(repo)..load(),
+      create: (_) => getIt<MerchantBoxesCubit>()..load(),
       child: const _MerchantBoxesView(),
     );
   }
@@ -72,8 +72,8 @@ class _MerchantBoxesViewState extends State<_MerchantBoxesView> {
 
   /// Abre el selector de platos del menú propio para una caja.
   Future<void> _addDish(BuildContext context, GotasBox box) async {
-    final catalog = context.read<CatalogController>();
-    final businessId = context.read<SessionController>().businessId;
+    final catalog = getIt<CatalogController>();
+    final businessId = getIt<SessionController>().businessId;
     final cubit = context.read<MerchantBoxesCubit>();
     if (businessId == null) return;
 

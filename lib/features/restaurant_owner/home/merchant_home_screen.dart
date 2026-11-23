@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -11,11 +10,14 @@ import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/notification_center.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Métricas del negocio actual derivadas de pedidos y productos locales.
 RestaurantMetrics businessMetrics(BuildContext context) {
-  final session = context.read<SessionController>();
-  final catalog = context.read<CatalogController>();
+  final session = getIt<SessionController>();
+  final catalog = getIt<CatalogController>();
   final orders = context.read<OrdersBloc>();
   final id = session.businessId!;
   return computeMetrics(
@@ -33,10 +35,10 @@ class MerchantHomeScreen extends StatelessWidget {
   /// Muestra el estado del negocio y atajos a pedidos y menú.
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
-    final catalog = context.watch<CatalogController>();
+    final session = context.watchController<SessionController>();
+    final catalog = context.watchController<CatalogController>();
     final orders = context.watch<OrdersBloc>();
-    final center = context.watch<NotificationCenter>();
+    final center = context.watchController<NotificationCenter>();
     final t = Theme.of(context).textTheme;
     final b = catalog.businessById(session.businessId!)!;
     final m = businessMetrics(context);

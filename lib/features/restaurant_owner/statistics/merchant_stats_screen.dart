@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -8,6 +7,8 @@ import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../home/merchant_home_screen.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Estadísticas del negocio con ventas por sede y productos top.
 class MerchantStatsScreen extends StatelessWidget {
@@ -16,8 +17,8 @@ class MerchantStatsScreen extends StatelessWidget {
   /// Calcula las métricas y dibuja las barras comparativas.
   @override
   Widget build(BuildContext context) {
-    context.watch<SessionController>();
-    context.watch<CatalogController>();
+    context.watchController<SessionController>();
+    context.watchController<CatalogController>();
     context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final m = businessMetrics(context);

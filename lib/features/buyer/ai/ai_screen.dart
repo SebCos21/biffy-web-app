@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -12,6 +11,9 @@ import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'recommendation_input.dart';
+import '../../../app/di/injection.dart';
+import '../../../shared/state/controller_scope.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Mensaje del chat local con Biffy AI y sus platos sugeridos.
 class _Msg {
@@ -83,8 +85,8 @@ class _AiScreenState extends State<AiScreen> {
   /// Construye las recomendaciones, el chat y el campo de entrada.
   @override
   Widget build(BuildContext context) {
-    context.watch<SessionController>();
-    context.watch<CatalogController>();
+    context.watchController<SessionController>();
+    context.watchController<CatalogController>();
     context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final input = buildRecommendationInput(context, seed: _seed);
@@ -214,7 +216,7 @@ class _RecCard extends StatelessWidget {
   /// Dibuja el plato recomendado y abre su detalle al tocar.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.read<CatalogController>();
+    final catalog = getIt<CatalogController>();
     final r = catalog.restaurantById(rec.dish.restaurantId);
     final t = Theme.of(context).textTheme;
     return Padding(
