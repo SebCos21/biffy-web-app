@@ -1,0 +1,591 @@
+# Estado del proyecto y pendientes
+
+> Documento de traspaso. Está escrito para que **una persona o una IA** pueda
+> retomar el trabajo sin adivinar qué está hecho, qué falta y cómo se trabaja.
+>
+> Rama de integración: **`dev`** (frontend + `supabase` unidos). Proyecto Supabase:
+> `jwdzpwsfwtkdeeuceaco`.
+>
+> **Lee primero** [`AGENTS.md`](AGENTS.md) (reglas de arquitectura) y
+> [`supabase/README.md`](supabase/README.md) (detalle de la base).
+
+---
+
+## 1. Cómo se corre
+
+| Modo | Comando | Qué usa |
+|---|---|---|
+| Demo local (por defecto) | `flutter run` | Datos en memoria, sin red |
+| Supabase | `flutter run --dart-define-from-file=env.json` | Auth, catálogo, pedidos y Storage reales |
+
+`env.json` se copia de `env.example.json` y **no se versiona**. Sin las dos
+variables (`SUPABASE_URL`, `SUPABASE_KEY`) la app arranca en demo.
+
+**Cuentas demo (contraseña `biffy123`):**
+
+| Rol | Correo |
+|---|---|
+| Comprador | `diego.demo@icesi.edu.co` |
+| Repartidor | `andres.repartidor@demo.biffy.co` |
+| Restaurante | `qbano@demo.biffy.co` |
+
+La confirmación de correo está **desactivada** mientras sea demo.
+
+---
+
+## 2. Arquitectura en una pantalla
+
+Toda la app usa **Clean Architecture + Bloc** (HU-2 terminó la migración: no
+queda `ChangeNotifier`, `provider`, `SessionController` ni `ControllerScope`).
+
+```text
+Pantallas (lib/features/**)
+   ↓ eventos: bloc.add(…) o await bloc.request(…) · lectura: context.watch<…>()
+Blocs y Cubits (lib/features/**/bloc, …_cubit.dart)   ← solo conocen el dominio
+   ↓ llaman a
+Casos de uso (lib/domain/usecases/<módulo>/)
+   ↓ dependen de interfaces y puertos
+Dominio: entidades, XRepository, puertos, x_errors.dart (lib/domain/**)  ← Dart puro
+   ↑ implementan                              ↑ adaptan los puertos
+Repositorios (lib/data/repositories/**)       lib/shared/adapters/
+   ├── InMemory…   → modo demo
+   └── Supabase…   → backend real
+```
+
+| Módulo | Bloc / Cubit | Casos de uso | Repositorio (dominio) |
+|---|---|---|---|
+| Sesión y auth | `AuthBloc` (global), `LoginCubit`, `RegisterCubit` | `usecases/auth` | `AuthRepository`, `SessionRepository`, `ProfileRepository` |
+| Pedidos | `OrdersBloc` (global) | `usecases/orders` | `OrderRepository` |
+| Carrito y checkout | `CartCubit` (global), `CheckoutCubit` | valida y delega en `OrdersBloc` (`OrderPlaced`) | `CatalogRepository` (solo lectura) |
+| Pagos | `PaymentBloc` | `usecases/payments` | `PaymentRepository` |
+| Catálogo | `CatalogBloc` (global) | `usecases/catalog` | `CatalogRepository` |
+| Avisos | `NotificationsBloc` (global), `NotificationsCubit` | `usecases/notifications` | `NotificationRepository` |
+| Repartidor | `CourierCubit` (global), `EarningsCubit` | `usecases/courier`, `GetCourierEarnings` | `CourierRepository` |
+| Gotas y cupones | `WalletCubit` (global) | `usecases/wallet` | `WalletRepository` |
+| Preferencias y favoritos | `PreferencesCubit` (global) | `usecases/preferences` | `PreferencesRepository` |
+| Direcciones | `AddressesCubit` (global) | `usecases/addresses` | `AddressRepository` |
+| Verificación universitaria | `UniversityCubit` (global), `UniversityVerificationCubit` | `usecases/university` | `UniversityRepository` |
+| Recompensas, cajas y reseñas (HU-4) | `RewardsCubit`, `MerchantBoxesCubit`, `RateOrderCubit` | `rewards_usecases`, `merchant_boxes_usecases`, `rate_order` | `RewardsRepository`, `MerchantBoxesRepository`, `ReviewRepository` |
+
+**Cómo es cada slice**
+
+- **Dominio:** entidad inmutable; interfaz con caché síncrona, `Stream<void>
+  changes` y escrituras que actualizan la caché antes del primer `await`;
+  resultado tipado (`XResult` con `code`, `message` en español desde
+  `x_errors.dart` e `isTransportError`); casos de uso agrupados en `XUseCases`.
+- **Datos:** caché compartida (`x_cache.dart`) con `InMemoryX…` y
+  `SupabaseX…`; las dos se comportan igual (las pruebas lo comparan).
+- **Presentación:** Bloc o Cubit con estado inmutable (`copyWith`, sin
+  Equatable), `revision` y `outcome` con id creciente para `BlocListener`;
+  las lecturas síncronas delegan en las `queries` de los casos de uso.
+  `request(evento)` devuelve el resultado cuando la pantalla necesita navegar
+  o avisar en el mismo toque.
+- **DI:** GetIt por módulos (`lib/app/di/modules/`). Repositorios y puertos
+  `LazySingleton` por interfaz; casos de uso `Factory`; Blocs globales
+  `LazySingleton` con `dispose`; cubits de pantalla `Factory`. Solo
+  `data_module.dart` decide Supabase o memoria (`AppConfig.hasSupabase`).
+- **Router:** `buildRouter(AuthBloc, refresh:)`. `StreamRefreshListenable`
+  (`lib/app/auth_refresh.dart`) implementa `Listenable` a mano sobre
+  `AuthBloc.stream` y cancela la suscripción en `dispose`.
+
+**Excepciones documentadas** (las valida `test/architecture_test.dart`):
+`SessionRepository` es solo en memoria en los dos modos (es el estado del
+equipo); `RewardsRepository` y `MerchantBoxesRepository` (HU-4) solo existen
+con Supabase y no se registran en demo.
+
+Reglas que **no** se negocian:
+
+- La regla de alcance (radio + repartidores + campus) vive solo en
+  `lib/domain/catalog_rules.dart` (`isReachable`).
+- Los pedidos solo cambian de estado por `OrdersBloc` → casos de uso →
+  `OrderRepository`; ninguna pantalla toca `Order` ni los repositorios.
+- Las reglas de negocio (precios, filtros, transiciones, horarios) son funciones
+  puras en `lib/domain/` con tests.
+- Los widgets nunca llaman a Supabase ni importan `data/`; los Blocs y Cubits
+  solo importan el dominio (y otros Blocs).
+- Cada Bloc/Cubit tiene `blocTest` de éxito y de error.
+- El modo demo (sin credenciales de Supabase) debe seguir funcionando: las pruebas lo
+  levantan con `makeServices()` (GetIt en memoria, reloj fijo).
+
+---
+
+## 3. Qué ya está hecho
+
+### Base de datos (aplicada y verificada)
+
+| Pieza | Detalle |
+|---|---|
+| Esquema | 30 tablas físicas (24 de negocio + auxiliares), FKs, `CHECK`, índices, `updated_at` por trigger |
+| RLS | Políticas por dueño y por rol; probadas con dos usuarios reales |
+| RPC | `place_order`, `restaurant_accept/reject/ready`, `buyer_cancel`, `courier_accept/decline/pickup/deliver`, `redeem_reward`, `verify_university`, `register_business` |
+| Storage | `dish-images` (público), `delivery-evidence` y `merchant-docs` (privados por carpeta) |
+| Datos | 4 universidades, 8 puntos con geometría, 9 categorías, 5 recompensas con 18 premios, 15 sedes y 32 platos |
+| Cuentas | 3 cuentas demo reales con bienvenida de 450 Gotas |
+
+Migraciones en `supabase/migrations/` (`0000`–`0026` y `0028`; la
+`0019_order_cycle` es el ciclo del pedido de HU-3 y la `0028_catalog_hu2` el
+catálogo de HU-2; `0027` está reservado, ver HU-2). El bootstrap para pegar
+en el SQL Editor es `supabase/apply_all.sql` (generado concatenando las
+migraciones).
+
+### App (Fase 2a–2c)
+
+| Archivo | Qué hace |
+|---|---|
+| `lib/core/config/app_config.dart` | Lee `--dart-define`; decide demo vs Supabase |
+| `lib/main.dart` | `Supabase.initialize()` + restaura sesión |
+| `lib/data/repositories/supabase_auth_repository.dart` | Login, registro con rol, sesión, saldo, direcciones y perfil de repartidor |
+| `lib/data/repositories/supabase_catalog_repository.dart` | Catálogo con caché hidratada + Realtime |
+| `lib/data/repositories/supabase_order_repository.dart` | Pedidos: caché + RPC con resultado tipado (`RpcResult`), recarga tras cada RPC, Realtime + sondeo de 30 s, sube evidencia |
+| `lib/data/repositories/rpc_result.dart` | Respuesta normalizada de un RPC (`code`, `data`, `order`) |
+| `lib/domain/order_errors.dart` | `result` del servidor → mensaje en español (con tests) |
+| `lib/app/di/injection.dart` | Raíz de composición con **GetIt**: `configureDependencies()` registra los módulos `core`, `data`, `domain` y `presentation` (`lib/app/di/modules/`) |
+| `lib/app/di/bootstrap.dart` | `bootstrapApp()`: restaura la sesión (Supabase) o carga los datos demo |
+| `lib/features/auth/bloc/auth_bloc.dart` | `AuthBloc` (HU-2): login, registro con rol, restaurar y cerrar sesión, rol, perfil, punto y ajustes → `AuthUseCases` (`lib/domain/usecases/auth/`) → `AuthRepository` + `SessionRepository` |
+| `lib/app/auth_refresh.dart` | `StreamRefreshListenable`: avisa al router en cada estado del `AuthBloc` y cancela la suscripción en `dispose` |
+| `lib/features/orders/bloc/` | `OrdersBloc`: eventos → casos de uso → `OrdersState` (`orders`, `revision`, `outcome`). Con servidor, **el servidor decide**: llama al RPC y el estado llega con la recarga |
+| `lib/domain/usecases/orders/` | `PlaceOrder`, `CancelOrder`, `AcceptOrder`, `RejectOrder`, `MarkOrderReady`, `AcceptOffer`, `DeclineOffer`, `ConfirmPickup`, `CompleteDelivery`, `OrderQueries`; se ensamblan en `OrderUseCases` |
+| `lib/domain/repositories/order_repository.dart` | Interfaz `OrderRepository` + `OrderResult` (mismos códigos en demo y servidor) |
+| `lib/shared/adapters/order_adapters.dart` | Conectan los puertos de pedidos con los casos de uso del catálogo y de avisos, y con la sesión (`SessionRepository`), la billetera y la verificación |
+| `lib/features/catalog/bloc/` | `CatalogBloc` (HU-2): eventos de escritura del comercio → `CatalogUseCases` → `CatalogRepository`; lecturas síncronas con la regla `isReachable`; `request()` devuelve un `CatalogResult` con mensaje en español |
+| `tool/admin_seed.dart` | Crea/actualiza las 3 cuentas demo con `service_role` (idempotente) |
+| `supabase/functions/send-university-code/` | Envía el código al correo institucional con Resend |
+| `supabase/functions/university-revalidation/` | Cron: revalida, revoca Campus y avisa |
+| `test/integration/hu1_supabase_test.dart` | 13 pruebas de perfil, verificación y RLS con usuarios reales |
+
+Verificado con un pedido real: `BF-2041` creado, aceptado, listo, asignado,
+recogido y entregado (6 eventos, evidencia en Storage, +12 Gotas).
+
+### HU-3 · Ciclo completo del pedido (comprador → restaurante → repartidor)
+
+Código y pruebas listos; **falta aplicar `0019_order_cycle.sql` al proyecto
+remoto** (ver «Cómo probarlo» abajo).
+
+- `0019_order_cycle.sql`: `place_order` calcula precios, descuento de campus,
+  tarifa, cupón, distancia y pago al repartidor en el servidor; idempotente con
+  `client_key`; el código de entrega pasa a `order_secrets` (el repartidor ya
+  no puede leerlo); cancelar/rechazar devuelve Gotas **y** cupón;
+  `order_events.from_status`; `courier_deliver` verifica la foto en Storage;
+  las ofertas solo las ven repartidores; escrituras directas revocadas;
+  `credit_gotas` ya no es llamable por clientes.
+- Prueba SQL de punta a punta: `supabase/tests/hu3_order_cycle.sql` (87
+  comprobaciones, termina en `ROLLBACK`).
+- Flutter: Clean Architecture + Bloc (ver tabla arriba), mensajes en español
+  para cada `result`, doble toque protegido, reintento seguro del pedido.
+
+
+### HU-1 · Autenticación y perfiles reales
+
+- ✅ Esquema aplicado en el proyecto remoto; cuentas demo y catálogo semilla cargados.
+- ✅ `tool/admin_seed.dart` crea/actualiza las 3 cuentas demo sin duplicar datos.
+- ✅ Nombre y teléfono se guardan en `profiles`; el perfil de repartidor se
+  guarda en `courier_profiles`.
+- ✅ `verify_university` se llama desde la app; el estado verificado se
+  rehidrata al volver a iniciar sesión.
+- ✅ Errores de `register_business` y de conexión se muestran en español.
+- ✅ Correo institucional separado del correo personal: código de 6 dígitos,
+  vencimiento a 30 días y revocación de Campus sin bloquear la app.
+- ✅ 13 pruebas de RLS contra el proyecto real (se saltan sin credenciales).
+- ⏳ Configurar `RESEND_API_KEY`/`FROM_EMAIL` y desplegar las Edge Functions;
+  hasta entonces la app usa el código demo visible en la pantalla.
+- ✅ Cuentas demo verificadas en el SQL Editor: Andrés y Qbano conservan 450
+  Gotas con una sola bienvenida; Diego tiene 332 porque gastó en pruebas.
+  Evidencia: `tool/evidence/hu1_cuentas_demo.csv`.
+- ⏳ Adjuntar al informe la salida literal de `0099_verify.sql` (la consulta ya
+  se ejecutó en el SQL Editor; falta el pantallazo/texto).
+
+### Migración a Bloc · rama `blocs`
+
+- **Fase 1a completada:** `LoginCubit`, `RegisterCubit` y
+  `UniversityVerificationCubit`; `AuthRepository`/`AuthException` viven en
+  `lib/domain/repositories/` con re-export de compatibilidad.
+- Las pantallas de login, registro y Campus usan los cubits; la lógica de
+  sesión sigue en `SessionController` para no romper las otras 45 pantallas.
+- `test/architecture_test.dart` impide que los cubits de auth importen `data/`
+  o Supabase.
+- **Fase 2 completada:** `CartCubit` reemplaza a `CartController` (se eliminó el
+  archivo) y `CheckoutCubit` maneja el envío, la idempotencia y los errores.
+  El checkout sigue usando `OrdersBloc` como única fuente de pedidos.
+- **Integración con GetIt:** la rama se rebasó sobre el `dev` con inyección de
+  dependencias. `CartCubit` se registra como `LazySingleton` y se publica con
+  `BlocProvider` en `app.dart` (no va en `ControllerScope`: no es `Listenable`);
+  `LoginCubit`, `RegisterCubit`, `UniversityVerificationCubit` y `CheckoutCubit`
+  son `Factory` en `presentation_module.dart`. Las pantallas los piden con
+  `getIt<T>()` y observan controladores con `context.watchController<T>()`.
+- ✅ **1b y 3 cerrados en HU-2:** `AuthBloc` reemplazó a `SessionController` y
+  `CatalogBloc` a `CatalogController` (ver sección 2 y «HU-2 · Clean + Bloc»).
+- Calidad de la rama: `flutter analyze` limpio · **235/235** tests ·
+  21 pruebas saltadas (las que necesitan credenciales de Supabase).
+
+### HU-4 · Gotas, recompensas, cupones, reseñas y notificaciones
+
+Rama `hu4-gotas-recompensas-notificaciones`.
+
+- ✅ Cupones: el descuento lo calcula `place_order` de HU-3 (`0019_order_cycle`);
+  `hu4_cupones.sql` prueba que el valor de la app se ignora, y que no se usan
+  cupones ajenos, vencidos o repetidos.
+- ✅ `0020` canjear `free_shipping` entrega su cupón (antes cobraba sin dar nada).
+- ✅ `0021` reseñas solo por `rate_order` (pedido propio, entregado, una vez,
+  en la sede del pedido) y `branches.rating` con el promedio real.
+- ✅ `0022` notificaciones creadas por la base en cada transición, por usuario
+  y rol, en Realtime; el usuario solo puede cambiar `read_at`.
+- ✅ `0023` `credit_gotas` falla si el saldo quedaría negativo (saldo = ledger)
+  y respeta `biffy.internal` de quien la llama (lo necesita `hu3_order_cycle.sql`).
+- ✅ `0024` envío gratis cuesta 5 Gotas.
+- ✅ App: pantalla para calificar, avisos en vivo sin duplicados y en hora
+  local, ganancias reales del repartidor, cajas del restaurante sin caerse en demo.
+- ✅ BLoC + Clean en todas las pantallas de HU-4 (ver sección 2). Calificar usa
+  el caso de uso `RateOrder` con puertos (`BranchRatingPort`, `ReviewNotifier`);
+  con Supabase el notificador de pedidos es `ServerOrderNotifier` (no duplica
+  los avisos que crea la base).
+- ✅ Pruebas SQL de RLS/RPC (`tool/test_supabase_sql.sh`, job `sql-tests`):
+  la base local trae las cuentas demo (`_demo_accounts.sql`), así que
+  `hu3_order_cycle.sql` también corre ahí.
+- ⏳ Aplicar `0020`–`0024` al proyecto remoto y el checklist de despliegue de
+  `supabase/README.md`; prueba final con datos reales.
+
+### HU-5 · Pasarela de pagos (Wompi) + efectivo con billete
+
+Rama `hu5-pasarela-pagos`.
+
+- ✅ `0026_payments.sql` aplicada: `payments` (un intento auditable por reintento),
+  `payment_events` (webhook idempotente), `orders.payment_status`,
+  `payment_expires_at`, `cash_tendered` y `cash_change`; RLS y RPC
+  (`payment_begin`, `payment_set_checkout`, `payment_apply`, `payment_refund`,
+  `expire_pending_payments`, `payment_for_order`).
+- ✅ Gating: el restaurante no ve ni acepta un pedido sin pago aprobado; los
+  avisos no salen antes; la expiración cancela y devuelve Gotas/cupón; el
+  efectivo queda aprobado sin pasarela.
+- ✅ Edge Functions desplegadas: `create-payment`, `wompi-webhook`
+  (checksum + consulta real a Wompi), `expire-payments` y `refund-payment`.
+  Las llaves `WOMPI_*` viven solo en Supabase Secrets; la app recibe la URL del
+  checkout.
+- ✅ Flutter: `Payment`/`PaymentRepository`, casos de uso, `PaymentBloc` (7
+  etapas), `/pago/:id`, apertura de Wompi, banner de rechazo con motivo y
+  reintento en el checkout, billetes/vueltas del efectivo y estado del pago en
+  el seguimiento.
+- ✅ Pruebas: `hu5_payments.sql`, 5 pruebas Deno de firma, unit del Bloc, casos
+  de uso, errores, efectivo y repositorio. `flutter analyze` limpio ·
+  `flutter test` **251/251**.
+- ✅ Webhook probado con un evento firmado de la transacción aprobada:
+  `payment_events.result = applied` y `signature_valid = true`.
+- ✅ Wompi llama al webhook con la URL configurada en **pruebas** y el secreto
+  `test_events_…` correcto. Se corrigieron dos detalles: la función acepta el
+  checksum del header **o** del body (algunos proxies entregan el header vacío)
+  y usa `signature.sent_at` cuando el evento real no trae
+  `signature.timestamp` (Wompi firma con la hora de envío en segundos).
+- ✅ BF-2058 aprobado con el evento real reenviado: `payment_events.result =
+  applied` y `signature_valid = true`; el restaurante recibió el aviso.
+- ✅ Cron de vencidos: `.github/workflows/expire-payments.yml` cada 15 minutos
+  con el secret `CRON_SECRET` (cargado en GitHub y en Supabase).
+- ✅ PR **#6** mergeado en `dev` (`89823c2`); la rama `hu5-pasarela-pagos` se
+  eliminó.
+- ⏳ Wompi reintenta los eventos anteriores (BF-2052/BF-2057) de forma
+  idempotente; el flujo real ya quedó verificado con BF-2058 y el endpoint
+  acepta los eventos reales.
+
+Calidad actual (HU-3 + HU-4 + HU-5): `flutter analyze` limpio · `flutter test`
+**251/251** (21 pruebas de integración se saltan sin credenciales de Supabase) ·
+pruebas SQL **158/158** de HU-3/HU-4 + `hu5_payments.sql`.
+
+### HU-2 · Catálogo y gestión del comercio en tiempo real
+
+Portada a `feat/hu2-clean-bloc` copiando archivos desde
+`origin/feat/hu2-catalogo-comercio` (sin merge). La parte de la base está en
+`supabase/migrations/0028_catalog_hu2.sql` (idempotente; en la rama original
+era `0019_catalog_hu2.sql`). **⏳ Falta aplicarla en el proyecto remoto** y
+correr las verificaciones de abajo.
+
+> **Numeración y la rama `hu4-cierre-entrega`.** El `0027` queda libre a
+> propósito: `origin/hu4-cierre-entrega` (aún sin integrar a `dev`) ya usa
+> `0027_server_guards.sql` y también modifica `apply_all.sql` y
+> `0099_verify.sql`. `0028` no depende de `0027`. Cuando esa rama llegue a
+> `dev`: **regenerar `apply_all.sql`** con `dart run tool/generate_apply_all.dart`
+> (orden 0026 → 0027 → 0028 → 0099) y, en `0099_verify.sql`, **conservar los
+> chequeos de las dos ramas**. Los de HU-2 van en un bloque `do $$` aparte al
+> final, entre `>>> HU-2` y `<<< fin HU-2`, para que el conflicto sea fácil de
+> resolver.
+
+| # | Criterio | Estado | Dónde |
+|---|---|---|---|
+| 1 | Los cambios del comercio (crear, editar, agotar, pausar, eliminar) llegan al comprador sin reabrir la app | ✅ código · ⏳ aplicar 0028 | `0028` §1 (`catalog_revision` + `dish_options` en Realtime), `supabase_catalog_repository.dart` (`_subscribe`, recarga agrupada 300 ms) |
+| 2 | Pausar o eliminar un plato lo oculta junto con sus opciones | ✅ código · ⏳ aplicar 0028 | `0028` §4 (`dish_options_read` pasa por `dishes_read`), `_apply` |
+| 3 | Un comercio no edita ni crea en sedes, platos u opciones de otro, ni mueve platos a otra sede | ✅ (RLS de `0004`) | `supabase/tests/editor/hu2_rls.sql` (1), `test/integration/hu2_supabase_test.dart` |
+| 4 | Borrado solo lógico (`deleted_at`); el DELETE duro de negocio, sede y plato falla | ✅ código · ⏳ aplicar 0028 | `0028` §2, `deleteDish`, `test/unit/hu2_guards_test.dart` |
+| 5 | El comprador solo recibe datos públicos del negocio (sin banco ni documentos) | ✅ código · ⏳ aplicar 0028 | `0028` §3 (`businesses_public` = id, brand, cuisine, description), `_fetchRows` + `CatalogRows.businesses` |
+| 6 | Sin red el catálogo abre con la última copia y avisa; sin copia muestra error con reintento | ✅ | `lib/data/repositories/catalog_snapshot.dart`, `lib/core/widgets/offline_banner.dart`, `test/unit/catalog_offline_test.dart`, `test/widget/offline_banner_test.dart` |
+| 7 | Una escritura que RLS rechaza (0 filas) no se muestra como guardada | ✅ | `CatalogWriteDenied` (`.select('id')` en update/delete/agotado/pausa) → `CatalogResult('forbidden')`; «Disponible» se revierte en el caso de uso `SetDishAvailability` |
+| 8 | Favoritos privados y sin "fantasmas" si falla la escritura | ✅ | `SupabasePreferencesRepository.setFavorite` (revierte la caché), `preferences_cubit_test`, `editor/hu2_rls.sql` (6) |
+| 9 | Fotos de platos solo en la carpeta del propio negocio, máx. 5 MiB e imágenes | ✅ código · ⏳ aplicar 0028 | `0028` §5 (`dish_images_update` con `WITH CHECK`), `editor/hu2_rls.sql` (7) |
+
+**Decisiones**
+
+- Realtime no envía eventos de filas que RLS deja de mostrar (pausar u ocultar
+  un plato). En vez de abrir RLS se añadió `catalog_revision`: una fila pública
+  que un trigger por sentencia sube en cada cambio de `branches`, `dishes` y
+  `dish_options`; la app solo la usa como señal para recargar.
+- `branches_write` y `dishes_write` siguen siendo `for all`: así el dueño puede
+  marcar `deleted_at` y seguir viendo la fila. El borrado duro se cierra con
+  `revoke delete`, no con políticas. Por eso el dueño recibe sus filas
+  borradas y `_apply` las descarta (junto con las opciones de esos platos).
+- La copia en disco (`shared_preferences`, clave `biffy.catalog.v1`) guarda
+  solo filas públicas: `CatalogRows.toJson` omite `ownBusinesses` (banco y
+  documentos nunca van al equipo). Una copia dañada o de otra versión se ignora.
+- `refresh()` nunca lanza; marca `offline` y lee la copia del disco **una sola
+  vez** y solo si la memoria está vacía. Al volver Realtime (`subscribed`)
+  estando sin red, recarga.
+- `CatalogRepository` (en `lib/domain/repositories/`) implementa
+  `CatalogSyncStatus`: la demo en memoria nunca está "sin conexión"
+  (`offline == false`). El `CatalogBloc` publica `offline` en su estado y el
+  `OfflineBanner` lo lee con `context.watch<CatalogBloc>()`.
+- La regla de cobertura expone el motivo con `coverageGap` (solo campus → sin
+  repartidores → fuera de radio); `isReachable` es `coverageGap == null`.
+
+**Cómo verificar**
+
+1. Aplicar `0028_catalog_hu2.sql` (o `apply_all.sql`) en el SQL Editor y
+   correr `0099_verify.sql` (su bloque HU-2 comprueba `catalog_revision`, los
+   triggers y que `authenticated` no tenga `DELETE`).
+2. Pegar `supabase/tests/editor/hu2_rls.sql` **a mano** en el SQL Editor (no
+   corre en CI): corre en `begin … rollback` y debe terminar con el aviso
+   `OK n` (cualquier fallo se detiene con `FALLO: …`).
+3. `flutter test test/integration/hu2_supabase_test.dart --dart-define-from-file=env.json`
+   (usa `qbano@demo.biffy.co`, `horno@demo.biffy.co` y `diego.demo@icesi.edu.co`).
+4. Manual: con la app del comprador abierta, pausar un plato desde
+   `/negocio/menu` en otra sesión; debe desaparecer en ~1 s. Cortar la red y
+   reabrir: aparece la franja «Sin conexión · mostrando el menú guardado».
+
+### HU-2 · Clean Architecture + Bloc en todos los flujos
+
+Rama `feat/hu2-clean-bloc`. Migración por módulos, cada uno con su commit:
+carrito → notificaciones → repartidor → porteo del caché sin conexión →
+catálogo → perfil (Gotas y cupones · preferencias y favoritos · direcciones ·
+verificación universitaria) → sesión/auth → cierre.
+
+- ✅ Cada módulo tiene entidades, interfaz de repositorio, casos de uso,
+  implementación en memoria y de Supabase, y su Bloc/Cubit (tabla de la
+  sección 2). Resultados tipados con mensaje en español en `lib/domain/*_errors.dart`.
+- ✅ `AuthBloc` (login, registro con rol, restaurar, cerrar sesión, rol activo,
+  perfil, negocio, punto de entrega, medio de pago y ajustes) reemplazó a
+  `SessionController`; se eliminaron `session_controller.dart` y
+  `controller_scope.dart`. El estado vive en `SessionRepository`.
+- ✅ Router con `StreamRefreshListenable` sobre `AuthBloc.stream` (con test de
+  `dispose`).
+- ✅ Cerrar sesión llama al servidor y, si falla la red, cierra igual en el
+  equipo, avisa y sale al login (ver «Trampas conocidas»).
+- ✅ Cero `package:provider`, cero `ChangeNotifier`/`ValueNotifier` en `lib/`
+  y cero `TODO(puente)`; `provider` no está en el `pubspec`.
+- ✅ Todos los Bloc/Cubit tienen `blocTest` de éxito y de error (86 en total);
+  `architecture_test.dart` lo exige para cualquier Bloc/Cubit nuevo, además de
+  que solo importen el dominio y que cada repositorio tenga las dos versiones.
+- Pruebas: los tests de widgets de los tres roles siguen pasando. Las pruebas
+  usan `makeServices()`; los atajos síncronos de sesión (`s.session.login`,
+  `loginAs`, `logout`, `setPoint`, `updateSettings`) son una extensión de prueba
+  en `test/helpers.dart` que llama a los mismos casos de uso.
+- Calidad: `flutter analyze` sin issues · `flutter test` **403 pasan, 30 se
+  saltan** (integración sin credenciales de Supabase).
+- ⏳ Aplicar `0028_catalog_hu2.sql` en el proyecto remoto (sección anterior).
+
+---
+
+## 4. Qué falta
+
+Orden sugerido. Cada punto tiene criterio de aceptación.
+
+### Fase 1 · Recompensas con cajas (2 días)
+
+- ✅ `/recompensas` lee `gotas_rewards` y `gotas_reward_prizes` con Supabase.
+- ✅ Abrir caja → RPC `redeem_reward` → diálogo con el premio sorteado.
+- ✅ Historial de canjes desde `reward_redemptions`.
+- ✅ Límites configurables en la base (`cooldown_hours`): caja de 5 ilimitada,
+  el resto cada 12 h y la grande cada 24 h.
+- ✅ Los restaurantes meten y sacan sus platos de las cajas (`box_items`,
+  pantalla `/negocio/cajas`); el sorteo usa esos platos y cae a los premios de
+  plataforma si no hay ninguno.
+- ✅ Ciclo completo del plato: al ganarlo se genera un código de 6 caracteres
+  (30 días) que el restaurante valida en `/negocio/cajas` → el canje pasa a
+  `used`.
+- ⏳ Saldo y libro de movimientos desde `gotas_ledger` (la pantalla aún usa el
+  historial local en demo).
+- ⏳ **Aplicar `0012_box_items.sql` y `0013_prize_claim.sql`** en el proyecto.
+- **Hecho cuando:** abrir una caja descuenta en la base y al reabrir la app el
+  premio sigue ahí.
+
+### Fase 2 · Comercio real (3–4 días)
+
+- ✅ Alta de negocio desde la app con `register_business` (cuenta + negocio +
+  sede en la base).
+- ✅ CRUD de platos remoto: crear, editar y borrar (borrado lógico) vía
+  `SupabaseCatalogRepository.upsertDish/deleteDish`.
+- ✅ Agotado y pausa de sede persistidos (`setDishSoldOut` / `setBranchPaused`).
+- ✅ Fotos de platos a `dish-images/<business_id>/` con URL pública.
+- **Hecho cuando:** un comerciante nuevo se registra, crea su menú y al reabrir
+  ve lo mismo.
+
+### Fase 3 · Catálogo completo (2 días)
+
+- ✅ Catálogo cargado desde `lib/data/mock/seed_catalog.dart` con
+  `tool/seed_supabase.dart` (idempotente): **14 negocios, 16 sedes, 36 platos y
+  40 opciones** (tamaños, acompañantes y extras).
+- ✅ Cada negocio tiene su cuenta demo (`biffy123`) como dueño real.
+- ✅ `branches.location` sincronizada desde lat/lng (trigger + backfill).
+- ✅ Polígono **real** de Icesi en `universities.boundary_polygon` (OSM).
+  UNAL, Andes y Javeriana quedan sin polígono (respaldo por `campus_id`).
+- ✅ `place_order` valida con PostGIS: radio (`ST_DWithin`) y geocerca
+  (`ST_Covers`) cuando la sede es `campus_delivery_only`.
+- **Hecho cuando:** el home en modo Supabase se ve igual que el demo.
+
+### Fase 4 · Datos personales sincronizados (2–3 días)
+
+- ✅ Direcciones (`addresses`) — crear/editar/borrar/predeterminada, con `dbId`.
+- ✅ Preferencias y encuesta de 300 Gotas (`preferences` + RPC `complete_survey`).
+- ✅ Favoritos (`favorite_dishes`, `favorite_branches`).
+- ✅ Ajustes (`app_settings`), incluido el modo oscuro real.
+- ✅ Cupones (`coupons`, `user_coupons`): los premios de caja generan cupón.
+- ✅ Notificaciones persistentes (`notifications`) para el propio usuario.
+- **Hecho cuando:** cerrar sesión y volver conserva todo.
+
+- ⏳ **Verificación universitaria:** ✅ `VerifyUniversity` (`UniversityUseCases`)
+  llama al RPC `verify_university`, guarda `profiles.verified` /
+  `university_email` y se rehidrata al iniciar sesión. Falta probar el camino
+  feliz con una cuenta nueva desde la app (requiere `service_role` para
+  limpiar la cuenta de prueba).
+
+### Fase 5 · Robustez (2–3 días)
+
+- ✅ Idempotencia de `place_order` con `client_key` (un reintento no duplica).
+- ✅ Reintentos automáticos en `place_order` (3 intentos con espera).
+- ✅ `ErrorView` con reintento en las pantallas que dependen de red; el resto
+  lee de la caché hidratada.
+- ✅ Estados de carga: checkout (`_placing`) y formulario de producto (`_saving`).
+- ✅ Smoke test real en `test/integration/supabase_smoke_test.dart` (4 casos),
+  gated por `--dart-define` y ejecutado en CI si hay secretos.
+- ✅ CI en GitHub Actions: analyze, test, build web y smoke opcional.
+
+### Fase 6 · Publicación (1–2 días)
+
+- Secrets por entorno; confirmación de correo activada + plantilla en español.
+- Backups/PITR, rate limits.
+- **Rotar** la contraseña de la base que se compartió por chat.
+- Smoke test de los tres roles en el build final.
+
+### Backlog técnico de la base
+
+| Prioridad | Pendiente |
+|---|---|
+| Alta | `couriers_nearby` real (repartidores online + PostGIS) |
+| Alta | Límite diario de canjes |
+| Alta | Política INSERT de `notifications` |
+| Media | `branches.rating` recalculado desde `reviews` |
+| Media | Jobs `pg_cron`: auto-cancelar pedidos viejos, sorteo mensual, limpiar evidencias |
+| Media | Ledger de pagos (restaurante y repartidor) |
+| Media | Índices trigram para buscador |
+| Baja | Auditoría de cambios de catálogo |
+| Baja | `profiles.active_role` (multi-rol) |
+
+---
+
+## 5. Reglas de trabajo
+
+1. **Una sola base compartida.** Los pedidos y cuentas de prueba los ve todo el
+   equipo.
+2. **Nada de cambios de esquema desde el panel.** Cada cambio es una migración
+   nueva en `supabase/migrations/`; después se regenera `apply_all.sql`
+   concatenando las migraciones en orden.
+3. **La app nunca usa `service_role`.** Solo scripts locales de administración.
+4. **Secretos fuera del repo:** `env.json`, contraseñas y `service_role` no se
+   versionan.
+5. Antes de subir: `flutter analyze` y `flutter test` en verde.
+6. Commits pequeños; la rama de integración es `supabasev2` (creada desde `dev`).
+7. **Comenta cada clase, función y widget** con una línea corta de qué es o qué
+   hace (`///` en miembros públicos). Es requisito para dar algo por terminado.
+
+---
+
+## 6. Trampas conocidas (leer antes de tocar código)
+
+| Tema | Detalle |
+|---|---|
+| Auth síncrona vs asíncrona | La demo usa `login/register` (síncronos, los tests dependen de ellos). Las pantallas usan `loginAsync/registerAsync`. No mezclar. |
+| IDs de pedido | `Order.id` es el código visible (`BF-2041`); `Order.dbId` es el uuid de la base. Los RPC usan **`dbId`**. Si es `null`, el pedido aún no llegó a la base. |
+| Servidor primero | Con Supabase el pedido **no** se crea ni cambia de estado localmente: se llama al RPC y el estado llega con la recarga. Si el RPC falla no queda nada a medias. En demo todo sigue siendo local e inmediato. |
+| Un solo API | Las pantallas despachan eventos al `OrdersBloc` (`add`) o esperan el resultado con `await bloc.request(evento)`. No hay API síncrona de pedidos. Los tests de reglas usan `bloc.useCases.<caso de uso>(...)`. |
+| Código de entrega | Vive en `order_secrets` (solo el comprador). El repartidor lo recibe vacío y lo valida el servidor; no compares códigos en la app. |
+| Direcciones y cupones | Hasta la HU de datos personales son locales (sin uuid). Con servidor, `validate()` pide una dirección guardada en la cuenta y bloquea cupones locales. |
+| Alcance | `isReachable` exige `couriersNearby > 0`. Es un valor simulado (default 1); la sede demo tiene 3. |
+| Realtime | Requiere `0010_realtime.sql` (publica `branches`, `dishes`, `orders`, `order_events`) y `0028` (`dish_options`, `catalog_revision`). Realtime **no** emite eventos de filas que RLS oculta: pausar/borrar un plato solo llega al comprador por el UPDATE de `catalog_revision`. No quitar sus triggers. Sin Realtime todo funciona, pero hay que reabrir la app. |
+| `businesses` | Tiene RLS de dueño. El comprador lee **`businesses_public`** (id, brand, cuisine, description); el dueño recibe además su fila completa y `CatalogRows.businesses` la mezcla por id. La vista corre con permisos de su dueño a propósito: no añadirle columnas privadas. |
+| Copia sin conexión | `biffy.catalog.v1` en `shared_preferences`, formato `{'v':1,…}`. Si cambia el formato, subir `v`: las copias viejas se ignoran solas. |
+| Escrituras de catálogo | Un UPDATE que RLS filtra devuelve 0 filas **sin error**. Toda escritura de catálogo usa `.select('id')` y lanza `CatalogWriteDenied` si vuelve vacía; el repositorio lo entrega como `CatalogResult` con código `forbidden` (nunca lanza hacia la pantalla). |
+| Migraciones 0027/0028 | `0027` está reservado para `0027_server_guards.sql` de `origin/hu4-cierre-entrega`. Al integrarla, regenerar `apply_all.sql` y conservar en `0099_verify.sql` los chequeos de las dos ramas (ver HU-2 arriba). |
+| Prueba SQL de HU-2 fuera de CI | Límite conocido: `supabase/tests/editor/hu2_rls.sql` **no corre en el job `sql-tests`** (que solo toma `supabase/tests/hu*.sql`). Está escrita para el SQL Editor: inserta en `auth.users` columnas que los stubs locales no tienen (`instance_id`, `aud`, `encrypted_password`…) y fija el usuario con `request.jwt.claims`, mientras el stub de `auth.uid()` lee `request.jwt.claim.sub`. Se corre a mano; para llevarla a CI habría que adaptarla. |
+| Evidencia | Se sube a `delivery-evidence/<order_uuid>/`; `courier_deliver` exige que el objeto exista. Máx. 5 MB, jpeg/png/webp. El bucket es privado: para mostrarla hace falta URL firmada (pendiente). |
+| Fechas | `timestamptz` llega en UTC: el mapeo usa `.toLocal()` y `scheduled_for` se envía con `.toUtc()`. Sin eso las horas y los días (ganancias, seguimiento) salen corridos 5 h. |
+| Imágenes | `image_url` acepta una ruta `assets/...` o una URL de Storage; `catalogImage` en `lib/core/widgets/ui.dart` elige asset o red. Hoy las 4 filas de Qbano tienen `null` (se ve el emoji). |
+| Ids demo | En Supabase las sedes tienen uuid: no enlazar a ids fijos como `qbano-icesi`; usar `CatalogBloc.qbanoIcesi` o buscar en el catálogo. |
+| Datos locales | Preferencias, favoritos, ajustes y cupones **no** se guardan en Supabase todavía (Fase 4). |
+| Datos de prueba | Existe el pedido `BF-2041` entregado y `legacy_gotas_rewards` (tabla antigua conservada y bloqueada). |
+| Confirmación de correo | Desactivada a propósito. Al publicar hay que activarla. |
+| Registro abierto | `disable_signup = false`: cualquiera con la URL y la clave publicable puede crear cuenta. Es aceptable en demo, no en producción. |
+| Disponibilidad y zona del repartidor | Límite conocido (HU-2): `CourierRepository.setOnline/setZone` son **locales en los dos modos**; no se guardan en Supabase. Al iniciar sesión con servidor, una cuenta con `courier_profiles` queda conectada y en zona Campus si su perfil tiene universidad. Solo el perfil se persiste. |
+| Avisos creados por la app | Límite conocido (HU-2): la escritura de `SupabaseNotificationRepository.push` en `notifications` (avisos `user:<id>`) **no tiene test automático**; la caché, `load`, `markRead` y la regla de visibilidad sí están probadas. |
+| Cerrar sesión | «Cerrar sesión» despacha `LogoutRequested()`: llama a `auth.signOut()` y cierra la sesión local. Si el servidor falla por red, la sesión local **se cierra igual**, el resultado es `network` («Cerramos tu sesión en este equipo, pero no pudimos avisar al servidor.») y la pantalla sale al login con ese aviso. En ese caso la sesión de Supabase guardada en el dispositivo podría restaurarse al reabrir la app. Probado en `auth_bloc_test` y `logout_widgets_test`. |
+| Eventos de sesión asíncronos | `AuthBloc` procesa los eventos después del `add`. Si la pantalla navega o lee la sesión justo después (iniciar sesión, cambiar de rol o de punto), debe usar `await bloc.request(evento)` antes de `context.go`; si no, el `redirect` del router aún ve la sesión vieja. |
+
+---
+
+## 7. Cómo verificar el estado
+
+```bash
+flutter analyze
+flutter test
+flutter run --dart-define-from-file=env.json
+```
+
+En la base (SQL Editor o `psql`):
+
+```sql
+select count(*) from public.gotas_rewards;        -- 4
+select count(*) from public.gotas_reward_prizes;  -- 15
+select code, status from public.orders order by created_at desc limit 5;
+select status from public.order_events order by created_at desc limit 6;
+```
+
+Pruebas SQL sin tocar el proyecto (Docker):
+
+```bash
+tool/test_supabase_sql.sh
+```
+
+Si `gotas_reward_prizes` no existe, falta aplicar `0008`.
+Si la app no se refresca sola, falta `0010`.
+Si `place_order` responde `total_mismatch` siempre o no existe `order_secrets`,
+falta aplicar `0019`.
+
+### Probar la HU-3 (ciclo del pedido)
+
+1. **Base:** SQL Editor → pegar `supabase/apply_all.sql` → Run (debe terminar
+   con `Biffy OK · 30 tablas …`). Si solo falta lo nuevo, basta
+   `supabase/migrations/0019_order_cycle.sql`.
+2. **Prueba SQL:** pegar `supabase/tests/hu3_order_cycle.sql` → Run. Debe
+   imprimir ~87 líneas `PASS` y ningún `FALLO`; no deja datos (`ROLLBACK`).
+3. **App:** copiar `env.example.json` a `env.json` y correr
+   `flutter run --dart-define-from-file=env.json` (usa dos o tres dispositivos
+   o ventanas, una por rol).
+4. **Flujo:** comprador `diego.demo@icesi.edu.co` pide → restaurante
+   `qbano@demo.biffy.co` acepta y marca listo → repartidor
+   `andres.repartidor@demo.biffy.co` acepta, recoge y entrega con el código que
+   ve el comprador y una foto → comprobar `orders`, `order_events` y
+   `gotas_ledger`.
+
+---
+
+## 8. Glosario
+
+| Término | Significado |
+|---|---|
+| Gota | Moneda de fidelidad. 1 Gota = $10 COP (`kGotaValue`) |
+| Caja | Recompensa aleatoria (`mystery_box` / `monthly_raffle`) con premios ponderados |
+| Sede / branch | Restaurante físico (`branches`) de un negocio (`businesses`) |
+| Punto de entrega | Lugar del campus o casa (`delivery_points`) que fija la regla de alcance |
+| RPC | Función Postgres expuesta por PostgREST; única vía de escritura de pedidos |

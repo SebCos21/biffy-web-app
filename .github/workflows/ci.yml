@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, supabasev2, main]
+  pull_request:
+    branches: [dev, supabasev2, main]
+
+jobs:
+  analyze-test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Versión fija: la misma con la que se desarrolla (pubspec exige Dart
+      # ^3.12.2). Con `channel: stable` sin versión, un Flutter más nuevo
+      # (3.50) marca `package:flutter/material.dart` como obsoleto y
+      # `flutter analyze` falla aunque el código no haya cambiado.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.8
+          cache: true
+
+      - name: Dependencias
+        run: flutter pub get
+
+      - name: Análisis estático
+        run: flutter analyze
+
+      - name: Pruebas
+        run: flutter test
+
+      - name: Build web (modo demo)
+        run: flutter build web --release
+
+      - name: Smoke test Supabase (si hay secretos)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_KEY" ]; then
+            flutter test test/integration/supabase_smoke_test.dart \
+              --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+              --dart-define=SUPABASE_KEY="$SUPABASE_KEY"
+          else
+            echo "Sin secretos configurados: se omite el smoke test."
+          fi
+
+  sql-tests:
+    # Migraciones + pruebas de RLS/RPC en un Postgres con PostGIS (sin Supabase).
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Migraciones y pruebas SQL
+        env:
+          DB_URL: postgres://postgres:postgres@localhost:5432/postgres
+        run: tool/test_supabase_sql.sh

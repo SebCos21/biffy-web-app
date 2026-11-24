@@ -1,0 +1,61 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/widgets/catalog_cards.dart';
+import '../../../core/widgets/ui.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
+import '../../auth/bloc/auth_bloc.dart';
+import '../../preferences/bloc/preferences_cubit.dart';
+
+/// Lista los platos y restaurantes marcados como favoritos.
+class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key});
+
+  /// Construye la lista de favoritos o el estado vacío.
+  @override
+  Widget build(BuildContext context) {
+    final session = context.watch<AuthBloc>();
+    final prefsCubit = context.watch<PreferencesCubit>();
+    final catalog = context.watch<CatalogBloc>();
+    final dishes = [
+      for (final id in prefsCubit.favoriteDishes(session.user?.id))
+        ?catalog.dishById(id),
+    ];
+    final restaurants = [
+      for (final id in prefsCubit.favoriteBranches(session.user?.id))
+        ?catalog.restaurantById(id),
+    ];
+    return Scaffold(
+      appBar: AppBar(title: const Text('Favoritos')),
+      body: MobileFrame(
+        child: dishes.isEmpty && restaurants.isEmpty
+            ? EmptyState(
+                emoji: '❤️',
+                title: 'Aún no tienes favoritos',
+                body:
+                    'Toca el corazón en un plato o restaurante para guardarlo.',
+                actionLabel: 'Explorar',
+                onAction: () => context.go('/explorar'),
+              )
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                children: [
+                  if (dishes.isNotEmpty) ...[
+                    const SectionHeader('Platos'),
+                    for (final d in dishes) DishTile(d),
+                  ],
+                  if (restaurants.isNotEmpty) ...[
+                    const SectionHeader('Restaurantes'),
+                    for (final r in restaurants)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: RestaurantCard(r),
+                      ),
+                  ],
+                ],
+              ),
+      ),
+    );
+  }
+}
