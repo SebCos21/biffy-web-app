@@ -1,6 +1,7 @@
 import 'package:biffy/domain/order_rules.dart';
 import 'package:biffy/domain/usecases/get_courier_earnings.dart';
 import 'package:biffy/features/courier/earnings/earnings_cubit.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
@@ -59,6 +60,39 @@ void main() {
         await deliverQbano(s);
         await Future<void>.delayed(Duration.zero);
         expect(c.state.today.deliveries, before + 1);
+      },
+    );
+  });
+
+  group('EarningsCubit (bloc_test)', () {
+    blocTest<EarningsCubit, EarningsSummary>(
+      'una entrega del repartidor emite el resumen con la entrega nueva',
+      build: () => EarningsCubit(
+        orders: s.orders,
+        courierId: 'u-andres',
+        now: () => s.catalog.now,
+      ),
+      act: (_) => deliverQbano(s),
+      expect: () => contains(
+        isA<EarningsSummary>().having(
+          (e) => e.today.deliveries,
+          'entregas de hoy',
+          greaterThanOrEqualTo(1),
+        ),
+      ),
+    );
+
+    blocTest<EarningsCubit, EarningsSummary>(
+      'la entrega de otro repartidor no suma a estas ganancias',
+      build: () => EarningsCubit(
+        orders: s.orders,
+        courierId: 'u-otro',
+        now: () => s.catalog.now,
+      ),
+      act: (_) => deliverQbano(s),
+      verify: (c) {
+        expect(c.state.total.deliveries, 0);
+        expect(c.state.history, isEmpty);
       },
     );
   });

@@ -334,19 +334,23 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-/// Cierra sesión con confirmación, limpia la sesión y vuelve al inicio.
+/// Cierra sesión con confirmación (en el servidor y en el equipo) y sale al
+/// login. Sin red la sesión local se cierra igual y se avisa.
 Future<void> logoutFlow(BuildContext context) async {
   final ok = await showConfirm(
     context,
     title: '¿Cerrar sesión?',
-    message: 'Se cerrará tu sesión de demostración en este dispositivo.',
+    message: 'Se cerrará tu sesión en este dispositivo.',
     confirm: 'Cerrar sesión',
     destructive: true,
   );
   if (!ok || !context.mounted) return;
-  // Igual que antes de HU-2: cierra solo en el equipo.
-  await getIt<AuthBloc>().request(LogoutRequested(local: true));
+  final result = await getIt<AuthBloc>().request(LogoutRequested());
   if (!context.mounted) return;
-  context.go('/');
-  showSnack(context, 'Sesión cerrada');
+  context.go('/login');
+  showSnack(
+    context,
+    result.ok ? 'Sesión cerrada' : result.message,
+    error: !result.ok,
+  );
 }

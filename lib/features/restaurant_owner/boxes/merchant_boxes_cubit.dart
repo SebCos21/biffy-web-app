@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../data/models/catalog.dart';
-import '../../../data/models/rewards.dart';
+import '../../../domain/entities/catalog.dart';
+import '../../../domain/entities/rewards.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/usecases/merchant_boxes_usecases.dart';
 

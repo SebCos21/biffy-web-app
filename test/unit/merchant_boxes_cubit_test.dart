@@ -3,6 +3,7 @@ import 'package:biffy/domain/usecases/merchant_boxes_usecases.dart';
 import 'package:biffy/data/models/rewards.dart';
 import 'package:biffy/domain/repositories/merchant_boxes_repository.dart';
 import 'package:biffy/features/restaurant_owner/boxes/merchant_boxes_cubit.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
@@ -122,4 +123,73 @@ void main() {
       expect(cubit.state.messageIsError, isTrue);
     },
   );
+
+  group('MerchantBoxesCubit (bloc_test)', () {
+    MerchantBoxesCubit fresh() => MerchantBoxesCubit(
+      repo: repo,
+      load: LoadMerchantBoxes(repo),
+      add: AddDishToBox(repo),
+      claim: ClaimBoxPrize(repo),
+    );
+
+    blocTest<MerchantBoxesCubit, MerchantBoxesState>(
+      'cargar emite cargando y luego las cajas listas',
+      build: fresh,
+      act: (c) => c.load(),
+      expect: () => [
+        isA<MerchantBoxesState>().having(
+          (s) => s.status,
+          'estado',
+          BoxesStatus.loading,
+        ),
+        isA<MerchantBoxesState>()
+            .having((s) => s.status, 'estado', BoxesStatus.ready)
+            .having((s) => s.data.boxes.length, 'cajas', 1),
+      ],
+    );
+
+    blocTest<MerchantBoxesCubit, MerchantBoxesState>(
+      'si guardar falla emite ocupado y luego el error sin quedar ocupado',
+      build: fresh,
+      setUp: () => repo.failWrites = true,
+      act: (c) => c.addDish(_box25, dish),
+      expect: () => [
+        isA<MerchantBoxesState>().having((s) => s.busy, 'ocupado', isTrue),
+        isA<MerchantBoxesState>()
+            .having((s) => s.busy, 'ocupado', isFalse)
+            .having((s) => s.messageIsError, 'error', isTrue)
+            .having(
+              (s) => s.message,
+              'mensaje',
+              'No pudimos guardar el cambio.',
+            ),
+      ],
+    );
+
+    blocTest<MerchantBoxesCubit, MerchantBoxesState>(
+      'un código de premio válido emite el premio entregado',
+      build: fresh,
+      act: (c) => c.claim('abc123'),
+      expect: () => [
+        isA<MerchantBoxesState>()
+            .having((s) => s.messageIsError, 'error', isFalse)
+            .having(
+              (s) => s.message,
+              'mensaje',
+              'Premio entregado: Qbano de pollo',
+            ),
+      ],
+    );
+
+    blocTest<MerchantBoxesCubit, MerchantBoxesState>(
+      'un código inexistente emite el error de la base',
+      build: fresh,
+      act: (c) => c.claim('zzz'),
+      expect: () => [
+        isA<MerchantBoxesState>()
+            .having((s) => s.messageIsError, 'error', isTrue)
+            .having((s) => s.message, 'mensaje', 'Código no encontrado.'),
+      ],
+    );
+  });
 }

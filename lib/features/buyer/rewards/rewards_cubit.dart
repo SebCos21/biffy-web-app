@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../data/models/rewards.dart';
+import '../../../domain/entities/rewards.dart';
 import '../../../domain/repositories/rewards_repository.dart';
 import '../../../domain/rewards_rules.dart';
 import '../../../domain/usecases/rewards_usecases.dart';

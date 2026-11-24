@@ -5,6 +5,7 @@ import 'package:biffy/domain/repositories/order_repository.dart';
 import 'package:biffy/domain/usecases/orders/order_usecases.dart';
 import 'package:biffy/features/orders/bloc/orders_bloc.dart';
 import 'package:biffy/shared/adapters/order_adapters.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_order_repository.dart';
@@ -197,5 +198,38 @@ void main() {
     expect(bloc.all, hasLength(1));
     expect(bloc.forBuyer(o.buyerId), hasLength(1));
     expect(bloc.isRemote, isTrue);
+  });
+
+  group('OrdersBloc (bloc_test)', () {
+    blocTest<OrdersBloc, OrdersState>(
+      'aceptar un pedido emite el resultado ok de la acción',
+      setUp: () async => repo.insertSeed(await pending()),
+      build: () => OrdersBloc(bloc.useCases),
+      act: (b) => b.add(OrderAccepted('BF-3001')),
+      expect: () => contains(
+        isA<OrdersState>()
+            .having((s) => s.outcome?.ok, 'ok', isTrue)
+            .having((s) => s.outcome?.action, 'acción', OrderAction.accept),
+      ),
+    );
+
+    blocTest<OrdersBloc, OrdersState>(
+      'si el servidor lo rechaza emite el error en español',
+      setUp: () async {
+        repo.insertSeed(await pending());
+        repo.responses['accept:BF-3001'] = const OrderResult('forbidden');
+      },
+      build: () => OrdersBloc(bloc.useCases),
+      act: (b) => b.add(OrderAccepted('BF-3001')),
+      expect: () => contains(
+        isA<OrdersState>()
+            .having((s) => s.outcome?.result.code, 'code', 'forbidden')
+            .having(
+              (s) => s.outcome?.result.message,
+              'mensaje',
+              contains('No tienes permiso'),
+            ),
+      ),
+    );
   });
 }

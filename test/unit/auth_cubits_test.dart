@@ -5,6 +5,7 @@ import 'package:biffy/domain/entities/user.dart';
 import 'package:biffy/features/auth/bloc/login_cubit.dart';
 import 'package:biffy/features/auth/bloc/register_cubit.dart';
 import 'package:biffy/features/auth/bloc/university_verification_cubit.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
@@ -168,5 +169,66 @@ void main() {
       expect(cubit.state.expiresAt, isNotNull);
       expect(cubit.state.codeSent, isFalse);
     });
+  });
+
+  group('LoginCubit y RegisterCubit (bloc_test)', () {
+    blocTest<LoginCubit, LoginState>(
+      'login correcto emite enviando y luego éxito con el usuario',
+      build: () => LoginCubit(services.session),
+      act: (c) => c.submit(kDemoBuyerEmail, kDemoPassword),
+      expect: () => [
+        isA<LoginState>().having((s) => s.isSubmitting, 'enviando', isTrue),
+        isA<LoginState>()
+            .having((s) => s.status, 'estado', LoginStatus.success)
+            .having((s) => s.user?.email, 'correo', kDemoBuyerEmail),
+      ],
+    );
+
+    blocTest<LoginCubit, LoginState>(
+      'contraseña incorrecta emite enviando y luego el error en español',
+      build: () => LoginCubit(services.session),
+      act: (c) => c.submit(kDemoBuyerEmail, 'incorrecta'),
+      expect: () => [
+        isA<LoginState>().having((s) => s.isSubmitting, 'enviando', isTrue),
+        isA<LoginState>()
+            .having((s) => s.status, 'estado', LoginStatus.error)
+            .having((s) => s.error, 'error', isNotEmpty),
+      ],
+      verify: (_) => expect(services.session.isLoggedIn, isFalse),
+    );
+
+    blocTest<RegisterCubit, RegisterState>(
+      'registrar un comprador nuevo emite enviando y luego éxito',
+      build: () => RegisterCubit(services.session),
+      act: (c) => c.submit(
+        name: 'Nueva Compradora',
+        email: 'nueva.compradora@test.co',
+        password: '123456',
+        phone: '',
+      ),
+      expect: () => [
+        isA<RegisterState>().having((s) => s.isSubmitting, 'enviando', isTrue),
+        isA<RegisterState>()
+            .having((s) => s.status, 'estado', RegisterStatus.success)
+            .having((s) => s.user?.role, 'rol', UserRole.buyer),
+      ],
+    );
+
+    blocTest<RegisterCubit, RegisterState>(
+      'un correo ya registrado emite el error en español',
+      build: () => RegisterCubit(services.session),
+      act: (c) => c.submit(
+        name: 'Diego',
+        email: kDemoBuyerEmail,
+        password: '123456',
+        phone: '',
+      ),
+      expect: () => [
+        isA<RegisterState>().having((s) => s.isSubmitting, 'enviando', isTrue),
+        isA<RegisterState>()
+            .having((s) => s.status, 'estado', RegisterStatus.error)
+            .having((s) => s.error, 'error', isNotEmpty),
+      ],
+    );
   });
 }

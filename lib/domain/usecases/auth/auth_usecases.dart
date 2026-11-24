@@ -113,13 +113,7 @@ class _Deps {
       );
     }
     final addr = addresses.queries.defaultOf(u.id);
-    set(
-      (s) => s.copyWith(
-        user: u,
-        activeRole: u.role,
-        pointId: addr?.pointId,
-      ),
-    );
+    set((s) => s.copyWith(user: u, activeRole: u.role, pointId: addr?.pointId));
   }
 
   /// Trae billetera, direcciones, repartidor, preferencias, ajustes, avisos y
@@ -299,12 +293,19 @@ class SignOut {
     return const AuthResult.ok();
   }
 
-  /// Cierra la sesión remota y la local (la local siempre, aunque falle la red).
+  /// Cierra la sesión remota y la local. Si el servidor falla, la local se
+  /// cierra igual y devuelve `network` para que la pantalla lo avise.
   Future<AuthResult> call() async {
     try {
       await _d.auth.signOut();
     } on Object {
-      // Sin red igual se cierra en el equipo.
+      local();
+      return const AuthResult(
+        'network',
+        serverMessage:
+            'Cerramos tu sesión en este equipo, pero no pudimos avisar al '
+            'servidor.',
+      );
     }
     return local();
   }

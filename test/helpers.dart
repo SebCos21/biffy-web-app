@@ -6,6 +6,7 @@ import 'package:biffy/app/di/injection.dart';
 import 'package:biffy/data/repositories/in_memory_order_repository.dart';
 import 'package:biffy/data/repositories/in_memory_payment_repository.dart';
 import 'package:biffy/domain/repositories/rewards_repository.dart';
+import 'package:biffy/domain/repositories/auth_repository.dart';
 import 'package:biffy/domain/usecases/rate_order.dart';
 import 'package:biffy/features/orders/bloc/orders_bloc.dart';
 import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
@@ -57,12 +58,14 @@ class TestServices {
 }
 
 /// Reinicia GetIt en modo demo (sin Supabase) con reloj fijo y datos de
-/// ejemplo. [rewards] sustituye el repositorio de recompensas por un doble.
+/// ejemplo. [rewards] sustituye el repositorio de recompensas por un doble y
+/// [auth] construye el de autenticación (p. ej. uno que falla sin red).
 Future<TestServices> makeServices({
   Clock? clock,
   int? randomSeed = 7,
   bool seed = true,
   RewardsRepository? rewards,
+  AuthRepository Function()? auth,
 }) async {
   await getIt.reset();
   getIt.allowReassignment = true;
@@ -78,6 +81,7 @@ Future<TestServices> makeServices({
     ),
   );
   if (rewards != null) getIt.registerSingleton<RewardsRepository>(rewards);
+  if (auth != null) getIt.registerLazySingleton<AuthRepository>(auth);
   // En pruebas el pago simulado se resuelve rápido (sin esperar 2 s).
   getIt.registerLazySingleton<PaymentRepository>(
     () => InMemoryPaymentRepository(

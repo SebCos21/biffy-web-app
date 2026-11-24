@@ -211,6 +211,38 @@ void main() {
         expect(c.verifiedUniversityId('u1'), isNull);
       },
     );
+
+    blocTest<UniversityCubit, UniversityState>(
+      'cargar una verificación vigente repinta y habilita Campus',
+      build: () => UniversityCubit(
+        useCases(
+          _RemoteRecord(
+            UniversityRecord(
+              verified: true,
+              universityId: 'icesi',
+              expiresAt: _now.add(const Duration(days: 5)),
+            ),
+          ),
+        ),
+      ),
+      act: (c) => c.useCases.load('u1'),
+      expect: () => isNotEmpty,
+      verify: (c) => expect(c.isVerifiedStudent('u1'), isTrue),
+    );
+
+    blocTest<UniversityCubit, UniversityState>(
+      'sin red cargar no cambia nada ni habilita Campus',
+      build: () => UniversityCubit(
+        useCases(
+          _RemoteRecord(
+            const UniversityRecord(verified: true, universityId: 'icesi'),
+            code: 'network',
+          ),
+        ),
+      ),
+      act: (c) async => expect((await c.useCases.load('u1')).ok, isFalse),
+      verify: (c) => expect(c.isVerifiedStudent('u1'), isFalse),
+    );
   });
 
   group('Cargar la verificación al iniciar sesión', () {

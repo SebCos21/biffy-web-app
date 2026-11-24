@@ -78,11 +78,8 @@ final class SessionRefreshRequested extends AuthEvent {
 
 /// Cerrar sesión.
 final class LogoutRequested extends AuthEvent {
-  /// Crea el evento; [local] cierra solo en el equipo (sin llamar al servidor).
-  LogoutRequested({this.local = false});
-
-  /// `true` para cerrar solo la sesión local.
-  final bool local;
+  /// Crea el evento (cierra en el servidor y en el equipo).
+  LogoutRequested();
 }
 
 /// Entrar con una cuenta de demostración.

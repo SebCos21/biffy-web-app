@@ -35,31 +35,63 @@ La confirmación de correo está **desactivada** mientras sea demo.
 
 ## 2. Arquitectura en una pantalla
 
+Toda la app usa **Clean Architecture + Bloc** (HU-2 terminó la migración: no
+queda `ChangeNotifier`, `provider`, `SessionController` ni `ControllerScope`).
+
 ```text
 Pantallas (lib/features/**)
-   ↓ eventos / lectura
-OrdersBloc (lib/features/orders/bloc)        Controladores ChangeNotifier (sesión,
-   ↓ llama a                                  catálogo, carrito: aún sin migrar)
-Casos de uso (lib/domain/usecases/orders)
-   ↓ dependen de interfaces
-Dominio: entidades, OrderRepository, puertos (lib/domain/**)  ← Dart puro
-   ↑ implementan
-Repositorios (lib/data/repositories/**)
+   ↓ eventos: bloc.add(…) o await bloc.request(…) · lectura: context.watch<…>()
+Blocs y Cubits (lib/features/**/bloc, …_cubit.dart)   ← solo conocen el dominio
+   ↓ llaman a
+Casos de uso (lib/domain/usecases/<módulo>/)
+   ↓ dependen de interfaces y puertos
+Dominio: entidades, XRepository, puertos, x_errors.dart (lib/domain/**)  ← Dart puro
+   ↑ implementan                              ↑ adaptan los puertos
+Repositorios (lib/data/repositories/**)       lib/shared/adapters/
    ├── InMemory…   → modo demo
    └── Supabase…   → backend real
 ```
 
-HU-4 usa BLoC + Clean por feature (acuerdo del equipo):
+| Módulo | Bloc / Cubit | Casos de uso | Repositorio (dominio) |
+|---|---|---|---|
+| Sesión y auth | `AuthBloc` (global), `LoginCubit`, `RegisterCubit` | `usecases/auth` | `AuthRepository`, `SessionRepository`, `ProfileRepository` |
+| Pedidos | `OrdersBloc` (global) | `usecases/orders` | `OrderRepository` |
+| Carrito y checkout | `CartCubit` (global), `CheckoutCubit` | valida y delega en `OrdersBloc` (`OrderPlaced`) | `CatalogRepository` (solo lectura) |
+| Pagos | `PaymentBloc` | `usecases/payments` | `PaymentRepository` |
+| Catálogo | `CatalogBloc` (global) | `usecases/catalog` | `CatalogRepository` |
+| Avisos | `NotificationsBloc` (global), `NotificationsCubit` | `usecases/notifications` | `NotificationRepository` |
+| Repartidor | `CourierCubit` (global), `EarningsCubit` | `usecases/courier`, `GetCourierEarnings` | `CourierRepository` |
+| Gotas y cupones | `WalletCubit` (global) | `usecases/wallet` | `WalletRepository` |
+| Preferencias y favoritos | `PreferencesCubit` (global) | `usecases/preferences` | `PreferencesRepository` |
+| Direcciones | `AddressesCubit` (global) | `usecases/addresses` | `AddressRepository` |
+| Verificación universitaria | `UniversityCubit` (global), `UniversityVerificationCubit` | `usecases/university` | `UniversityRepository` |
+| Recompensas, cajas y reseñas (HU-4) | `RewardsCubit`, `MerchantBoxesCubit`, `RateOrderCubit` | `rewards_usecases`, `merchant_boxes_usecases`, `rate_order` | `RewardsRepository`, `MerchantBoxesRepository`, `ReviewRepository` |
 
-```text
-Pantalla ──► Cubit (lib/features/**/x_cubit.dart)
-               ──► Caso de uso (lib/domain/usecases/)
-                     ──► Interfaz (lib/domain/repositories/)
-                           ◄── Supabase… / InMemory… (lib/data/repositories/)
-```
+**Cómo es cada slice**
 
-Cubits de HU-4: `RateOrderCubit`, `RewardsCubit`, `MerchantBoxesCubit`,
-`NotificationsCubit`, `EarningsCubit`. Se crean con GetIt (`getIt<…Cubit>()`), uno nuevo por pantalla.
+- **Dominio:** entidad inmutable; interfaz con caché síncrona, `Stream<void>
+  changes` y escrituras que actualizan la caché antes del primer `await`;
+  resultado tipado (`XResult` con `code`, `message` en español desde
+  `x_errors.dart` e `isTransportError`); casos de uso agrupados en `XUseCases`.
+- **Datos:** caché compartida (`x_cache.dart`) con `InMemoryX…` y
+  `SupabaseX…`; las dos se comportan igual (las pruebas lo comparan).
+- **Presentación:** Bloc o Cubit con estado inmutable (`copyWith`, sin
+  Equatable), `revision` y `outcome` con id creciente para `BlocListener`;
+  las lecturas síncronas delegan en las `queries` de los casos de uso.
+  `request(evento)` devuelve el resultado cuando la pantalla necesita navegar
+  o avisar en el mismo toque.
+- **DI:** GetIt por módulos (`lib/app/di/modules/`). Repositorios y puertos
+  `LazySingleton` por interfaz; casos de uso `Factory`; Blocs globales
+  `LazySingleton` con `dispose`; cubits de pantalla `Factory`. Solo
+  `data_module.dart` decide Supabase o memoria (`AppConfig.hasSupabase`).
+- **Router:** `buildRouter(AuthBloc, refresh:)`. `StreamRefreshListenable`
+  (`lib/app/auth_refresh.dart`) implementa `Listenable` a mano sobre
+  `AuthBloc.stream` y cancela la suscripción en `dispose`.
+
+**Excepciones documentadas** (las valida `test/architecture_test.dart`):
+`SessionRepository` es solo en memoria en los dos modos (es el estado del
+equipo); `RewardsRepository` y `MerchantBoxesRepository` (HU-4) solo existen
+con Supabase y no se registran en demo.
 
 Reglas que **no** se negocian:
 
@@ -69,6 +101,9 @@ Reglas que **no** se negocian:
   `OrderRepository`; ninguna pantalla toca `Order` ni los repositorios.
 - Las reglas de negocio (precios, filtros, transiciones, horarios) son funciones
   puras en `lib/domain/` con tests.
+- Los widgets nunca llaman a Supabase ni importan `data/`; los Blocs y Cubits
+  solo importan el dominio (y otros Blocs).
+- Cada Bloc/Cubit tiene `blocTest` de éxito y de error.
 - El modo demo (sin credenciales de Supabase) debe seguir funcionando: las pruebas lo
   levantan con `makeServices()` (GetIt en memoria, reloj fijo).
 
@@ -106,12 +141,12 @@ migraciones).
 | `lib/domain/order_errors.dart` | `result` del servidor → mensaje en español (con tests) |
 | `lib/app/di/injection.dart` | Raíz de composición con **GetIt**: `configureDependencies()` registra los módulos `core`, `data`, `domain` y `presentation` (`lib/app/di/modules/`) |
 | `lib/app/di/bootstrap.dart` | `bootstrapApp()`: restaura la sesión (Supabase) o carga los datos demo |
-| `lib/shared/state/controller_scope.dart` | `ControllerScope` + `context.watchController<T>()`: redibujan las pantallas cuando cambia un controlador, sin Provider |
-| `lib/shared/state/session_controller.dart` | `loginAsync`, `registerAsync`, `restoreAsync`, hidratación remota y persistencia de perfil |
+| `lib/features/auth/bloc/auth_bloc.dart` | `AuthBloc` (HU-2): login, registro con rol, restaurar y cerrar sesión, rol, perfil, punto y ajustes → `AuthUseCases` (`lib/domain/usecases/auth/`) → `AuthRepository` + `SessionRepository` |
+| `lib/app/auth_refresh.dart` | `StreamRefreshListenable`: avisa al router en cada estado del `AuthBloc` y cancela la suscripción en `dispose` |
 | `lib/features/orders/bloc/` | `OrdersBloc`: eventos → casos de uso → `OrdersState` (`orders`, `revision`, `outcome`). Con servidor, **el servidor decide**: llama al RPC y el estado llega con la recarga |
 | `lib/domain/usecases/orders/` | `PlaceOrder`, `CancelOrder`, `AcceptOrder`, `RejectOrder`, `MarkOrderReady`, `AcceptOffer`, `DeclineOffer`, `ConfirmPickup`, `CompleteDelivery`, `OrderQueries`; se ensamblan en `OrderUseCases` |
 | `lib/domain/repositories/order_repository.dart` | Interfaz `OrderRepository` + `OrderResult` (mismos códigos en demo y servidor) |
-| `lib/shared/adapters/order_adapters.dart` | Conectan los puertos de pedidos con los casos de uso del catálogo y de avisos, y con `SessionController` (puente hasta el AuthBloc) |
+| `lib/shared/adapters/order_adapters.dart` | Conectan los puertos de pedidos con los casos de uso del catálogo y de avisos, y con la sesión (`SessionRepository`), la billetera y la verificación |
 | `lib/features/catalog/bloc/` | `CatalogBloc` (HU-2): eventos de escritura del comercio → `CatalogUseCases` → `CatalogRepository`; lecturas síncronas con la regla `isReachable`; `request()` devuelve un `CatalogResult` con mensaje en español |
 | `tool/admin_seed.dart` | Crea/actualiza las 3 cuentas demo con `service_role` (idempotente) |
 | `supabase/functions/send-university-code/` | Envía el código al correo institucional con Resend |
@@ -177,9 +212,8 @@ remoto** (ver «Cómo probarlo» abajo).
   `LoginCubit`, `RegisterCubit`, `UniversityVerificationCubit` y `CheckoutCubit`
   son `Factory` en `presentation_module.dart`. Las pantallas los piden con
   `getIt<T>()` y observan controladores con `context.watchController<T>()`.
-- **Pendiente 1b:** `SessionBloc` que reemplace `SessionController` y migre sus
-  consumidores; se hará como slice independiente.
-- **Pendiente 3:** `CatalogBloc`/`ExploreCubit` y el resto de pantallas.
+- ✅ **1b y 3 cerrados en HU-2:** `AuthBloc` reemplazó a `SessionController` y
+  `CatalogBloc` a `CatalogController` (ver sección 2 y «HU-2 · Clean + Bloc»).
 - Calidad de la rama: `flutter analyze` limpio · **235/235** tests ·
   21 pruebas saltadas (las que necesitan credenciales de Supabase).
 
@@ -281,7 +315,7 @@ correr las verificaciones de abajo.
 | 5 | El comprador solo recibe datos públicos del negocio (sin banco ni documentos) | ✅ código · ⏳ aplicar 0028 | `0028` §3 (`businesses_public` = id, brand, cuisine, description), `_fetchRows` + `CatalogRows.businesses` |
 | 6 | Sin red el catálogo abre con la última copia y avisa; sin copia muestra error con reintento | ✅ | `lib/data/repositories/catalog_snapshot.dart`, `lib/core/widgets/offline_banner.dart`, `test/unit/catalog_offline_test.dart`, `test/widget/offline_banner_test.dart` |
 | 7 | Una escritura que RLS rechaza (0 filas) no se muestra como guardada | ✅ | `CatalogWriteDenied` (`.select('id')` en update/delete/agotado/pausa) → `CatalogResult('forbidden')`; «Disponible» se revierte en el caso de uso `SetDishAvailability` |
-| 8 | Favoritos privados y sin "fantasmas" si falla la escritura | ✅ | `SessionController._revertFavorite`, `editor/hu2_rls.sql` (6) |
+| 8 | Favoritos privados y sin "fantasmas" si falla la escritura | ✅ | `SupabasePreferencesRepository.setFavorite` (revierte la caché), `preferences_cubit_test`, `editor/hu2_rls.sql` (6) |
 | 9 | Fotos de platos solo en la carpeta del propio negocio, máx. 5 MiB e imágenes | ✅ código · ⏳ aplicar 0028 | `0028` §5 (`dish_images_update` con `WITH CHECK`), `editor/hu2_rls.sql` (7) |
 
 **Decisiones**
@@ -320,6 +354,37 @@ correr las verificaciones de abajo.
 4. Manual: con la app del comprador abierta, pausar un plato desde
    `/negocio/menu` en otra sesión; debe desaparecer en ~1 s. Cortar la red y
    reabrir: aparece la franja «Sin conexión · mostrando el menú guardado».
+
+### HU-2 · Clean Architecture + Bloc en todos los flujos
+
+Rama `feat/hu2-clean-bloc`. Migración por módulos, cada uno con su commit:
+carrito → notificaciones → repartidor → porteo del caché sin conexión →
+catálogo → perfil (Gotas y cupones · preferencias y favoritos · direcciones ·
+verificación universitaria) → sesión/auth → cierre.
+
+- ✅ Cada módulo tiene entidades, interfaz de repositorio, casos de uso,
+  implementación en memoria y de Supabase, y su Bloc/Cubit (tabla de la
+  sección 2). Resultados tipados con mensaje en español en `lib/domain/*_errors.dart`.
+- ✅ `AuthBloc` (login, registro con rol, restaurar, cerrar sesión, rol activo,
+  perfil, negocio, punto de entrega, medio de pago y ajustes) reemplazó a
+  `SessionController`; se eliminaron `session_controller.dart` y
+  `controller_scope.dart`. El estado vive en `SessionRepository`.
+- ✅ Router con `StreamRefreshListenable` sobre `AuthBloc.stream` (con test de
+  `dispose`).
+- ✅ Cerrar sesión llama al servidor y, si falla la red, cierra igual en el
+  equipo, avisa y sale al login (ver «Trampas conocidas»).
+- ✅ Cero `package:provider`, cero `ChangeNotifier`/`ValueNotifier` en `lib/`
+  y cero `TODO(puente)`; `provider` no está en el `pubspec`.
+- ✅ Todos los Bloc/Cubit tienen `blocTest` de éxito y de error (86 en total);
+  `architecture_test.dart` lo exige para cualquier Bloc/Cubit nuevo, además de
+  que solo importen el dominio y que cada repositorio tenga las dos versiones.
+- Pruebas: los tests de widgets de los tres roles siguen pasando. Las pruebas
+  usan `makeServices()`; los atajos síncronos de sesión (`s.session.login`,
+  `loginAs`, `logout`, `setPoint`, `updateSettings`) son una extensión de prueba
+  en `test/helpers.dart` que llama a los mismos casos de uso.
+- Calidad: `flutter analyze` sin issues · `flutter test` **403 pasan, 30 se
+  saltan** (integración sin credenciales de Supabase).
+- ⏳ Aplicar `0028_catalog_hu2.sql` en el proyecto remoto (sección anterior).
 
 ---
 
@@ -380,7 +445,7 @@ Orden sugerido. Cada punto tiene criterio de aceptación.
 - ✅ Notificaciones persistentes (`notifications`) para el propio usuario.
 - **Hecho cuando:** cerrar sesión y volver conserva todo.
 
-- ⏳ **Verificación universitaria:** ✅ `SessionController.verifyUniversityAsync`
+- ⏳ **Verificación universitaria:** ✅ `VerifyUniversity` (`UniversityUseCases`)
   llama al RPC `verify_university`, guarda `profiles.verified` /
   `university_email` y se rehidrata al iniciar sesión. Falta probar el camino
   feliz con una cuenta nueva desde la app (requiere `service_role` para
@@ -464,7 +529,7 @@ Orden sugerido. Cada punto tiene criterio de aceptación.
 | Registro abierto | `disable_signup = false`: cualquiera con la URL y la clave publicable puede crear cuenta. Es aceptable en demo, no en producción. |
 | Disponibilidad y zona del repartidor | Límite conocido (HU-2): `CourierRepository.setOnline/setZone` son **locales en los dos modos**; no se guardan en Supabase. Al iniciar sesión con servidor, una cuenta con `courier_profiles` queda conectada y en zona Campus si su perfil tiene universidad. Solo el perfil se persiste. |
 | Avisos creados por la app | Límite conocido (HU-2): la escritura de `SupabaseNotificationRepository.push` en `notifications` (avisos `user:<id>`) **no tiene test automático**; la caché, `load`, `markRead` y la regla de visibilidad sí están probadas. |
-| Cerrar sesión con Supabase | Límite conocido (HU-2, heredado): «Cerrar sesión» del perfil despacha `LogoutRequested(local: true)` y **no llama a `auth.signOut()`**, igual que el `SessionController` anterior (que nunca usó `logoutAsync`). La sesión de Supabase guardada se restaura al reabrir la app. `LogoutRequested()` sin `local` ya cierra también en el servidor; cambiarlo es una decisión de producto. |
+| Cerrar sesión | «Cerrar sesión» despacha `LogoutRequested()`: llama a `auth.signOut()` y cierra la sesión local. Si el servidor falla por red, la sesión local **se cierra igual**, el resultado es `network` («Cerramos tu sesión en este equipo, pero no pudimos avisar al servidor.») y la pantalla sale al login con ese aviso. En ese caso la sesión de Supabase guardada en el dispositivo podría restaurarse al reabrir la app. Probado en `auth_bloc_test` y `logout_widgets_test`. |
 | Eventos de sesión asíncronos | `AuthBloc` procesa los eventos después del `add`. Si la pantalla navega o lee la sesión justo después (iniciar sesión, cambiar de rol o de punto), debe usar `await bloc.request(evento)` antes de `context.go`; si no, el `redirect` del router aún ve la sesión vieja. |
 
 ---

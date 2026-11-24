@@ -1,7 +1,9 @@
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:biffy/features/buyer/notifications/notifications_cubit.dart';
-import 'package:biffy/features/notifications/bloc/notifications_bloc.dart';
+import 'package:biffy/features/notifications/bloc/notifications_bloc.dart'
+    hide NotificationsState;
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
@@ -60,5 +62,35 @@ void main() {
     await _settle();
     expect(c.state.items.length, greaterThan(before));
     expect(c.state.items.map((n) => n.title), contains('Pedido entregado ✅'));
+  });
+
+  group('NotificationsCubit (bloc_test)', () {
+    blocTest<NotificationsCubit, NotificationsState>(
+      'un aviso para el usuario activo aparece primero',
+      build: () => NotificationsCubit(
+        notifications: s.notifications,
+        session: s.session,
+      ),
+      act: (_) => push('Mío', 'user:${s.session.user!.id}'),
+      expect: () => contains(
+        isA<NotificationsState>().having(
+          (st) => st.items.first.title,
+          'primero',
+          'Mío',
+        ),
+      ),
+    );
+
+    blocTest<NotificationsCubit, NotificationsState>(
+      'un aviso para otra cuenta no se muestra',
+      build: () => NotificationsCubit(
+        notifications: s.notifications,
+        session: s.session,
+      ),
+      act: (_) => push('De otro', 'user:otro'),
+      wait: Duration.zero,
+      verify: (c) =>
+          expect(c.state.items.map((n) => n.title), isNot(contains('De otro'))),
+    );
   });
 }

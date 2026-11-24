@@ -42,17 +42,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       ),
     );
-    on<SessionRestoreRequested>((e, emit) => _run(e, emit, useCases.restore.call));
-    on<SessionRefreshRequested>((e, emit) => _run(e, emit, useCases.refresh.call));
-    on<LogoutRequested>(
-      (e, emit) => _run(
-        e,
-        emit,
-        e.local ? () async => useCases.signOut.local() : useCases.signOut.call,
-      ),
+    on<SessionRestoreRequested>(
+      (e, emit) => _run(e, emit, useCases.restore.call),
     );
+    on<SessionRefreshRequested>(
+      (e, emit) => _run(e, emit, useCases.refresh.call),
+    );
+    on<LogoutRequested>((e, emit) => _run(e, emit, useCases.signOut.call));
     on<DemoAccountSelected>(
-      (e, emit) => _run(e, emit, () async => useCases.signIn.demoAccount(e.user)),
+      (e, emit) =>
+          _run(e, emit, () async => useCases.signIn.demoAccount(e.user)),
     );
     on<ActiveRoleChanged>(
       (e, emit) =>
@@ -66,8 +65,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ),
     );
     on<BusinessLinked>(
-      (e, emit) =>
-          _run(e, emit, () async => useCases.account.linkBusiness(e.businessId)),
+      (e, emit) => _run(
+        e,
+        emit,
+        () async => useCases.account.linkBusiness(e.businessId),
+      ),
     );
     on<BusinessRegistrationRequested>(
       (e, emit) =>

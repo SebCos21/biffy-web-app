@@ -155,14 +155,22 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'sin red igual cierra la sesión en el equipo',
+      'sin red cierra igual en el equipo y emite network con aviso',
       build: () {
         // Entra con la demo antes de quedarse sin red.
         getIt<AuthBloc>().login(kDemoBuyerEmail, kDemoPassword);
         return offline();
       },
       act: (b) => b.add(LogoutRequested()),
-      expect: () => contains(_outcome('ok')),
+      expect: () => contains(
+        _outcome('network')
+            .having((s) => s.session.user, 'cuenta', isNull)
+            .having(
+              (s) => s.outcome?.result.message,
+              'mensaje',
+              contains('no pudimos avisar al servidor'),
+            ),
+      ),
       verify: (b) => expect(b.isLoggedIn, isFalse),
     );
   });

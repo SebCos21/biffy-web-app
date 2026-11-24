@@ -45,6 +45,24 @@ String _sessionSources({bool stateOnly = false}) => [
   if (!stateOnly) 'lib/domain/usecases/auth/auth_usecases.dart',
 ].map((p) => File(p).readAsStringSync()).join('\n');
 
+/// Patrón de una clase Bloc o Cubit.
+final _blocClass = RegExp(r'class (\w+) extends (?:Bloc|Cubit)<');
+
+/// Archivos de lib/features que declaran un Bloc o un Cubit.
+List<File> _blocFiles() => [
+  for (final f in Directory('lib/features').listSync(recursive: true))
+    if (f is File &&
+        f.path.endsWith('.dart') &&
+        _blocClass.hasMatch(f.readAsStringSync()))
+      f,
+];
+
+/// Nombres de todos los Bloc y Cubit de la app.
+List<String> _blocNames() => [
+  for (final f in _blocFiles())
+    for (final m in _blocClass.allMatches(f.readAsStringSync())) m.group(1)!,
+];
+
 void main() {
   test('domain no depende de data, features, shared, app ni de frameworks', () {
     final bad = _violations(
@@ -438,6 +456,86 @@ void main() {
       ),
     );
   });
+
+  test('todo Bloc/Cubit de lib/features solo conoce el dominio', () {
+    // Incluye carrito, checkout, pagos, recompensas, cajas, ganancias y avisos:
+    // nada de data/, shared/, app/, Supabase ni GetIt dentro de un Bloc.
+    final forbidden = RegExp(
+      r"(\.\./)+(data|shared|app)/|supabase|package:get_it",
+    );
+    final bad = <String>[];
+    for (final f in _blocFiles()) {
+      for (final line in f.readAsLinesSync()) {
+        final t = line.trimLeft();
+        if (t.startsWith('import ') && forbidden.hasMatch(t)) {
+          bad.add('${f.path}: $t');
+        }
+      }
+    }
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test('cada Bloc/Cubit tiene blocTest de éxito y de error', () {
+    final tests = [
+      for (final f in Directory('test').listSync(recursive: true))
+        if (f is File && f.path.endsWith('_test.dart')) f.readAsStringSync(),
+    ].join('\n');
+    final missing = <String>[];
+    for (final name in _blocNames()) {
+      final n = RegExp('blocTest<$name\\b').allMatches(tests).length;
+      if (n < 2) missing.add('$name ($n blocTest)');
+    }
+    expect(missing, isEmpty, reason: missing.join('\n'));
+  });
+
+  test('el checkout valida y delega el pedido en el OrdersBloc', () {
+    final src = File(
+      'lib/features/buyer/cart/bloc/checkout_cubit.dart',
+    ).readAsStringSync();
+    expect(src, contains('OrdersBloc'));
+    expect(src, contains('OrderPlaced('));
+    // No crea pedidos por su cuenta ni toca el repositorio o los casos de uso.
+    expect(src, isNot(contains('order_repository')));
+    expect(src, isNot(contains('placeOrder(')));
+  });
+
+  test(
+    'cada repositorio del dominio tiene versión en memoria y de Supabase',
+    () {
+      // Excepciones documentadas en HANDOFF.md.
+      const onlyLocal = {'SessionRepository'}; // estado del equipo, ambos modos
+      const onlySupabase = {
+        'RewardsRepository', // HU-4: cajas y canjes solo con servidor
+        'MerchantBoxesRepository',
+      };
+      final data = [
+        for (final f in Directory('lib/data').listSync(recursive: true))
+          if (f is File && f.path.endsWith('.dart')) f.readAsStringSync(),
+      ].join('\n');
+      final interfaces = <String>{
+        for (final f in Directory('lib/domain/repositories').listSync())
+          if (f is File)
+            for (final m in RegExp(
+              r'(?:abstract (?:interface )?|interface )class (\w+Repository)',
+            ).allMatches(f.readAsStringSync()))
+              m.group(1)!,
+      };
+      final missing = <String>[];
+      for (final i in interfaces) {
+        bool has(String prefix) => RegExp(
+          'class $prefix\\w*\\s+(?:extends \\w+\\s+)?implements[^{]*\\b$i\\b',
+        ).hasMatch(data);
+        if (!onlySupabase.contains(i) && !has('InMemory')) {
+          missing.add('$i sin InMemory');
+        }
+        if (!onlyLocal.contains(i) && !has('Supabase')) {
+          missing.add('$i sin Supabase');
+        }
+      }
+      expect(interfaces, isNotEmpty);
+      expect(missing, isEmpty, reason: missing.join('\n'));
+    },
+  );
 
   test('los repositorios de pedidos implementan la interfaz del dominio', () {
     for (final f in [
