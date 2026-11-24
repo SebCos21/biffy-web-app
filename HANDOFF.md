@@ -235,13 +235,10 @@ Rama `hu5-pasarela-pagos`.
   `payment_events.result = applied` y `signature_valid = true`.
 - ✅ Cron de vencidos: `.github/workflows/expire-payments.yml` cada 15 minutos
   con el secret `CRON_SECRET` (cargado en GitHub y en Supabase).
-- ⏳ Solo falta pegar la URL `…/functions/v1/wompi-webhook` en el panel de Wompi
-  (ambiente de pruebas) para que los eventos reales lleguen solos; el endpoint
-  ya responde (`GET` devuelve 405 `method_not_allowed`).
-- — La compra rechazada y la carpeta de evidencia no se adjuntan: el equipo
-  mostrará el proceso al profesor.
-- PR **#6** en draft (`hu5-pasarela-pagos → dev`), sin mergear al cierre de esta
-  fase.
+- ✅ PR **#6** mergeado en `dev` (`89823c2`); la rama `hu5-pasarela-pagos` se
+  eliminó. Solo falta pegar la URL `…/functions/v1/wompi-webhook` en el panel de
+  Wompi (ambiente de pruebas) para que los eventos reales lleguen solos; el
+  endpoint ya responde (`GET` devuelve 405 `method_not_allowed`).
 
 Calidad actual (HU-3 + HU-4 + HU-5): `flutter analyze` limpio · `flutter test`
 **251/251** (21 pruebas de integración se saltan sin credenciales de Supabase) ·

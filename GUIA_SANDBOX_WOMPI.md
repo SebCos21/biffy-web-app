@@ -206,6 +206,7 @@ Guarda en `tool/evidence/hu5_payments/`:
   con el secret `CRON_SECRET` (ya configurado en GitHub y Supabase).
 - [—] Compra rechazada y carpeta de evidencia: **no se adjuntan**; el equipo
   mostrará el proceso al profesor.
+- [x] PR #6 mergeado en `dev` (`89823c2`) y rama `hu5-pasarela-pagos` eliminada.
 
 ### Seguridad de las llaves
 
