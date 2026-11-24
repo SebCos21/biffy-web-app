@@ -696,7 +696,7 @@ begin
 
   elsif new.status = 'preparing' then
     perform public.notify(o.buyer_id, 'buyer', 'user:' || o.buyer_id,
-      'Pedido en preparación 🍳',
+      'Pedido en preparación 👩‍🍳',
       o.restaurant_name || ' aceptó tu pedido ' || o.code || '.',
       v_buyer_route, o.id);
 
@@ -710,7 +710,7 @@ begin
 
   elsif new.status = 'cancelled' then
     perform public.notify(o.buyer_id, 'buyer', 'user:' || o.buyer_id,
-      'Pedido ' || o.code || ' cancelado',
+      'Pedido ' || o.code || ' rechazado',
       'Motivo: ' || coalesce(nullif(o.reject_reason, ''), 'sin motivo') || '. ' ||
         case
           when o.payment_status in ('approved', 'refunded')
@@ -745,7 +745,7 @@ begin
   elsif new.status = 'ready' then
     perform public.notify(o.buyer_id, 'buyer', 'user:' || o.buyer_id,
       'Pedido listo 🥡',
-      'Tu pedido ' || o.code || ' está listo. Buscando repartidor…',
+      'Tu pedido ' || o.code || ' está listo. Buscando repartidor.',
       v_buyer_route, o.id);
     for c in
       select cp.user_id
