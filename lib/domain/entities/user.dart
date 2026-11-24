@@ -175,14 +175,11 @@ class UserData {
   bool prefsCompleted = false;
   bool surveyRewarded = false;
   bool welcomeGranted = false;
-  int gotas = 0;
-  final List<GotasEntry> gotasHistory = [];
   final Set<String> favoriteDishes = {};
   final Set<String> favoriteRestaurants = {};
   final List<Address> addresses = [];
   String? defaultAddressId;
   PaymentMethod defaultPayment = PaymentMethod.nequi;
-  final List<Coupon> coupons = [];
 
   /// Verificación universitaria (el correo se comprueba con un código).
   String? verifiedUniversityId;

@@ -69,8 +69,12 @@ void main() {
         s.session.login(kDemoBuyerEmail, kDemoPassword);
         s.cart.add(s.catalog.dishById('qbano-pollo')!);
       },
-      build: () =>
-          CheckoutCubit(orders: s.orders, session: s.session, cart: s.cart),
+      build: () => CheckoutCubit(
+        orders: s.orders,
+        session: s.session,
+        cart: s.cart,
+        wallet: s.wallet,
+      ),
       act: (c) => c.submit(),
       expect: () => [
         isA<CheckoutState>()
@@ -91,8 +95,12 @@ void main() {
         s.session.login(kDemoNewBuyerEmail, kDemoPassword);
         s.cart.add(s.catalog.dishById('qbano-pollo')!);
       },
-      build: () =>
-          CheckoutCubit(orders: s.orders, session: s.session, cart: s.cart),
+      build: () => CheckoutCubit(
+        orders: s.orders,
+        session: s.session,
+        cart: s.cart,
+        wallet: s.wallet,
+      ),
       act: (c) => c.submit(),
       expect: () => [
         isA<CheckoutState>()

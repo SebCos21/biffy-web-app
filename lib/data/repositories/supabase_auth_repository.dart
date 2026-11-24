@@ -102,21 +102,6 @@ class SupabaseAuthRepository implements AuthRepository {
     }
   }
 
-  /// Lee el saldo de Gotas de `profiles`.
-  @override
-  Future<int?> gotasBalance(String userId) async {
-    try {
-      final row = await _client
-          .from('profiles')
-          .select('gotas')
-          .eq('id', userId)
-          .maybeSingle();
-      return (row?['gotas'] as num?)?.toInt();
-    } on Object {
-      return null;
-    }
-  }
-
   /// Lee las direcciones activas del usuario.
   @override
   Future<List<Address>> addresses(String userId) async {

@@ -61,9 +61,6 @@ abstract class AuthRepository {
   /// Recupera la sesión persistida (solo backend real).
   Future<AppUser?> restoreSession();
 
-  /// Saldo de Gotas en el backend. `null` en modo demo.
-  Future<int?> gotasBalance(String userId);
-
   /// Direcciones guardadas del usuario (vacío en la demo).
   Future<List<Address>> addresses(String userId);
 

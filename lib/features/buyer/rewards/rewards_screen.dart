@@ -8,7 +8,10 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/rewards.dart';
 import '../../../domain/repositories/rewards_repository.dart';
+import '../../../domain/entities/user.dart';
+import '../../../domain/entities/wallet.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../wallet/bloc/wallet_cubit.dart';
 import 'rewards_cubit.dart';
 import '../../../app/di/injection.dart';
 import '../../../shared/state/controller_scope.dart';
@@ -106,7 +109,10 @@ class _RewardsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
-    final d = session.data;
+    final wallet = context.watch<WalletCubit>();
+    final userId = session.user?.id;
+    final gotas = wallet.balanceOf(userId);
+    final coupons = wallet.couponsOf(userId);
     final t = Theme.of(context).textTheme;
     final now = DateTime.now();
 
@@ -116,7 +122,7 @@ class _RewardsPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           children: [
-            _BalanceCard(gotas: d.gotas),
+            _BalanceCard(gotas: gotas),
             const SectionHeader('Cómo ganar Gotas'),
             BiffyCard(
               child: Column(
@@ -138,12 +144,12 @@ class _RewardsPage extends StatelessWidget {
               ),
             ),
             if (state == null)
-              ..._demoBenefits(context, session, d.gotas)
+              ..._demoBenefits(context, wallet, userId, gotas)
             else
-              ..._remoteBoxes(context, state!, d.gotas),
-            if (d.coupons.isNotEmpty) ...[
+              ..._remoteBoxes(context, state!, gotas),
+            if (coupons.isNotEmpty) ...[
               const SectionHeader('Mis cupones'),
-              for (final c in d.coupons)
+              for (final c in coupons)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Text('🎟️', style: TextStyle(fontSize: 24)),
@@ -151,7 +157,7 @@ class _RewardsPage extends StatelessWidget {
                   subtitle: Text(c.used ? 'Usado' : 'Disponible en el carrito'),
                 ),
             ],
-            if (state == null) ..._localHistory(t, session, now),
+            if (state == null) ..._localHistory(t, wallet.historyOf(userId), now),
             if (state != null) ..._remoteHistory(context, state!, t, now),
           ],
         ),
@@ -162,7 +168,8 @@ class _RewardsPage extends StatelessWidget {
   /// Sección de beneficios locales (modo demo).
   List<Widget> _demoBenefits(
     BuildContext context,
-    SessionController session,
+    WalletCubit wallet,
+    String? userId,
     int gotas,
   ) {
     return [
@@ -208,13 +215,13 @@ class _RewardsPage extends StatelessWidget {
                             confirm: 'Canjear',
                           );
                           if (!ok || !context.mounted) return;
-                          final c = session.redeem(b);
+                          final r = wallet.redeemBenefit(userId, b);
                           showSnack(
                             context,
-                            c == null
-                                ? 'Saldo insuficiente'
-                                : 'Cupón «${c.title}» listo para tu próximo pedido',
-                            error: c == null,
+                            r.ok
+                                ? 'Cupón «${r.coupon!.title}» listo para tu próximo pedido'
+                                : r.message,
+                            error: !r.ok,
                           );
                         },
                   child: Text(
@@ -281,16 +288,15 @@ class _RewardsPage extends StatelessWidget {
   /// Historial de movimientos local (modo demo).
   List<Widget> _localHistory(
     TextTheme t,
-    SessionController session,
+    List<GotasEntry> history,
     DateTime now,
   ) {
-    final d = session.data;
     return [
       const SectionHeader('Historial'),
-      if (d.gotasHistory.isEmpty)
+      if (history.isEmpty)
         Text('Aún no tienes movimientos.', style: t.bodySmall)
       else
-        for (final e in d.gotasHistory)
+        for (final e in history)
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(e.title),

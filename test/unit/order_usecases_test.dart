@@ -64,14 +64,14 @@ void main() {
 
     test('usa Gotas y las reembolsa si el restaurante rechaza', () async {
       s.session.login(kDemoBuyerEmail, kDemoPassword);
-      final before = s.session.gotas;
+      final before = s.gotas;
       final o = await placeQbano(s, useGotas: true);
       expect(o.gotasUsed, greaterThan(0));
-      expect(s.session.gotas, before - o.gotasUsed);
+      expect(s.gotas, before - o.gotasUsed);
       final r = await uc.rejectOrder(o.id, 'Producto agotado');
       expect(r.ok, isTrue);
       expect(o.status, OrderStatus.cancelled);
-      expect(s.session.dataFor('u-diego').gotas, before);
+      expect(s.wallet.balanceOf('u-diego'), before);
     });
 
     test('rechazar exige un motivo', () async {
@@ -134,11 +134,11 @@ void main() {
 
     test('cancelar a tiempo devuelve las Gotas', () async {
       s.session.login(kDemoBuyerEmail, kDemoPassword);
-      final before = s.session.gotas;
+      final before = s.gotas;
       final o = await placeQbano(s, useGotas: true);
       expect((await uc.cancelOrder(o.id)).ok, isTrue);
       expect(o.status, OrderStatus.cancelled);
-      expect(s.session.dataFor('u-diego').gotas, before);
+      expect(s.wallet.balanceOf('u-diego'), before);
     });
 
     test('un pedido inexistente devuelve not_found', () async {
@@ -297,7 +297,7 @@ void main() {
       );
       expect(o.status, OrderStatus.onTheWay);
       final before = computeEarnings(s.orders.deliveredBy('u-andres'));
-      final gotas = s.session.dataFor('u-diego').gotas;
+      final gotas = s.wallet.balanceOf('u-diego');
       expect(
         (await uc.completeDelivery(o.id, 'u-andres', o.deliveryCode, 'foto'))
             .ok,
@@ -308,7 +308,7 @@ void main() {
       expect(after.deliveries, before.deliveries + 1);
       expect(after.gross, before.gross + o.courierPay);
       expect(after.tips, before.tips + o.tip);
-      expect(s.session.dataFor('u-diego').gotas, gotas + o.subtotal ~/ 1000);
+      expect(s.wallet.balanceOf('u-diego'), gotas + o.subtotal ~/ 1000);
       expect(s.orders.activeForCourier('u-andres'), isNull);
     });
 
@@ -323,11 +323,11 @@ void main() {
         productsVerified: true,
       );
       await uc.completeDelivery(o.id, 'u-andres', o.deliveryCode, 'foto');
-      final gotas = s.session.dataFor('u-diego').gotas;
+      final gotas = s.wallet.balanceOf('u-diego');
       final again =
           await uc.completeDelivery(o.id, 'u-andres', o.deliveryCode, 'foto');
       expect(again.code, 'invalid_state');
-      expect(s.session.dataFor('u-diego').gotas, gotas);
+      expect(s.wallet.balanceOf('u-diego'), gotas);
     });
   });
 

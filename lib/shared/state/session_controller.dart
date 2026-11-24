@@ -9,51 +9,7 @@ import '../../data/repositories/auth_repository.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../domain/usecases/courier/courier_usecases.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
-
-/// Beneficio canjeable con Gotas (valores de demostración).
-class Benefit {
-  /// Crea un beneficio canjeable con sus datos de cupón.
-  const Benefit(
-    this.id,
-    this.title,
-    this.description,
-    this.cost,
-    this.kind, [
-    this.amount = 0,
-  ]);
-  final String id;
-  final String title;
-  final String description;
-  final int cost;
-  final CouponKind kind;
-  final int amount;
-}
-
-const kBenefits = [
-  Benefit(
-    'free-delivery',
-    'Envío gratis',
-    'Cupón para un pedido sin tarifa de entrega.',
-    300,
-    CouponKind.freeDelivery,
-  ),
-  Benefit(
-    'off-5000',
-    r'$5.000 de descuento',
-    'Cupón aplicable a tu próximo pedido.',
-    500,
-    CouponKind.fixed,
-    5000,
-  ),
-  Benefit(
-    'off-10000',
-    r'$10.000 de descuento',
-    'Cupón aplicable a tu próximo pedido.',
-    950,
-    CouponKind.fixed,
-    10000,
-  ),
-];
+import '../../domain/usecases/wallet/wallet_usecases.dart';
 
 /// Resultado de verificar el correo universitario.
 enum VerifyResult {
@@ -82,9 +38,11 @@ class SessionController extends ChangeNotifier {
     this._clock, {
     required CourierQueries couriers,
     required LoadCourier loadCourier,
+    required WalletUseCases wallet,
     ProfileRepository? profile,
   }) : _couriers = couriers, // ignore: prefer_initializing_formals
        _loadCourier = loadCourier, // ignore: prefer_initializing_formals
+       _wallet = wallet, // ignore: prefer_initializing_formals
        _profile = profile; // ignore: prefer_initializing_formals
 
   final AuthRepository _auth;
@@ -98,6 +56,10 @@ class SessionController extends ChangeNotifier {
   // iniciar sesión hasta que el AuthBloc la reemplace (módulo 6).
   final CourierQueries _couriers;
   final LoadCourier _loadCourier;
+
+  // TODO(puente): la sesión acredita la bienvenida y la encuesta y carga la
+  // billetera al iniciar sesión hasta que el AuthBloc la reemplace (módulo 6).
+  final WalletUseCases _wallet;
 
   /// Repositorio de datos personales; null en modo demo.
   final ProfileRepository? _profile;
@@ -134,9 +96,6 @@ class SessionController extends ChangeNotifier {
 
   /// Preferencias del usuario activo.
   Preferences get prefs => data.prefs;
-
-  /// Saldo de Gotas del usuario activo.
-  int get gotas => data.gotas;
 
   /// Universidad verificada, si la verificación sigue vigente.
   String? get verifiedUniversityId =>
@@ -229,7 +188,7 @@ class SessionController extends ChangeNotifier {
     // En modo remoto las Gotas de bienvenida las acredita la base.
     if (localWelcome && !d.welcomeGranted && u.role == UserRole.buyer) {
       d.welcomeGranted = true;
-      _credit(d, kWelcomeGotas, 'Bienvenida a Biffy (demo)');
+      _wallet.credit(u.id, kWelcomeGotas, 'Bienvenida a Biffy (demo)');
       _notifications.push(
         title: '¡Bienvenido a Biffy! 🐝',
         body: 'Te regalamos $kWelcomeGotas Gotas de demostración.',
@@ -326,24 +285,6 @@ class SessionController extends ChangeNotifier {
     await _hydrateRemote(u);
   }
 
-  /// Con backend real, el saldo de Gotas lo mueve el servidor (compra,
-  /// reembolso, entrega). Esto vuelve a leerlo; no hace nada en modo demo ni
-  /// sin sesión. Nunca lanza.
-  Future<void> syncGotas() async {
-    final u = _user;
-    if (u == null || !_auth.isRemote) return;
-    try {
-      final balance = await _auth.gotasBalance(u.id);
-      if (balance == null || _user?.id != u.id) return;
-      final d = dataFor(u.id);
-      if (d.gotas == balance) return;
-      d.gotas = balance;
-      notifyListeners();
-    } on Object {
-      // Sin conexión se conserva el último saldo conocido.
-    }
-  }
-
   /// Trae saldo, direcciones y perfil del backend sin romper la sesión si
   /// falla la red: la sesión ya es válida y se conserva la caché local.
   Future<void> _hydrateRemote(AppUser u) async {
@@ -356,19 +297,18 @@ class SessionController extends ChangeNotifier {
 
   /// Lecturas remotas de la hidratación (pueden lanzar si falla la red).
   Future<void> _hydrateRemoteData(AppUser u) async {
-    // Las tres lecturas base van en paralelo.
-    final balanceF = _auth.gotasBalance(u.id);
+    // Las tres lecturas base van en paralelo. La billetera (saldo y cupones)
+    // la carga su propio caso de uso; en demo no hace nada.
+    final walletF = _wallet.load(u.id);
     final savedF = _auth.addresses(u.id);
     final courierF = _loadCourier(u.id, contactEmail: u.email);
 
-    final balance = await balanceF;
+    final wallet = await walletF;
     final saved = await savedF;
     final d = dataFor(u.id);
 
-    if (balance != null) {
-      d.gotas = balance;
-      d.welcomeGranted = true;
-    }
+    // Con servidor la bienvenida ya la acreditó la base.
+    if (_auth.isRemote && wallet.ok) d.welcomeGranted = true;
 
     // Las direcciones del backend fijan el punto de entrega (regla de radio).
     if (saved.isNotEmpty) {
@@ -389,7 +329,6 @@ class SessionController extends ChangeNotifier {
       final prefsF = profile.preferences(u.id);
       final favsF = profile.favorites(u.id);
       final settingsF = profile.settings(u.id);
-      final couponsF = profile.coupons(u.id);
       // Avisos guardados: se cargan en paralelo y luego se escuchan en vivo.
       final notifsF = _notifications.sync(u.id);
       final verificationF = profile.verification(u.id);
@@ -435,10 +374,7 @@ class SessionController extends ChangeNotifier {
         }
       }
 
-      // Cupones generados por las cajas y notificaciones guardadas.
-      d.coupons
-        ..clear()
-        ..addAll(await couponsF);
+      // Notificaciones guardadas (los cupones llegan con la billetera).
       await notifsF;
     }
 
@@ -492,7 +428,7 @@ class SessionController extends ChangeNotifier {
     if (isLoggedIn && !d.surveyRewarded) {
       d.surveyRewarded = true;
       awarded = kSurveyGotas;
-      _credit(d, awarded, 'Completaste tus preferencias');
+      _wallet.credit(_user!.id, awarded, 'Completaste tus preferencias');
       _notifications.push(
         title: '+$kSurveyGotas Gotas 💧',
         body: 'Gracias por completar tus preferencias.',
@@ -827,62 +763,6 @@ class SessionController extends ChangeNotifier {
   /// Guarda el medio de pago preferido.
   void setDefaultPayment(PaymentMethod m) {
     data.defaultPayment = m;
-    notifyListeners();
-  }
-
-  // ------------------------------------------------------------ Gotas
-
-  /// Suma Gotas y registra el movimiento en el historial.
-  void _credit(UserData d, int amount, String reason) {
-    d.gotas += amount;
-    d.gotasHistory.insert(0, GotasEntry(reason, amount, _clock.now()));
-  }
-
-  /// Acredita Gotas a un usuario.
-  void creditGotas(String userId, int amount, String reason) {
-    if (amount <= 0) return;
-    _credit(dataFor(userId), amount, reason);
-    notifyListeners();
-  }
-
-  /// Descuenta Gotas si el saldo alcanza.
-  bool spendGotas(String userId, int amount, String reason) {
-    final d = dataFor(userId);
-    if (amount <= 0) return true;
-    if (d.gotas < amount) return false;
-    _credit(d, -amount, reason);
-    notifyListeners();
-    return true;
-  }
-
-  /// Canjea un beneficio si el saldo alcanza. Devuelve el cupón creado.
-  Coupon? redeem(Benefit b) {
-    if (!isLoggedIn || data.gotas < b.cost) return null;
-    _credit(data, -b.cost, 'Canje: ${b.title}');
-    final c = Coupon(
-      id: _id('cup'),
-      title: b.title,
-      kind: b.kind,
-      amount: b.amount,
-    );
-    data.coupons.add(c);
-    notifyListeners();
-    return c;
-  }
-
-  /// Busca un cupón del usuario por id.
-  Coupon? couponById(String? id) {
-    for (final c in data.coupons) {
-      if (c.id == id) return c;
-    }
-    return null;
-  }
-
-  /// Marca un cupón como usado o disponible.
-  void setCouponUsed(String userId, String couponId, bool used) {
-    for (final c in dataFor(userId).coupons) {
-      if (c.id == couponId) c.used = used;
-    }
     notifyListeners();
   }
 

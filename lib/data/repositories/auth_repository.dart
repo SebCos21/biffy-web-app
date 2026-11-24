@@ -117,10 +117,6 @@ class InMemoryAuthRepository implements AuthRepository {
   @override
   Future<AppUser?> restoreSession() async => null;
 
-  /// Saldo de Gotas: no aplica en la demo.
-  @override
-  Future<int?> gotasBalance(String userId) async => null;
-
   /// Direcciones guardadas: vacío en la demo.
   @override
   Future<List<Address>> addresses(String userId) async => const [];

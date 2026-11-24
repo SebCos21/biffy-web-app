@@ -10,6 +10,7 @@ import '../../../data/models/order.dart';
 import '../../../data/models/user.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../wallet/bloc/wallet_cubit.dart';
 import '../../../app/di/injection.dart';
 import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,6 +23,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
+    final wallet = context.watch<WalletCubit>();
     final orders = context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final u = session.user;
@@ -139,7 +141,7 @@ class ProfileScreen extends StatelessWidget {
                       onTap: () => context.push('/recompensas'),
                       child: BigNumber(
                         'Gotas Biffy',
-                        '${session.gotas}',
+                        '${wallet.balanceOf(session.user?.id)}',
                         highlight: true,
                       ),
                     ),

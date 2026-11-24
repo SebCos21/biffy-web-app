@@ -4,9 +4,11 @@ import 'package:biffy/data/models/user.dart';
 import 'package:biffy/data/repositories/auth_repository.dart';
 import 'package:biffy/data/repositories/in_memory_courier_repository.dart';
 import 'package:biffy/data/repositories/in_memory_notification_repository.dart';
+import 'package:biffy/data/repositories/in_memory_wallet_repository.dart';
 import 'package:biffy/domain/repositories/courier_repository.dart';
 import 'package:biffy/domain/usecases/courier/courier_usecases.dart';
 import 'package:biffy/domain/usecases/notifications/notification_usecases.dart';
+import 'package:biffy/domain/usecases/wallet/wallet_usecases.dart';
 import 'package:biffy/shared/adapters/courier_adapters.dart';
 import 'package:biffy/shared/state/session_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -74,9 +76,6 @@ class _FakeRemoteAuth implements AuthRepository {
 
   @override
   Future<AppUser?> restoreSession() async => user;
-
-  @override
-  Future<int?> gotasBalance(String userId) async => 450;
 
   @override
   Future<List<Address>> addresses(String userId) async => const [];
@@ -147,6 +146,10 @@ SessionController _session(
     Clock.fixed(DateTime(2026)),
     couriers: CourierQueries(c),
     loadCourier: LoadCourier(c),
+    wallet: WalletUseCases(
+      repo: InMemoryWalletRepository(),
+      clock: Clock.fixed(DateTime(2026)),
+    ),
   );
 }
 

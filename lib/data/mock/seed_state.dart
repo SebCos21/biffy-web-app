@@ -5,6 +5,7 @@ import '../../domain/pricing.dart';
 import '../../core/utils/clock.dart';
 import '../../domain/repositories/courier_repository.dart';
 import '../../domain/repositories/order_repository.dart';
+import '../../domain/repositories/wallet_repository.dart';
 import '../../domain/repositories/catalog_repository.dart';
 import '../../shared/state/session_controller.dart';
 import '../models/address.dart';
@@ -21,6 +22,7 @@ void applyDemoSeed(
   CatalogRepository catalog,
   Clock clock,
   CourierRepository couriers,
+  WalletRepository wallet,
 ) {
   final now = clock.now();
 
@@ -36,20 +38,23 @@ void applyDemoSeed(
     ..welcomeGranted = true
     ..verifiedUniversityId = 'icesi'
     ..universityEmail = 'diego.demo@icesi.edu.co'
-    ..gotas = 750
     ..defaultPayment = PaymentMethod.nequi;
-  diego.gotasHistory.addAll([
-    GotasEntry(
-      'Completaste tus preferencias',
-      kSurveyGotas,
-      now.subtract(const Duration(days: 6)),
-    ),
-    GotasEntry(
-      'Bienvenida a Biffy (demo)',
-      kWelcomeGotas,
-      now.subtract(const Duration(days: 7)),
-    ),
-  ]);
+  wallet.insertSeed(
+    'u-diego',
+    gotas: 750,
+    history: [
+      GotasEntry(
+        'Completaste tus preferencias',
+        kSurveyGotas,
+        now.subtract(const Duration(days: 6)),
+      ),
+      GotasEntry(
+        'Bienvenida a Biffy (demo)',
+        kWelcomeGotas,
+        now.subtract(const Duration(days: 7)),
+      ),
+    ],
+  );
   diego.addresses.addAll([
     Address(
       id: 'addr-diego-1',

@@ -182,6 +182,47 @@ void main() {
     },
   );
 
+  test('el cubit de la billetera solo conoce el dominio', () {
+    final bad = _violations(
+      'lib/features/wallet',
+      RegExp(r"(\.\./)+(data|shared)/|supabase"),
+    );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test('los repositorios de la billetera implementan la interfaz', () {
+    for (final f in [
+      'lib/data/repositories/in_memory_wallet_repository.dart',
+      'lib/data/repositories/supabase_wallet_repository.dart',
+    ]) {
+      final src = File(f).readAsStringSync();
+      expect(src, contains('implements WalletRepository'), reason: f);
+      expect(
+        src,
+        contains('domain/repositories/wallet_repository.dart'),
+        reason: f,
+      );
+    }
+  });
+
+  test('Gotas y cupones no se mueven en la sesión', () {
+    // Saldo, historial y cupones viven en la billetera (WalletRepository).
+    final src = File(
+      'lib/shared/state/session_controller.dart',
+    ).readAsStringSync();
+    for (final m in [
+      'int get gotas',
+      'spendGotas(',
+      'creditGotas(',
+      'Coupon? redeem(',
+      'syncGotas(',
+      'gotasHistory',
+      '.coupons',
+    ]) {
+      expect(src.contains(m), isFalse, reason: 'session_controller: $m');
+    }
+  });
+
   test('no queda NotificationCenter (lo reemplazó NotificationsBloc)', () {
     expect(
       File('lib/shared/state/notification_center.dart').existsSync(),

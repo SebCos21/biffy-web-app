@@ -12,6 +12,7 @@ import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
 import 'package:biffy/features/catalog/bloc/catalog_bloc.dart';
 import 'package:biffy/domain/usecases/notifications/notification_usecases.dart';
 import 'package:biffy/features/notifications/bloc/notifications_bloc.dart';
+import 'package:biffy/features/wallet/bloc/wallet_cubit.dart';
 import 'package:biffy/shared/state/session_controller.dart';
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_users.dart';
@@ -39,6 +40,10 @@ class TestServices {
   CartCubit get cart => getIt<CartCubit>();
   PaymentRepository get payment => getIt<PaymentRepository>();
   NotificationsBloc get notifications => getIt<NotificationsBloc>();
+  WalletCubit get wallet => getIt<WalletCubit>();
+
+  /// Saldo de Gotas de la cuenta con sesión (0 sin sesión).
+  int get gotas => wallet.balanceOf(session.user?.id);
   PushNotification get pushNotification => getIt<PushNotification>();
   OrdersBloc get orders => getIt<OrdersBloc>();
   RateOrder get rateOrder => getIt<RateOrder>();

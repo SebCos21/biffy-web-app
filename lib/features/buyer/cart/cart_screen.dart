@@ -14,6 +14,7 @@ import 'bloc/cart_cubit.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../wallet/bloc/wallet_cubit.dart';
 import 'cart_draft.dart';
 import 'schedule_sheet.dart';
 import '../../../app/di/injection.dart';
@@ -54,6 +55,7 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartCubit>();
     final session = context.watchController<SessionController>();
+    final wallet = context.watch<WalletCubit>();
     final catalog = context.watch<CatalogBloc>();
     final orders = context.read<OrdersBloc>();
     final t = Theme.of(context).textTheme;
@@ -75,10 +77,10 @@ class _CartScreenState extends State<CartScreen> {
     final address = session.isLoggedIn ? cartAddress(session, cart) : null;
     final point = address == null ? session.point : pointById(address.pointId);
     final reachable = isReachable(r, point);
-    final draft = draftFromCart(session, cart);
+    final draft = draftFromCart(session, cart, wallet);
     final totals = orders.preview(draft);
     final payment = cart.payment ?? session.data.defaultPayment;
-    final coupons = session.data.coupons.where((c) => !c.used).toList();
+    final coupons = wallet.availableCoupons(session.user?.id);
 
     return Scaffold(
       appBar: AppBar(
@@ -279,12 +281,12 @@ class _CartScreenState extends State<CartScreen> {
               SwitchListTile(
                 key: const Key('use-gotas'),
                 contentPadding: EdgeInsets.zero,
-                title: Text('Usar mis Gotas (${session.gotas} disponibles)'),
+                title: Text('Usar mis Gotas (${wallet.balanceOf(session.user?.id)} disponibles)'),
                 subtitle: Text(
                   '1 Gota = ${cop(kGotaValue)} (referencia de la demo)',
                 ),
                 value: cart.useGotas,
-                onChanged: session.gotas > 0 ? cart.setUseGotas : null,
+                onChanged: wallet.balanceOf(session.user?.id) > 0 ? cart.setUseGotas : null,
               ),
               if (coupons.isNotEmpty)
                 Wrap(

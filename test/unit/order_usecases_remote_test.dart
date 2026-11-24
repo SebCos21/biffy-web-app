@@ -33,7 +33,7 @@ void main() {
     repo = FakeOrderRepository();
     wallet = RecordingWallet();
     notifier = RecordingNotifier();
-    final sessionAdapter = SessionOrderAdapter(s.session);
+    final sessionAdapter = SessionOrderAdapter(s.session, s.wallet.useCases);
     uc = OrderUseCases(
       repo: repo,
       catalog: CatalogOrderAdapter(s.catalog.useCases),
@@ -162,14 +162,14 @@ void main() {
 
     test('con éxito: el servidor mueve las Gotas, la app solo relee el saldo', () async {
       repo.onPlace = placedOk;
-      final gotas = s.session.gotas;
+      final gotas = s.gotas;
       final res = await uc.placeOrder(draft(gotas: true));
 
       expect(res.ok, isTrue);
       expect(res.order!.id, 'BF-9001');
       expect(wallet.log, contains('sync'));
       expect(wallet.log.where((e) => e.startsWith('spend')), isEmpty);
-      expect(s.session.gotas, gotas, reason: 'no se descuenta localmente');
+      expect(s.gotas, gotas, reason: 'no se descuenta localmente');
       expect(notifier.log, ['placed']);
     });
 

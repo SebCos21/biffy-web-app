@@ -22,6 +22,7 @@ void main() {
         orders: services.orders,
         session: services.session,
         cart: services.cart,
+        wallet: services.wallet,
       );
 
       expect(checkout.errors, isEmpty);
@@ -41,6 +42,7 @@ void main() {
         orders: services.orders,
         session: services.session,
         cart: services.cart,
+        wallet: services.wallet,
       );
 
       expect(checkout.errors, isNotEmpty);
@@ -58,6 +60,7 @@ void main() {
         orders: services.orders,
         session: services.session,
         cart: services.cart,
+        wallet: services.wallet,
       );
 
       expect(checkout.canSubmit, isFalse);

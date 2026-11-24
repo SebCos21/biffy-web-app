@@ -196,7 +196,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('prefs-next')));
       await tester.pumpAndSettle();
-      expect(s.session.gotas, kWelcomeGotas + kSurveyGotas);
+      expect(s.gotas, kWelcomeGotas + kSurveyGotas);
       await goTo(tester, '/perfil');
       expect(find.text('${kWelcomeGotas + kSurveyGotas}'), findsOneWidget);
       // Repetir la encuesta no duplica la recompensa.
@@ -205,7 +205,7 @@ void main() {
         await tester.tap(find.byKey(const Key('prefs-next')));
         await tester.pumpAndSettle();
       }
-      expect(s.session.gotas, kWelcomeGotas + kSurveyGotas);
+      expect(s.gotas, kWelcomeGotas + kSurveyGotas);
     },
   );
 

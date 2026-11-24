@@ -13,6 +13,7 @@ import '../../../domain/repositories/order_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
 import '../../../domain/repositories/review_repository.dart';
 import '../../../domain/repositories/rewards_repository.dart';
+import '../../../domain/repositories/wallet_repository.dart';
 import '../../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../../domain/usecases/courier/courier_usecases.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
@@ -24,6 +25,7 @@ import '../../../domain/usecases/payments/retry_payment.dart';
 import '../../../domain/usecases/payments/start_payment.dart';
 import '../../../domain/usecases/rate_order.dart';
 import '../../../domain/usecases/rewards_usecases.dart';
+import '../../../domain/usecases/wallet/wallet_usecases.dart';
 import '../../../shared/adapters/courier_adapters.dart';
 import '../../../shared/adapters/order_adapters.dart';
 import '../../../shared/adapters/review_adapters.dart';
@@ -46,10 +48,10 @@ void _registerPorts(GetIt g) {
     () => CatalogOrderAdapter(g<CatalogUseCases>()),
   );
   g.registerLazySingleton<OrderBuyerPort>(
-    () => SessionOrderAdapter(g<SessionController>()),
+    () => SessionOrderAdapter(g<SessionController>(), g<WalletUseCases>()),
   );
   g.registerLazySingleton<OrderWalletPort>(
-    () => SessionOrderAdapter(g<SessionController>()),
+    () => SessionOrderAdapter(g<SessionController>(), g<WalletUseCases>()),
   );
   // Con servidor los avisos los crea la base (0022); en demo, la app.
   g.registerLazySingleton<OrderNotifier>(
@@ -110,6 +112,11 @@ void _registerUseCases(GetIt g) {
   );
   g.registerFactory<PushNotification>(
     () => PushNotification(g<NotificationRepository>(), g<Clock>()),
+  );
+
+  // Billetera: Gotas y cupones (la sesión, el WalletCubit y pedidos).
+  g.registerFactory<WalletUseCases>(
+    () => WalletUseCases(repo: g<WalletRepository>(), clock: g<Clock>()),
   );
 
   // Catálogo: lecturas con la regla de alcance y escrituras del comercio.

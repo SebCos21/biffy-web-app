@@ -17,6 +17,7 @@ import '../../../domain/usecases/payments/retry_payment.dart';
 import '../../../domain/usecases/payments/start_payment.dart';
 import '../../../domain/usecases/rate_order.dart';
 import '../../../domain/usecases/rewards_usecases.dart';
+import '../../../domain/usecases/wallet/wallet_usecases.dart';
 import '../../../features/buyer/cart/bloc/cart_cubit.dart';
 import '../../../features/buyer/cart/bloc/checkout_cubit.dart';
 import '../../../features/buyer/payment/bloc/payment_bloc.dart';
@@ -32,6 +33,7 @@ import '../../../features/courier/earnings/earnings_cubit.dart';
 import '../../../features/notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../features/restaurant_owner/boxes/merchant_boxes_cubit.dart';
+import '../../../features/wallet/bloc/wallet_cubit.dart';
 import '../../../shared/state/session_controller.dart';
 
 /// Módulo de presentación: estado que consumen las pantallas.
@@ -57,6 +59,7 @@ void _registerControllers(GetIt g) {
       g<Clock>(),
       couriers: g<CourierQueries>(),
       loadCourier: g<LoadCourier>(),
+      wallet: g<WalletUseCases>(),
       profile: _optional<ProfileRepository>(g),
     ),
   );
@@ -72,6 +75,10 @@ void _registerBlocs(GetIt g) {
   g.registerLazySingleton<OrdersBloc>(
     () => OrdersBloc(g<OrderUseCases>()),
     dispose: (bloc) => bloc.close(),
+  );
+  g.registerLazySingleton<WalletCubit>(
+    () => WalletCubit(g<WalletUseCases>()),
+    dispose: (cubit) => cubit.close(),
   );
   g.registerLazySingleton<CourierCubit>(
     () => CourierCubit(g<CourierUseCases>()),
@@ -129,6 +136,7 @@ void _registerBlocs(GetIt g) {
       orders: g<OrdersBloc>(),
       session: g<SessionController>(),
       cart: g<CartCubit>(),
+      wallet: g<WalletCubit>(),
     ),
   );
   g.registerFactoryParam<PaymentBloc, String, void>(

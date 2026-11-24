@@ -62,7 +62,4 @@ abstract interface class ProfileRepository {
 
   /// Marca una dirección como principal.
   Future<void> setDefaultAddress(String userId, String dbId);
-
-  /// Cupones del usuario.
-  Future<List<Coupon>> coupons(String userId);
 }

@@ -276,41 +276,6 @@ class SupabaseProfileRepository implements ProfileRepository {
     await _client.from('addresses').update({'is_default': true}).eq('id', dbId);
   }
 
-  // ------------------------------------------------------------ Cupones
-
-  /// Cupones del usuario (premios de caja ya convertidos en cupón).
-  @override
-  Future<List<Coupon>> coupons(String userId) async {
-    final rows = await _client
-        .from('user_coupons')
-        .select(
-          'used_at, coupon:coupons(id,title,kind,amount,active,valid_until)',
-        )
-        .eq('user_id', userId);
-
-    final out = <Coupon>[];
-    for (final row in rows) {
-      final c = row['coupon'];
-      if (c is! Map) continue;
-      if (c['active'] == false) continue;
-
-      final until = DateTime.tryParse((c['valid_until'] as String?) ?? '');
-      if (until != null && until.isBefore(DateTime.now())) continue;
-
-      out.add(
-        Coupon(
-          id: c['id'] as String,
-          title: (c['title'] as String?) ?? 'Cupón',
-          kind: c['kind'] == 'free_delivery'
-              ? CouponKind.freeDelivery
-              : CouponKind.fixed,
-          amount: ((c['amount'] as num?) ?? 0).toInt(),
-        )..used = row['used_at'] != null,
-      );
-    }
-    return out;
-  }
-
   /// Convierte el arreglo de Postgres en un conjunto de textos.
   static Set<String> _set(Object? value) =>
       (value as List?)?.map((e) => e.toString()).toSet() ?? {};

@@ -5,6 +5,7 @@ import '../../domain/entities/user.dart';
 import '../../domain/ports/order_ports.dart';
 import '../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
+import '../../domain/usecases/wallet/wallet_usecases.dart';
 import '../state/session_controller.dart';
 
 /// Conecta el puerto de catálogo de pedidos con los casos de uso del catálogo.
@@ -31,35 +32,51 @@ class CatalogOrderAdapter implements OrderCatalogPort {
   void recordSale(String dishId, int qty) => _catalog.recordSale(dishId, qty);
 }
 
-/// Conecta los puertos de comprador y billetera con `SessionController`.
+// TODO(puente): lee de SessionController (ChangeNotifier) la verificación,
+// el punto y la cuenta activa hasta que el AuthBloc la reemplace (módulo 6).
+/// Conecta los puertos de comprador y billetera de pedidos con la sesión y
+/// con los casos de uso de la billetera.
 class SessionOrderAdapter implements OrderBuyerPort, OrderWalletPort {
-  SessionOrderAdapter(this._session);
+  /// Recibe la sesión y la billetera.
+  SessionOrderAdapter(this._session, this._wallet);
   final SessionController _session;
+  final WalletUseCases _wallet;
 
+  /// Universidad verificada del comprador (descuento de campus).
   @override
   String? verifiedUniversityId(String userId) =>
       _session.dataFor(userId).verifiedUniversityId;
 
+  /// Saldo de Gotas del comprador.
   @override
-  int gotasOf(String userId) => _session.dataFor(userId).gotas;
+  int gotasOf(String userId) => _wallet.queries.balanceOf(userId);
 
+  /// Punto de entrega activo.
   @override
   DeliveryPoint get currentPoint => _session.point;
 
+  /// Descuenta Gotas (solo demo; con servidor las mueve la base).
   @override
   void spendGotas(String userId, int amount, String reason) =>
-      _session.spendGotas(userId, amount, reason);
+      _wallet.spend(userId, amount, reason);
 
+  /// Acredita Gotas (solo demo).
   @override
   void creditGotas(String userId, int amount, String reason) =>
-      _session.creditGotas(userId, amount, reason);
+      _wallet.credit(userId, amount, reason);
 
+  /// Marca o libera un cupón (solo demo).
   @override
   void setCouponUsed(String userId, String couponId, bool used) =>
-      _session.setCouponUsed(userId, couponId, used);
+      _wallet.setCouponUsed(userId, couponId, used);
 
+  /// Relee el saldo del servidor; no hace nada en demo ni sin sesión.
   @override
-  Future<void> syncBalance() => _session.syncGotas();
+  Future<void> syncBalance() async {
+    final u = _session.user;
+    if (u == null || !_wallet.repo.isRemote) return;
+    await _wallet.sync(u.id);
+  }
 }
 
 /// Convierte los hitos del pedido en notificaciones locales.

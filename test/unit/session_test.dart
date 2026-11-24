@@ -1,6 +1,8 @@
 import 'package:biffy/app/di/injection.dart';
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/features/courier/bloc/courier_cubit.dart';
+import 'package:biffy/domain/entities/wallet.dart';
+import 'package:biffy/features/wallet/bloc/wallet_cubit.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:biffy/data/models/user.dart';
 import 'package:biffy/data/repositories/auth_repository.dart';
@@ -12,6 +14,12 @@ import '../helpers.dart';
 void main() {
   late SessionController s;
   setUp(() async => s = (await makeServices()).session);
+
+  // Adaptado: el saldo y los canjes viven ahora en la billetera (WalletCubit);
+  // antes eran s.gotas y s.redeem.
+  int gotas() => getIt<WalletCubit>().balanceOf(s.user?.id);
+  Coupon? redeem(Benefit b) =>
+      getIt<WalletCubit>().redeemBenefit(s.user?.id, b).coupon;
 
   group('Autenticación simulada', () {
     test('login correcto y rol', () {
@@ -41,10 +49,10 @@ void main() {
 
     test('bienvenida de 450 Gotas una sola vez', () {
       s.login(kDemoNewBuyerEmail, kDemoPassword);
-      expect(s.gotas, kWelcomeGotas);
+      expect(gotas(), kWelcomeGotas);
       s.logout();
       s.login(kDemoNewBuyerEmail, kDemoPassword);
-      expect(s.gotas, kWelcomeGotas);
+      expect(gotas(), kWelcomeGotas);
     });
 
     test('logout limpia la sesión', () {
@@ -72,27 +80,27 @@ void main() {
 
     test('300 Gotas la primera vez y nunca duplicadas', () {
       s.login(kDemoNewBuyerEmail, kDemoPassword);
-      final before = s.gotas;
+      final before = gotas();
       expect(s.savePreferences(prefs), kSurveyGotas);
-      expect(s.gotas, before + kSurveyGotas);
+      expect(gotas(), before + kSurveyGotas);
       expect(s.savePreferences(prefs.copyWith(budget: 30000)), 0);
-      expect(s.gotas, before + kSurveyGotas);
+      expect(gotas(), before + kSurveyGotas);
     });
 
     test('sin sesión no se acreditan Gotas', () {
       expect(s.savePreferences(prefs), 0);
-      expect(s.gotas, 0);
+      expect(gotas(), 0);
       expect(s.data.prefsCompleted, isTrue);
     });
 
     test('canje valida saldo suficiente', () {
       s.login(kDemoNewBuyerEmail, kDemoPassword); // 450 Gotas
       final expensive = kBenefits.firstWhere((b) => b.cost > 450);
-      expect(s.redeem(expensive), isNull);
-      expect(s.gotas, 450);
+      expect(redeem(expensive), isNull);
+      expect(gotas(), 450);
       final cheap = kBenefits.firstWhere((b) => b.cost <= 450);
-      expect(s.redeem(cheap), isNotNull);
-      expect(s.gotas, 450 - cheap.cost);
+      expect(redeem(cheap), isNotNull);
+      expect(gotas(), 450 - cheap.cost);
     });
 
     test('verificación universitaria simulada por dominio', () {

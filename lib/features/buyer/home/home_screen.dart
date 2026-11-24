@@ -13,6 +13,7 @@ import '../../catalog/bloc/catalog_bloc.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../wallet/bloc/wallet_cubit.dart';
 import '../ai/recommendation_input.dart';
 import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,6 +26,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
+    final wallet = context.watch<WalletCubit>();
     final catalog = context.watch<CatalogBloc>();
     final orders = context.watch<OrdersBloc>();
     final notifications = context.watch<NotificationsBloc>();
@@ -220,7 +222,7 @@ class HomeScreen extends StatelessWidget {
                                   style: TextStyle(fontWeight: FontWeight.w700),
                                 ),
                                 Text(
-                                  '${session.gotas}',
+                                  '${wallet.balanceOf(session.user?.id)}',
                                   style: t.headlineSmall?.copyWith(
                                     color: AppColors.secondary,
                                   ),

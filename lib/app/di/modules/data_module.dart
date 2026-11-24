@@ -10,6 +10,7 @@ import '../../../data/repositories/in_memory_courier_repository.dart';
 import '../../../data/repositories/in_memory_notification_repository.dart';
 import '../../../data/repositories/in_memory_order_repository.dart';
 import '../../../data/repositories/in_memory_payment_repository.dart';
+import '../../../data/repositories/in_memory_wallet_repository.dart';
 import '../../../data/repositories/review_repository_impl.dart';
 import '../../../data/repositories/supabase_auth_repository.dart';
 import '../../../data/repositories/supabase_catalog_repository.dart';
@@ -19,6 +20,7 @@ import '../../../data/repositories/supabase_order_repository.dart';
 import '../../../data/repositories/supabase_payment_repository.dart';
 import '../../../data/repositories/supabase_profile_repository.dart';
 import '../../../data/repositories/supabase_rewards_repository.dart';
+import '../../../data/repositories/supabase_wallet_repository.dart';
 import '../../../domain/repositories/catalog_repository.dart';
 import '../../../domain/repositories/courier_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
@@ -28,6 +30,7 @@ import '../../../domain/repositories/payment_repository.dart';
 import '../../../domain/repositories/profile_repository.dart';
 import '../../../domain/repositories/review_repository.dart';
 import '../../../domain/repositories/rewards_repository.dart';
+import '../../../domain/repositories/wallet_repository.dart';
 
 /// Módulo de datos: repositorios. Aquí está la única decisión de entorno de la
 /// app: con credenciales de Supabase se usan las implementaciones reales; sin
@@ -66,6 +69,12 @@ void _registerInMemory(GetIt g) {
     InMemoryCourierRepository.new,
     dispose: (repo) {
       if (repo is InMemoryCourierRepository) repo.dispose();
+    },
+  );
+  g.registerLazySingleton<WalletRepository>(
+    InMemoryWalletRepository.new,
+    dispose: (repo) {
+      if (repo is InMemoryWalletRepository) repo.dispose();
     },
   );
   g.registerLazySingleton<NotificationRepository>(
@@ -107,6 +116,12 @@ void _registerSupabase(GetIt g) {
     SupabaseCourierRepository.new,
     dispose: (repo) {
       if (repo is SupabaseCourierRepository) repo.dispose();
+    },
+  );
+  g.registerLazySingleton<WalletRepository>(
+    SupabaseWalletRepository.new,
+    dispose: (repo) {
+      if (repo is SupabaseWalletRepository) repo.dispose();
     },
   );
   g.registerLazySingleton<NotificationRepository>(
