@@ -208,9 +208,44 @@ Rama `hu4-gotas-recompensas-notificaciones`.
 - ⏳ Aplicar `0020`–`0024` al proyecto remoto y el checklist de despliegue de
   `supabase/README.md`; prueba final con datos reales.
 
-Calidad actual (HU-3 + HU-4): `flutter analyze` limpio · `flutter test`
-**208/208** (21 pruebas de integración se saltan sin credenciales de Supabase) ·
-pruebas SQL **158/158** (HU-3: 87, HU-4: 71).
+### HU-5 · Pasarela de pagos (Wompi) + efectivo con billete
+
+Rama `hu5-pasarela-pagos`.
+
+- ✅ `0026_payments.sql` aplicada: `payments` (un intento auditable por reintento),
+  `payment_events` (webhook idempotente), `orders.payment_status`,
+  `payment_expires_at`, `cash_tendered` y `cash_change`; RLS y RPC
+  (`payment_begin`, `payment_set_checkout`, `payment_apply`, `payment_refund`,
+  `expire_pending_payments`, `payment_for_order`).
+- ✅ Gating: el restaurante no ve ni acepta un pedido sin pago aprobado; los
+  avisos no salen antes; la expiración cancela y devuelve Gotas/cupón; el
+  efectivo queda aprobado sin pasarela.
+- ✅ Edge Functions desplegadas: `create-payment`, `wompi-webhook`
+  (checksum + consulta real a Wompi), `expire-payments` y `refund-payment`.
+  Las llaves `WOMPI_*` viven solo en Supabase Secrets; la app recibe la URL del
+  checkout.
+- ✅ Flutter: `Payment`/`PaymentRepository`, casos de uso, `PaymentBloc` (7
+  etapas), `/pago/:id`, apertura de Wompi, banner de rechazo con motivo y
+  reintento en el checkout, billetes/vueltas del efectivo y estado del pago en
+  el seguimiento.
+- ✅ Pruebas: `hu5_payments.sql`, 5 pruebas Deno de firma, unit del Bloc, casos
+  de uso, errores, efectivo y repositorio. `flutter analyze` limpio ·
+  `flutter test` **251/251**.
+- ✅ Webhook probado con un evento firmado de la transacción aprobada:
+  `payment_events.result = applied` y `signature_valid = true`.
+- ✅ Cron de vencidos: `.github/workflows/expire-payments.yml` cada 15 minutos
+  con el secret `CRON_SECRET` (cargado en GitHub y en Supabase).
+- ⏳ Solo falta pegar la URL `…/functions/v1/wompi-webhook` en el panel de Wompi
+  (ambiente de pruebas) para que los eventos reales lleguen solos; el endpoint
+  ya responde (`GET` devuelve 405 `method_not_allowed`).
+- — La compra rechazada y la carpeta de evidencia no se adjuntan: el equipo
+  mostrará el proceso al profesor.
+- PR **#6** en draft (`hu5-pasarela-pagos → dev`), sin mergear al cierre de esta
+  fase.
+
+Calidad actual (HU-3 + HU-4 + HU-5): `flutter analyze` limpio · `flutter test`
+**251/251** (21 pruebas de integración se saltan sin credenciales de Supabase) ·
+pruebas SQL **158/158** de HU-3/HU-4 + `hu5_payments.sql`.
 
 ---
 
