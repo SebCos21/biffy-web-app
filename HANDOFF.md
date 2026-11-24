@@ -208,9 +208,38 @@ Rama `hu4-gotas-recompensas-notificaciones`.
 - ⏳ Aplicar `0020`–`0024` al proyecto remoto y el checklist de despliegue de
   `supabase/README.md`; prueba final con datos reales.
 
-Calidad actual (HU-3 + HU-4): `flutter analyze` limpio · `flutter test`
-**208/208** (21 pruebas de integración se saltan sin credenciales de Supabase) ·
-pruebas SQL **158/158** (HU-3: 87, HU-4: 71).
+### HU-5 · Pasarela de pagos (Wompi) + efectivo con billete
+
+Rama `hu5-pasarela-pagos`.
+
+- ✅ `0026_payments.sql` aplicada: `payments` (un intento auditable por reintento),
+  `payment_events` (webhook idempotente), `orders.payment_status`,
+  `payment_expires_at`, `cash_tendered` y `cash_change`; RLS y RPC
+  (`payment_begin`, `payment_set_checkout`, `payment_apply`, `payment_refund`,
+  `expire_pending_payments`, `payment_for_order`).
+- ✅ Gating: el restaurante no ve ni acepta un pedido sin pago aprobado; los
+  avisos no salen antes; la expiración cancela y devuelve Gotas/cupón; el
+  efectivo queda aprobado sin pasarela.
+- ✅ Edge Functions desplegadas: `create-payment`, `wompi-webhook`
+  (checksum + consulta real a Wompi), `expire-payments` y `refund-payment`.
+  Las llaves `WOMPI_*` viven solo en Supabase Secrets; la app recibe la URL del
+  checkout.
+- ✅ Flutter: `Payment`/`PaymentRepository`, casos de uso, `PaymentBloc` (7
+  etapas), `/pago/:id`, apertura de Wompi, banner de rechazo con motivo y
+  reintento en el checkout, billetes/vueltas del efectivo y estado del pago en
+  el seguimiento.
+- ✅ Pruebas: `hu5_payments.sql`, 5 pruebas Deno de firma, unit del Bloc, casos
+  de uso, errores, efectivo y repositorio. `flutter analyze` limpio ·
+  `flutter test` **251/251**.
+- ⏳ Configurar la URL de eventos en Wompi (ambiente de pruebas) y hacer la
+  compra rechazada (`4917 4800 0000 0008`) para la evidencia; la aprobada ya se
+  verificó (`BF-2046`, pago aplicado).
+- ⏳ Agendar `expire-payments` (cron) y completar `INFORME_HU5_PAGOS.md` con
+  capturas y la salida de `payments`/`payment_events`.
+
+Calidad actual (HU-3 + HU-4 + HU-5): `flutter analyze` limpio · `flutter test`
+**251/251** (21 pruebas de integración se saltan sin credenciales de Supabase) ·
+pruebas SQL **158/158** de HU-3/HU-4 + `hu5_payments.sql`.
 
 ---
 

@@ -190,9 +190,14 @@ Guarda en `tool/evidence/hu5_payments/`:
   eventos:
   `https://jwdzpwsfwtkdeeuceaco.supabase.co/functions/v1/wompi-webhook`
   con el evento `transaction.updated`.
-- [ ] Hacer una compra aprobada y una rechazada con los datos de la sección 7.
-- [ ] Guardar la evidencia en `tool/evidence/hu5_payments/` y luego implementar
-  la parte Flutter (`PaymentBloc`, carrito, efectivo con billetes, `/pago`).
+- [x] Compra aprobada en sandbox (`BF-2046`, $23.910, VISA-0057). Se aplicó
+  manualmente porque la URL de eventos aún no estaba configurada; el siguiente
+  pago debe entrar solo por el webhook.
+- [ ] Compra rechazada (`4917 4800 0000 0008`) para la evidencia.
+- [x] Flutter: `PaymentBloc`, `/pago/:id`, banner de rechazo con motivo,
+  reintento y efectivo con billetes/vueltas.
+- [ ] Guardar la evidencia en `tool/evidence/hu5_payments/`.
+- [ ] Agendar `expire-payments` (cron con `x-cron-secret`).
 
 ### Seguridad de las llaves
 
