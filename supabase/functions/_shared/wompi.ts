@@ -40,8 +40,14 @@ export async function wompiFetch<T>(
 }
 
 /// Consulta una transacción por su id (nunca se confía en el webhook).
-export function getTransaction(id: string): Promise<WompiTransaction> {
-  return wompiFetch<WompiTransaction>(`/transactions/${encodeURIComponent(id)}`);
+///
+/// La API de Wompi devuelve `{ data: { ...transacción } }`; se desenvuelve para
+/// que el resto del código lea `status`, `reference`, etc. directamente.
+export async function getTransaction(id: string): Promise<WompiTransaction> {
+  const res = await wompiFetch<{ data?: WompiTransaction } & WompiTransaction>(
+    `/transactions/${encodeURIComponent(id)}`,
+  );
+  return (res.data ?? res) as WompiTransaction;
 }
 
 /// Anula una transacción aprobada (reembolso del mismo día).
