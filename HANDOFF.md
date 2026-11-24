@@ -234,17 +234,19 @@ Rama `hu5-pasarela-pagos`.
 - ✅ Webhook probado con un evento firmado de la transacción aprobada:
   `payment_events.result = applied` y `signature_valid = true`.
 - ✅ Wompi llama al webhook con la URL configurada en **pruebas** y el secreto
-  `test_events_…` correcto. Se corrigió un `401`: la función acepta el checksum
-  del header **o** del body (algunos proxies entregan el header vacío) y recorta
-  el secreto. Un evento simulado con header inválido y body correcto devolvió
-  `200 ok`.
+  `test_events_…` correcto. Se corrigieron dos detalles: la función acepta el
+  checksum del header **o** del body (algunos proxies entregan el header vacío)
+  y usa `signature.sent_at` cuando el evento real no trae
+  `signature.timestamp` (Wompi firma con la hora de envío en segundos).
+- ✅ BF-2058 aprobado con el evento real reenviado: `payment_events.result =
+  applied` y `signature_valid = true`; el restaurante recibió el aviso.
 - ✅ Cron de vencidos: `.github/workflows/expire-payments.yml` cada 15 minutos
   con el secret `CRON_SECRET` (cargado en GitHub y en Supabase).
 - ✅ PR **#6** mergeado en `dev` (`89823c2`); la rama `hu5-pasarela-pagos` se
   eliminó.
-- ⏳ Wompi reintenta el evento de BF-2052 a los 30 min / 3 h / 24 h o se confirma
-  con un pago nuevo; el pedido ya quedó aprobado y el endpoint ya acepta los
-  eventos reales.
+- ⏳ Wompi reintenta los eventos anteriores (BF-2052/BF-2057) de forma
+  idempotente; el flujo real ya quedó verificado con BF-2058 y el endpoint
+  acepta los eventos reales.
 
 Calidad actual (HU-3 + HU-4 + HU-5): `flutter analyze` limpio · `flutter test`
 **251/251** (21 pruebas de integración se saltan sin credenciales de Supabase) ·

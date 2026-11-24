@@ -6,6 +6,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getTransaction } from '../_shared/wompi.ts';
 import {
+  sha256Hex,
   verifyEventSignature,
   type WompiEvent,
 } from '../_shared/wompi_signature.ts';
@@ -48,6 +49,20 @@ Deno.serve(async (req: Request) => {
 
   const header = req.headers.get('x-event-checksum');
   if (!(await verifyEventSignature(event, header, secret))) {
+    // Diagnóstico: Wompi sí llama, pero la firma no coincide. Se registra el
+    // evento y el hash (no el secreto) para comparar con el panel.
+    console.error(
+      'wompi_invalid_signature',
+      JSON.stringify({
+        environment: event.environment,
+        event: event.event,
+        signature: event.signature,
+        header,
+        body: event.signature?.checksum,
+        secretLength: secret.trim().length,
+        secretHash: await sha256Hex(secret.trim()),
+      }),
+    );
     return text('invalid_signature', 401);
   }
 

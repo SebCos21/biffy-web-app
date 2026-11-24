@@ -173,7 +173,7 @@ Guarda en `tool/evidence/hu5_payments/`:
 | Síntoma | Causa probable |
 |---|---|
 | El checkout dice "firma inválida" | Orden de campos o secreto de integridad incorrecto; revisa el panel. |
-| El webhook devuelve 401 | El checksum no coincide. La función acepta header o body; si ambos fallan, el `WOMPI_EVENTS_SECRET` del panel y el de Supabase no son el mismo. |
+| El webhook devuelve 401 | El checksum no coincide. La función acepta header o body y usa `signature.sent_at` si no viene `signature.timestamp`; si ambos fallan, el `WOMPI_EVENTS_SECRET` del panel y el de Supabase no son el mismo. |
 | El webhook no llega | URL mal escrita, función no desplegada o `verify_jwt` activo. |
 | El pago queda `pending` | Wompi aún no confirma; espera el evento o corre `check-payment`. |
 | El pedido no aparece en el restaurante | `payment_status` no está en `approved` (RLS). |
@@ -195,8 +195,9 @@ Guarda en `tool/evidence/hu5_payments/`:
   > al final (eso produce `404 Requested function was not found`); el evento se
   > selecciona aparte en la lista del panel.
 - [x] Wompi llama al webhook. Se corrigió el `401`: se acepta el checksum del
-  header o del body y se recorta el secreto; un evento simulado con header
-  inválido y body correcto devolvió `200 ok`.
+  header o del body, se recorta el secreto y se usa `signature.sent_at` cuando
+  el evento real no trae `signature.timestamp`. BF-2058 quedó aprobado con el
+  evento real (`signature_valid = true`).
 
 - [x] Compra aprobada en sandbox (`BF-2046`, $23.910, VISA-0057). Se aplicó
   manualmente porque la URL de eventos aún no estaba configurada; el siguiente

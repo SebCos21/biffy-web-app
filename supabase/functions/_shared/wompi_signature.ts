@@ -11,11 +11,37 @@ export type WompiEvent = {
   signature?: {
     properties?: string[];
     checksum?: string;
-    timestamp?: number;
+    /** UNIX en segundos; Wompi no siempre lo manda. */
+    timestamp?: number | string;
+    /** Fecha ISO del envío; se usa si falta `timestamp`. */
+    sent_at?: string;
   };
-  environment?: string;
+  /** Algunas versiones ponen `sent_at` en la raíz. */
   sent_at?: string;
+  environment?: string;
 };
+
+/// Timestamp UNIX (segundos) que Wompi usó para firmar el evento.
+///
+/// Los eventos reales de Wompi no siempre traen `signature.timestamp`: firman
+/// con la hora de envío (`sent_at`). Se acepta cualquiera de las dos.
+function eventTimestamp(event: WompiEvent): number | null {
+  const signature = event.signature;
+  if (!signature) return null;
+  if (signature.timestamp !== undefined && signature.timestamp !== null) {
+    const value = Number(signature.timestamp);
+    if (Number.isFinite(value)) {
+      // Si llegara en milisegundos, se normaliza a segundos.
+      return value > 100000000000 ? Math.floor(value / 1000) : value;
+    }
+  }
+  const iso = signature.sent_at ?? event.sent_at;
+  if (iso) {
+    const ms = Date.parse(iso);
+    if (!Number.isNaN(ms)) return Math.floor(ms / 1000);
+  }
+  return null;
+}
 
 /// SHA-256 en hexadecimal minúscula.
 export async function sha256Hex(input: string): Promise<string> {
@@ -66,8 +92,8 @@ export async function verifyEventSignature(
 ): Promise<boolean> {
   const signature = event.signature;
   if (!signature || !Array.isArray(signature.properties)) return false;
-  const timestamp = signature.timestamp;
-  if (timestamp === undefined || timestamp === null) return false;
+  const timestamp = eventTimestamp(event);
+  if (timestamp === null) return false;
 
   const values = signature.properties
     // Wompi resuelve las propiedades contra `data` (p. ej. `transaction.id`);

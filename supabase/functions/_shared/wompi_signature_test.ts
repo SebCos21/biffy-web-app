@@ -82,6 +82,23 @@ Deno.test('evento: checksum inválido o secreto equivocado se rechaza', async ()
   assertEquals(await verifyEventSignature(event, checksum, 'otro-secreto'), false);
 });
 
+Deno.test('evento: usa sent_at si falta signature.timestamp', async () => {
+  const secret = 'test_events_secreto';
+  const timestamp = 1700000000;
+  const sentAt = new Date(timestamp * 1000).toISOString();
+  const checksum = sha(`tx-1APPROVED1365000${timestamp}${secret}`);
+  const event = eventWith(checksum, timestamp);
+  delete event.signature!.timestamp;
+  event.signature!.sent_at = sentAt;
+
+  assertEquals(await verifyEventSignature(event, checksum, secret), true);
+
+  // También se acepta `sent_at` en la raíz del evento.
+  delete event.signature!.sent_at;
+  event.sent_at = sentAt;
+  assertEquals(await verifyEventSignature(event, checksum, secret), true);
+});
+
 Deno.test('evento: sin firma o sin timestamp se rechaza', async () => {
   const secret = 'test_events_secreto';
   const sinFirma: WompiEvent = { event: 'transaction.updated', data: {} };
