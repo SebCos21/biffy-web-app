@@ -17,6 +17,7 @@ import 'package:biffy/data/models/cart.dart';
 import 'package:biffy/data/models/catalog.dart';
 import 'package:biffy/data/models/order.dart';
 import 'package:biffy/domain/repositories/order_repository.dart';
+import 'package:biffy/domain/repositories/payment_repository.dart';
 import 'package:biffy/domain/usecases/orders/checkout_draft.dart';
 import 'package:biffy/core/utils/clock.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +35,7 @@ class TestServices {
   SessionController get session => getIt<SessionController>();
   CatalogController get catalog => getIt<CatalogController>();
   CartCubit get cart => getIt<CartCubit>();
+  PaymentRepository get payment => getIt<PaymentRepository>();
   NotificationCenter get notifications => getIt<NotificationCenter>();
   OrdersBloc get orders => getIt<OrdersBloc>();
   RateOrder get rateOrder => getIt<RateOrder>();
