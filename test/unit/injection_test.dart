@@ -1,6 +1,7 @@
 import 'package:biffy/app/di/injection.dart';
 import 'package:biffy/data/repositories/auth_repository.dart';
-import 'package:biffy/data/repositories/catalog_repository.dart';
+import 'package:biffy/data/repositories/in_memory_catalog_repository.dart';
+import 'package:biffy/domain/repositories/catalog_repository.dart';
 import 'package:biffy/data/repositories/in_memory_order_repository.dart';
 import 'package:biffy/domain/repositories/order_repository.dart';
 import 'package:biffy/domain/repositories/payment_repository.dart';
@@ -13,7 +14,7 @@ import 'package:biffy/features/buyer/tracking/rate_order_cubit.dart';
 import 'package:biffy/features/courier/earnings/earnings_cubit.dart';
 import 'package:biffy/features/orders/bloc/orders_bloc.dart';
 import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
-import 'package:biffy/shared/state/catalog_controller.dart';
+import 'package:biffy/features/catalog/bloc/catalog_bloc.dart';
 import 'package:biffy/domain/repositories/notification_repository.dart';
 import 'package:biffy/features/notifications/bloc/notifications_bloc.dart';
 import 'package:biffy/shared/state/session_controller.dart';
@@ -46,7 +47,7 @@ void main() {
     test('repositorios y controladores son una sola instancia', () {
       expect(getIt<OrderRepository>(), same(getIt<OrderRepository>()));
       expect(getIt<SessionController>(), same(getIt<SessionController>()));
-      expect(getIt<CatalogController>(), same(getIt<CatalogController>()));
+      expect(getIt<CatalogBloc>(), same(getIt<CatalogBloc>()));
       expect(getIt<CartCubit>(), same(getIt<CartCubit>()));
       expect(getIt<PaymentRepository>(), same(getIt<PaymentRepository>()));
       expect(

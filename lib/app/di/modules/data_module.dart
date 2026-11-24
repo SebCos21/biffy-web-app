@@ -5,7 +5,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/utils/clock.dart';
 import '../../../data/mock/seed_users.dart';
 import '../../../data/repositories/auth_repository.dart';
-import '../../../data/repositories/catalog_repository.dart';
+import '../../../data/repositories/in_memory_catalog_repository.dart';
 import '../../../data/repositories/in_memory_courier_repository.dart';
 import '../../../data/repositories/in_memory_notification_repository.dart';
 import '../../../data/repositories/in_memory_order_repository.dart';
@@ -19,6 +19,7 @@ import '../../../data/repositories/supabase_order_repository.dart';
 import '../../../data/repositories/supabase_payment_repository.dart';
 import '../../../data/repositories/supabase_profile_repository.dart';
 import '../../../data/repositories/supabase_rewards_repository.dart';
+import '../../../domain/repositories/catalog_repository.dart';
 import '../../../domain/repositories/courier_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/notification_repository.dart';
@@ -41,7 +42,12 @@ void registerDataModule(GetIt g) {
 
 /// Repositorios en memoria: modo demo y pruebas, sin red.
 void _registerInMemory(GetIt g) {
-  g.registerLazySingleton<CatalogRepository>(InMemoryCatalogRepository.new);
+  g.registerLazySingleton<CatalogRepository>(
+    InMemoryCatalogRepository.new,
+    dispose: (repo) {
+      if (repo is InMemoryCatalogRepository) repo.dispose();
+    },
+  );
   g.registerLazySingleton<AuthRepository>(
     () => InMemoryAuthRepository(
       seedUsers(g<CatalogRepository>().businesses),

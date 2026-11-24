@@ -1,9 +1,12 @@
 import 'package:biffy/core/widgets/offline_banner.dart';
 import 'package:biffy/data/repositories/catalog_snapshot.dart';
 import 'package:biffy/data/repositories/supabase_catalog_repository.dart';
-import 'package:biffy/shared/state/catalog_controller.dart';
-import 'package:biffy/shared/state/controller_scope.dart';
+import 'package:biffy/app/di/injection.dart';
+import 'package:biffy/domain/ports/catalog_ports.dart';
+import 'package:biffy/domain/usecases/catalog/catalog_usecases.dart';
+import 'package:biffy/features/catalog/bloc/catalog_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
@@ -32,13 +35,21 @@ Future<void> pumpBanner(
   WidgetTester tester,
   SupabaseCatalogRepository repo,
 ) async {
-  // Adaptado: antes AppServices + Provider; ahora GetIt (makeServices) y
-  // ControllerScope, igual que el resto de la app.
+  // Adaptado: antes AppServices + Provider (luego ControllerScope con
+  // CatalogController); ahora GetIt (makeServices) y el CatalogBloc sobre
+  // este repositorio, igual que el resto de la app.
   final services = await makeServices();
-  final catalog = CatalogController(repo, services.session, services.clock);
+  final catalog = CatalogBloc(
+    CatalogUseCases(
+      repo: repo,
+      context: getIt<CatalogContextPort>(),
+      clock: services.clock,
+    ),
+  );
+  addTearDown(catalog.close);
   await tester.pumpWidget(
-    ControllerScope(
-      controllers: {CatalogController: catalog},
+    BlocProvider<CatalogBloc>.value(
+      value: catalog,
       child: MaterialApp(
         home: Scaffold(body: ListView(children: const [OfflineBanner()])),
       ),

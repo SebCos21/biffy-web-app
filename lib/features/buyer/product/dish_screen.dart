@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
@@ -10,7 +11,7 @@ import '../../../data/models/catalog.dart';
 import '../../../domain/catalog_rules.dart';
 import '../../../domain/pricing.dart';
 import '../cart/bloc/cart_cubit.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
 import '../../../shared/state/controller_scope.dart';
@@ -60,7 +61,7 @@ class _DishScreenState extends State<DishScreen> {
   /// Construye el detalle, las opciones y el botón de agregar.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final session = context.watchController<SessionController>();
     final t = Theme.of(context).textTheme;
     final d = catalog.dishById(widget.id);

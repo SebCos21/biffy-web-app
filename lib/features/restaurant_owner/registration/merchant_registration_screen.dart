@@ -11,7 +11,7 @@ import '../../../data/models/business.dart';
 import '../../../data/models/catalog.dart';
 import '../../../data/models/user.dart';
 import '../../../data/repositories/auth_repository.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
@@ -151,7 +151,7 @@ class _MerchantRegistrationScreenState
 
   /// Crea la cuenta si hace falta, guarda el negocio y navega al menú.
   Future<void> _runFinish() async {
-    final catalog = getIt<CatalogController>();
+    final catalog = context.read<CatalogBloc>();
     final notifications = context.read<NotificationsBloc>();
 
     try {
@@ -260,14 +260,15 @@ class _MerchantRegistrationScreenState
           return;
         }
         _session.linkBusiness(businessId);
-        await catalog.refresh();
+        await catalog.request(CatalogRefreshRequested());
       } on AuthException catch (e) {
         if (!mounted) return;
         showSnack(context, e.message, error: true);
         return;
       }
     } else {
-      catalog.registerBusiness(biz, [branch]);
+      // Se espera el alta para que el menú ya vea la sede al navegar.
+      await catalog.request(BusinessRegistered(biz, [branch]));
       _session.linkBusiness(biz.id);
     }
 

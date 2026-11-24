@@ -9,7 +9,7 @@ import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/order.dart';
 import '../../../domain/recommendation.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
@@ -25,7 +25,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final orders = context.watch<OrdersBloc>();
     final notifications = context.watch<NotificationsBloc>();
     final t = Theme.of(context).textTheme;

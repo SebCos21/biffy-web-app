@@ -7,7 +7,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/actions.dart';
 import '../../../core/widgets/catalog_cards.dart';
 import '../../../core/widgets/ui.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/controller_scope.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../auth/bloc/university_verification_cubit.dart';
@@ -87,7 +87,7 @@ class _CampusScreenState extends State<CampusScreen> {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final orders = context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final uniId = _uniId ?? session.universityId ?? 'icesi';

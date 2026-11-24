@@ -7,7 +7,7 @@ import '../../../data/models/order.dart';
 import '../../../domain/reorder.dart';
 import '../../../domain/usecases/orders/checkout_draft.dart';
 import '../cart/bloc/cart_cubit.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../cart/cart_screen.dart';
@@ -16,7 +16,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Evalúa si un pedido anterior se puede repetir en el catálogo actual.
 ReorderCheck _check(BuildContext context, Order order) {
-  final catalog = getIt<CatalogController>();
+  final catalog = getIt<CatalogBloc>();
   final cart = getIt<CartCubit>();
   final r = catalog.restaurantById(order.restaurantId);
   return checkReorder(

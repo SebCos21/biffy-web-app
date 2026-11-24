@@ -125,6 +125,63 @@ void main() {
     expect(bad, isEmpty, reason: bad.join('\n'));
   });
 
+  test('el Bloc del catálogo y el carrito solo conocen el dominio', () {
+    for (final dir in [
+      'lib/features/catalog',
+      'lib/features/buyer/cart/bloc',
+    ]) {
+      final bad = _violations(
+        dir,
+        RegExp(r"(\.\./)+data/|supabase"),
+        // El checkout aún lee la sesión (puente hasta el módulo de Auth).
+        except: ['checkout_cubit.dart'],
+      );
+      expect(bad, isEmpty, reason: bad.join('\n'));
+    }
+  });
+
+  test('los repositorios del catálogo implementan la interfaz del dominio', () {
+    for (final f in [
+      'lib/data/repositories/in_memory_catalog_repository.dart',
+      'lib/data/repositories/supabase_catalog_repository.dart',
+    ]) {
+      final src = File(f).readAsStringSync();
+      expect(src, contains('implements CatalogRepository'), reason: f);
+      expect(
+        src,
+        contains('domain/repositories/catalog_repository.dart'),
+        reason: f,
+      );
+    }
+    expect(
+      File('lib/data/repositories/catalog_repository.dart').existsSync(),
+      isFalse,
+      reason: 'la interfaz vive en lib/domain/repositories/',
+    );
+  });
+
+  test('no queda CatalogController (lo reemplazó CatalogBloc)', () {
+    expect(
+      File('lib/shared/state/catalog_controller.dart').existsSync(),
+      isFalse,
+    );
+    final bad = _violations('lib', RegExp(r'catalog_controller'));
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test(
+    'las pantallas no escriben el catálogo sin pasar por el CatalogBloc',
+    () {
+      // Las escrituras son eventos (request/add); nadie llama al repositorio.
+      final bad = _violations(
+        'lib/features',
+        RegExp(r'domain/repositories/catalog_repository\.dart'),
+        except: ['lib/features/catalog/', 'lib/features/buyer/cart/bloc/'],
+      );
+      expect(bad, isEmpty, reason: bad.join('\n'));
+    },
+  );
+
   test('no queda NotificationCenter (lo reemplazó NotificationsBloc)', () {
     expect(
       File('lib/shared/state/notification_center.dart').existsSync(),

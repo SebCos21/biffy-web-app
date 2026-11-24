@@ -1,7 +1,7 @@
 import 'package:biffy/app/di/injection.dart';
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_users.dart';
-import 'package:biffy/data/repositories/catalog_repository.dart';
+import 'package:biffy/domain/repositories/catalog_repository.dart';
 import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
 import 'package:biffy/features/buyer/cart/bloc/checkout_cubit.dart';
 import 'package:bloc_test/bloc_test.dart';

@@ -5,7 +5,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/order.dart';
 import '../../../domain/pricing.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'reorder_flow.dart';
@@ -47,7 +47,7 @@ class FrequentOrdersScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
     final session = context.watchController<SessionController>();
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final t = Theme.of(context).textTheme;
     if (session.user == null) return const Scaffold();
     final list = frequentOrders(orders.forBuyer(session.user!.id));
@@ -139,7 +139,7 @@ class FrequentOrdersScreen extends StatelessWidget {
   }
 
   /// Calcula el precio estimado del pedido con el catálogo actual.
-  int _estimate(CatalogController catalog, Order o) {
+  int _estimate(CatalogBloc catalog, Order o) {
     var sum = 0;
     for (final l in o.lines) {
       final d = catalog.dishById(l.dishId);

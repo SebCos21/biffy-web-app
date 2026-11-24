@@ -8,7 +8,7 @@ import '../../../core/constants/catalog_constants.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
 
@@ -34,7 +34,7 @@ class ProductFormScreen extends StatefulWidget {
 /// Estado del formulario que crea o edita un producto del menú.
 class _ProductFormScreenState extends State<ProductFormScreen> {
   final _form = GlobalKey<FormState>();
-  late final CatalogController _catalog = getIt<CatalogController>();
+  late final CatalogBloc _catalog = getIt<CatalogBloc>();
   late final String _biz = getIt<SessionController>().businessId!;
   late final Dish? _orig = widget.id == 'nuevo'
       ? null
@@ -161,17 +161,16 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     // Si hay foto nueva, se sube antes de guardar el plato.
     var image = _photoUrl;
     if (_photoBytes != null) {
-      final url = await _catalog.uploadDishPhoto(
-        businessId: _biz,
-        bytes: _photoBytes!,
+      final upload = await _catalog.request(
+        DishPhotoUploaded(businessId: _biz, bytes: _photoBytes!),
       );
-      if (url == null) {
+      if (!upload.ok || upload.url == null) {
         if (!mounted) return;
-        showSnack(context, 'No pudimos subir la foto.', error: true);
+        showSnack(context, upload.message, error: true);
         setState(() => _saving = false);
         return;
       }
-      image = url;
+      image = upload.url;
     }
 
     final hasNutrition = [
@@ -220,15 +219,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       soldToday: _orig?.soldToday ?? 0,
       imageAsset: image,
     );
-    try {
-      await _catalog.saveDish(dish);
-    } on Object {
+    final saved = await _catalog.request(DishSaved(dish));
+    if (!saved.ok) {
       if (!mounted) return;
-      showSnack(
-        context,
-        'No pudimos guardar el producto. Revisa tu conexión.',
-        error: true,
-      );
+      showSnack(context, saved.message, error: true);
       setState(() => _saving = false);
       return;
     }

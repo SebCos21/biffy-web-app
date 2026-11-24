@@ -6,7 +6,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
 import '../../../data/models/order.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
@@ -65,7 +65,7 @@ class OfferCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final o = order;
-    final catalog = getIt<CatalogController>();
+    final catalog = getIt<CatalogBloc>();
     final r = catalog.restaurantById(o.restaurantId);
     final t = Theme.of(context).textTheme;
     return Padding(

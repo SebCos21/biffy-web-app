@@ -36,7 +36,7 @@ void main() {
     final sessionAdapter = SessionOrderAdapter(s.session);
     uc = OrderUseCases(
       repo: repo,
-      catalog: CatalogOrderAdapter(s.catalog),
+      catalog: CatalogOrderAdapter(s.catalog.useCases),
       buyers: sessionAdapter,
       wallet: wallet,
       notifier: notifier,

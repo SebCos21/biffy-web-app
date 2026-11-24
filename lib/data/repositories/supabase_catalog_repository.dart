@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import '../models/business.dart';
 import '../models/catalog.dart';
-import 'catalog_repository.dart';
+import '../../domain/repositories/catalog_repository.dart';
 import 'catalog_snapshot.dart';
 
 /// Fuente de filas del catálogo (la red en producción, un doble en pruebas).
@@ -304,17 +304,68 @@ class SupabaseCatalogRepository
 
   // ------------------------------------------------------------ Escrituras
 
+  /// Ejecuta una escritura y la traduce a [CatalogResult]: un
+  /// [CatalogWriteDenied] (RLS dejó 0 filas) es `forbidden`; cualquier otro
+  /// fallo es `network`. Así nunca se muestra como guardado algo que no se
+  /// guardó.
+  Future<CatalogResult> _guard(
+    CatalogAction action,
+    Future<void> Function() write,
+  ) async {
+    try {
+      await write();
+      return CatalogResult.ok(action);
+    } on CatalogWriteDenied catch (e) {
+      return CatalogResult.denied(action, e);
+    } on Object {
+      return CatalogResult('network', action);
+    }
+  }
+
   /// Agrega un negocio y sus sedes solo en la caché.
   @override
-  void addBusiness(Business business, List<Restaurant> branches) {
+  CatalogResult addBusiness(Business business, List<Restaurant> branches) {
     _businesses.add(business);
     _restaurants.addAll(branches);
+    if (!_changes.isClosed) _changes.add(null);
+    return const CatalogResult.ok(CatalogAction.registerBusiness);
+  }
+
+  /// Crea o actualiza el plato en la base y refresca la caché.
+  @override
+  Future<CatalogResult> upsertDish(Dish dish) =>
+      _guard(CatalogAction.saveDish, () => _upsertDish(dish));
+
+  /// Borrado lógico del plato (marca `deleted_at`).
+  @override
+  Future<CatalogResult> deleteDish(String id) =>
+      _guard(CatalogAction.deleteDish, () => _deleteDish(id));
+
+  /// Persiste el estado de agotado y refresca la caché.
+  @override
+  Future<CatalogResult> setDishSoldOut(String dishId, bool soldOut) =>
+      _guard(CatalogAction.soldOut, () => _setDishSoldOut(dishId, soldOut));
+
+  /// Persiste la pausa de una sede y refresca la caché.
+  @override
+  Future<CatalogResult> setBranchPaused(String branchId, bool paused) =>
+      _guard(
+        CatalogAction.pauseBusiness,
+        () => _setBranchPaused(branchId, paused),
+      );
+
+  /// Guarda el promedio en la caché; el valor real llega por Realtime.
+  @override
+  void setBranchRating(String branchId, double rating) {
+    final r = restaurantById(branchId);
+    if (r == null || r.rating == rating) return;
+    r.rating = rating;
+    if (!_changes.isClosed) _changes.add(null);
   }
 
   /// Crea o actualiza el plato en la base y refresca la caché. Lanza
   /// [CatalogWriteDenied] si RLS no deja editarlo.
-  @override
-  Future<void> upsertDish(Dish dish) async {
+  Future<void> _upsertDish(Dish dish) async {
     final row = <String, dynamic>{
       'branch_id': dish.restaurantId,
       'name': dish.name,
@@ -408,8 +459,7 @@ class SupabaseCatalogRepository
 
   /// Borrado lógico del plato (marca `deleted_at`): conserva el historial de
   /// pedidos. Lanza [CatalogWriteDenied] si RLS no deja borrarlo.
-  @override
-  Future<void> deleteDish(String id) async {
+  Future<void> _deleteDish(String id) async {
     final updated = await _db
         .from('dishes')
         .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
@@ -424,13 +474,14 @@ class SupabaseCatalogRepository
   @override
   void recordSale(String dishId, int qty) {
     final dish = dishById(dishId);
-    if (dish != null) dish.soldToday += qty;
+    if (dish == null) return;
+    dish.soldToday += qty;
+    if (!_changes.isClosed) _changes.add(null);
   }
 
   /// Persiste el estado de agotado y refresca la caché. Lanza
   /// [CatalogWriteDenied] si RLS no deja cambiarlo.
-  @override
-  Future<void> setDishSoldOut(String dishId, bool soldOut) async {
+  Future<void> _setDishSoldOut(String dishId, bool soldOut) async {
     final updated = await _db
         .from('dishes')
         .update({'sold_out': soldOut})
@@ -445,8 +496,7 @@ class SupabaseCatalogRepository
 
   /// Persiste la pausa de una sede y refresca la caché. Lanza
   /// [CatalogWriteDenied] si RLS no deja pausarla.
-  @override
-  Future<void> setBranchPaused(String branchId, bool paused) async {
+  Future<void> _setBranchPaused(String branchId, bool paused) async {
     final updated = await _db
         .from('branches')
         .update({'paused': paused})
@@ -457,9 +507,10 @@ class SupabaseCatalogRepository
     if (!_changes.isClosed) _changes.add(null);
   }
 
-  /// Sube la foto del plato a `dish-images/<business_id>/` y devuelve la URL.
+  /// Sube la foto del plato a `dish-images/<business_id>/`; con éxito trae la
+  /// URL pública en [CatalogResult.url].
   @override
-  Future<String?> uploadDishPhoto({
+  Future<CatalogResult> uploadDishPhoto({
     required String businessId,
     required Uint8List bytes,
   }) async {
@@ -472,9 +523,12 @@ class SupabaseCatalogRepository
             bytes,
             fileOptions: const sb.FileOptions(contentType: 'image/jpeg'),
           );
-      return _db.storage.from('dish-images').getPublicUrl(path);
+      return CatalogResult.ok(
+        CatalogAction.uploadPhoto,
+        url: _db.storage.from('dish-images').getPublicUrl(path),
+      );
     } on Object {
-      return null;
+      return const CatalogResult('network', CatalogAction.uploadPhoto);
     }
   }
 

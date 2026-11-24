@@ -2,10 +2,11 @@ import 'package:get_it/get_it.dart';
 
 import '../../../core/utils/clock.dart';
 import '../../../data/repositories/auth_repository.dart';
-import '../../../data/repositories/catalog_repository.dart';
+import '../../../domain/repositories/catalog_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
 import '../../../domain/repositories/profile_repository.dart';
+import '../../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../../domain/usecases/courier/courier_usecases.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
 import '../../../domain/usecases/merchant_boxes_usecases.dart';
@@ -25,19 +26,19 @@ import '../../../features/buyer/tracking/rate_order_cubit.dart';
 import '../../../features/auth/bloc/login_cubit.dart';
 import '../../../features/auth/bloc/register_cubit.dart';
 import '../../../features/auth/bloc/university_verification_cubit.dart';
+import '../../../features/catalog/bloc/catalog_bloc.dart';
 import '../../../features/courier/bloc/courier_cubit.dart';
 import '../../../features/courier/earnings/earnings_cubit.dart';
 import '../../../features/notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../features/restaurant_owner/boxes/merchant_boxes_cubit.dart';
-import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/session_controller.dart';
 
 /// Módulo de presentación: estado que consumen las pantallas.
 ///
-/// - Controladores (`ChangeNotifier`, aún sin migrar), `OrdersBloc`,
-///   `NotificationsBloc` y `CourierCubit`: un solo objeto para toda la app
-///   (`LazySingleton`).
+/// - `SessionController` (`ChangeNotifier`, aún sin migrar), `CatalogBloc`,
+///   `OrdersBloc`, `NotificationsBloc` y `CourierCubit`: un solo objeto para
+///   toda la app (`LazySingleton`).
 /// - Cubits de una pantalla: `Factory`, uno nuevo cada vez que se abre.
 void registerPresentationModule(GetIt g) {
   _registerControllers(g);
@@ -59,18 +60,15 @@ void _registerControllers(GetIt g) {
       profile: _optional<ProfileRepository>(g),
     ),
   );
-  g.registerLazySingleton<CatalogController>(
-    () => CatalogController(
-      g<CatalogRepository>(),
-      g<SessionController>(),
-      g<Clock>(),
-    ),
-  );
   g.registerLazySingleton<CartCubit>(() => CartCubit(g<CatalogRepository>()));
 }
 
 /// Bloc de pedidos (global) y cubits de pantalla.
 void _registerBlocs(GetIt g) {
+  g.registerLazySingleton<CatalogBloc>(
+    () => CatalogBloc(g<CatalogUseCases>()),
+    dispose: (bloc) => bloc.close(),
+  );
   g.registerLazySingleton<OrdersBloc>(
     () => OrdersBloc(g<OrderUseCases>()),
     dispose: (bloc) => bloc.close(),
@@ -108,7 +106,7 @@ void _registerBlocs(GetIt g) {
     (courierId, _) => EarningsCubit(
       orders: g<OrdersBloc>(),
       courierId: courierId,
-      now: () => g<CatalogController>().now,
+      now: () => g<Clock>().now(),
       getEarnings: g<GetCourierEarnings>(),
     ),
   );

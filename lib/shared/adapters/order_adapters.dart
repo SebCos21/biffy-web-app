@@ -3,25 +3,30 @@ import '../../domain/entities/catalog.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/ports/order_ports.dart';
-import '../state/catalog_controller.dart';
+import '../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
 import '../state/session_controller.dart';
 
-/// Conecta el puerto de catálogo del dominio con `CatalogController`.
+/// Conecta el puerto de catálogo de pedidos con los casos de uso del catálogo.
 class CatalogOrderAdapter implements OrderCatalogPort {
+  /// Recibe los casos de uso del catálogo.
   CatalogOrderAdapter(this._catalog);
-  final CatalogController _catalog;
+  final CatalogUseCases _catalog;
 
+  /// Plato por id.
   @override
-  Dish? dishById(String id) => _catalog.dishById(id);
+  Dish? dishById(String id) => _catalog.queries.dishById(id);
 
+  /// Sede por id.
   @override
-  Restaurant? restaurantById(String id) => _catalog.restaurantById(id);
+  Restaurant? restaurantById(String id) => _catalog.queries.restaurantById(id);
 
+  /// Sedes de un negocio.
   @override
   List<Restaurant> branchesOf(String businessId) =>
-      _catalog.branchesOf(businessId);
+      _catalog.queries.branchesOf(businessId);
 
+  /// Suma las unidades vendidas (control de porciones).
   @override
   void recordSale(String dishId, int qty) => _catalog.recordSale(dishId, qty);
 }

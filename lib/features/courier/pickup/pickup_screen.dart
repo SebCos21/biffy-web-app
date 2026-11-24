@@ -5,7 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/order.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../offers/offer_widgets.dart';
@@ -31,7 +31,7 @@ class _PickupScreenState extends State<PickupScreen> {
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
     final session = context.watchController<SessionController>();
-    final catalog = getIt<CatalogController>();
+    final catalog = getIt<CatalogBloc>();
     final t = Theme.of(context).textTheme;
     final o = orders.byId(widget.id);
     if (o == null || o.courierId != session.user?.id) {

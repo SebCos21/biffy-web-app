@@ -1,7 +1,7 @@
 import '../../data/mock/seed_state.dart';
+import '../../domain/repositories/catalog_repository.dart';
 import '../../domain/repositories/courier_repository.dart';
 import '../../domain/repositories/order_repository.dart';
-import '../../shared/state/catalog_controller.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
 import '../../shared/state/session_controller.dart';
 import '../../core/utils/clock.dart';
@@ -31,7 +31,7 @@ void bootstrapDemo({bool seedData = true}) {
     applyDemoSeed(
       getIt<SessionController>(),
       getIt<OrderRepository>(),
-      getIt<CatalogController>(),
+      getIt<CatalogRepository>(),
       getIt<Clock>(),
       getIt<CourierRepository>(),
     );

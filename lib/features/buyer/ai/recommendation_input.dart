@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../../data/models/order.dart';
 import '../../../domain/recommendation.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
@@ -14,7 +14,7 @@ RecommendationInput buildRecommendationInput(
   int seed = 0,
 }) {
   final session = getIt<SessionController>();
-  final catalog = getIt<CatalogController>();
+  final catalog = getIt<CatalogBloc>();
   final orders = context.read<OrdersBloc>();
   final user = session.user;
   final history = <String>[

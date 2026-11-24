@@ -7,7 +7,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
 import '../../../data/models/rewards.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'merchant_boxes_cubit.dart';
 import '../../../app/di/injection.dart';
@@ -72,7 +72,7 @@ class _MerchantBoxesViewState extends State<_MerchantBoxesView> {
 
   /// Abre el selector de platos del menú propio para una caja.
   Future<void> _addDish(BuildContext context, GotasBox box) async {
-    final catalog = getIt<CatalogController>();
+    final catalog = getIt<CatalogBloc>();
     final businessId = getIt<SessionController>().businessId;
     final cubit = context.read<MerchantBoxesCubit>();
     if (businessId == null) return;

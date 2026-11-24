@@ -1,9 +1,11 @@
 import 'package:get_it/get_it.dart';
 
 import '../../../core/utils/clock.dart';
+import '../../../domain/ports/catalog_ports.dart';
 import '../../../domain/ports/courier_ports.dart';
 import '../../../domain/ports/order_ports.dart';
 import '../../../domain/ports/review_ports.dart';
+import '../../../domain/repositories/catalog_repository.dart';
 import '../../../domain/repositories/courier_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/notification_repository.dart';
@@ -11,6 +13,7 @@ import '../../../domain/repositories/order_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
 import '../../../domain/repositories/review_repository.dart';
 import '../../../domain/repositories/rewards_repository.dart';
+import '../../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../../domain/usecases/courier/courier_usecases.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
 import '../../../domain/usecases/merchant_boxes_usecases.dart';
@@ -25,7 +28,7 @@ import '../../../shared/adapters/courier_adapters.dart';
 import '../../../shared/adapters/order_adapters.dart';
 import '../../../shared/adapters/review_adapters.dart';
 import '../../../shared/adapters/server_order_notifier.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../../shared/adapters/catalog_adapters.dart';
 import '../../../shared/state/session_controller.dart';
 
 /// Módulo de dominio: puertos (con sus adaptadores) y casos de uso.
@@ -40,7 +43,7 @@ void registerDomainModule(GetIt g) {
 /// Conecta los puertos del dominio con los controladores de la app.
 void _registerPorts(GetIt g) {
   g.registerLazySingleton<OrderCatalogPort>(
-    () => CatalogOrderAdapter(g<CatalogController>()),
+    () => CatalogOrderAdapter(g<CatalogUseCases>()),
   );
   g.registerLazySingleton<OrderBuyerPort>(
     () => SessionOrderAdapter(g<SessionController>()),
@@ -57,13 +60,22 @@ void _registerPorts(GetIt g) {
   g.registerLazySingleton<CourierSessionPort>(
     () => SessionCourierAdapter(g<SessionController>()),
   );
+  g.registerLazySingleton<CatalogContextPort>(
+    () => SessionCatalogAdapter(g<SessionController>()),
+    dispose: (port) {
+      if (port is SessionCatalogAdapter) port.dispose();
+    },
+  );
   g.registerLazySingleton<BranchRatingPort>(
-    () => CatalogRatingAdapter(g<CatalogController>()),
+    () => CatalogRatingAdapter(g<CatalogUseCases>()),
   );
   g.registerLazySingleton<ReviewNotifier>(
     () => g<OrderRepository>().isRemote
         ? const ServerReviewNotifier()
-        : LocalReviewNotifier(g<PushNotification>(), g<CatalogController>()),
+        : LocalReviewNotifier(
+            g<PushNotification>(),
+            g<CatalogUseCases>().queries,
+          ),
   );
 }
 
@@ -98,6 +110,15 @@ void _registerUseCases(GetIt g) {
   );
   g.registerFactory<PushNotification>(
     () => PushNotification(g<NotificationRepository>(), g<Clock>()),
+  );
+
+  // Catálogo: lecturas con la regla de alcance y escrituras del comercio.
+  g.registerFactory<CatalogUseCases>(
+    () => CatalogUseCases(
+      repo: g<CatalogRepository>(),
+      context: g<CatalogContextPort>(),
+      clock: g<Clock>(),
+    ),
   );
 
   // Repartidor: el paquete completo (para el CourierCubit) y las dos piezas

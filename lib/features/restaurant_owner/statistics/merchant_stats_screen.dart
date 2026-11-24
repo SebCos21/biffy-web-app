@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../home/merchant_home_screen.dart';
@@ -18,7 +18,7 @@ class MerchantStatsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     context.watchController<SessionController>();
-    context.watchController<CatalogController>();
+    context.watch<CatalogBloc>();
     context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final m = businessMetrics(context);

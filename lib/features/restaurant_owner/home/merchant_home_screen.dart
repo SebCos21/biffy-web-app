@@ -6,7 +6,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/user.dart';
 import '../../../domain/order_rules.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
@@ -17,7 +17,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// Métricas del negocio actual derivadas de pedidos y productos locales.
 RestaurantMetrics businessMetrics(BuildContext context) {
   final session = getIt<SessionController>();
-  final catalog = getIt<CatalogController>();
+  final catalog = getIt<CatalogBloc>();
   final orders = context.read<OrdersBloc>();
   final id = session.businessId!;
   return computeMetrics(
@@ -36,7 +36,7 @@ class MerchantHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final orders = context.watch<OrdersBloc>();
     final center = context.watch<NotificationsBloc>();
     final t = Theme.of(context).textTheme;
@@ -113,15 +113,11 @@ class MerchantHomeScreen extends StatelessWidget {
                 ),
                 value: !paused,
                 onChanged: (v) async {
-                  try {
-                    await catalog.setBusinessPaused(b.id, !v);
-                  } on Object {
-                    if (!context.mounted) return;
-                    showSnack(
-                      context,
-                      'No pudimos cambiar el estado.',
-                      error: true,
-                    );
+                  final r = await catalog.request(
+                    BusinessPauseChanged(b.id, !v),
+                  );
+                  if (!r.ok && context.mounted) {
+                    showSnack(context, r.message, error: true);
                   }
                 },
               ),

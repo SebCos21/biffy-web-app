@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../features/orders/bloc/orders_bloc.dart';
 import '../features/buyer/cart/bloc/cart_cubit.dart';
-import '../shared/state/catalog_controller.dart';
+import '../features/catalog/bloc/catalog_bloc.dart';
 import '../shared/state/controller_scope.dart';
 import '../features/courier/bloc/courier_cubit.dart';
 import '../features/notifications/bloc/notifications_bloc.dart';
@@ -89,10 +89,10 @@ class _BiffyAppState extends State<BiffyApp> {
     return ControllerScope(
       controllers: {
         SessionController: getIt<SessionController>(),
-        CatalogController: getIt<CatalogController>(),
       },
       child: MultiBlocProvider(
         providers: [
+          BlocProvider<CatalogBloc>.value(value: getIt<CatalogBloc>()),
           BlocProvider<OrdersBloc>.value(value: getIt<OrdersBloc>()),
           BlocProvider<CartCubit>.value(value: getIt<CartCubit>()),
           BlocProvider<NotificationsBloc>.value(

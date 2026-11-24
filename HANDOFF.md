@@ -111,7 +111,8 @@ migraciones).
 | `lib/features/orders/bloc/` | `OrdersBloc`: eventos → casos de uso → `OrdersState` (`orders`, `revision`, `outcome`). Con servidor, **el servidor decide**: llama al RPC y el estado llega con la recarga |
 | `lib/domain/usecases/orders/` | `PlaceOrder`, `CancelOrder`, `AcceptOrder`, `RejectOrder`, `MarkOrderReady`, `AcceptOffer`, `DeclineOffer`, `ConfirmPickup`, `CompleteDelivery`, `OrderQueries`; se ensamblan en `OrderUseCases` |
 | `lib/domain/repositories/order_repository.dart` | Interfaz `OrderRepository` + `OrderResult` (mismos códigos en demo y servidor) |
-| `lib/shared/adapters/order_adapters.dart` | Conectan los puertos del dominio con `CatalogController`, `SessionController` y `NotificationCenter` |
+| `lib/shared/adapters/order_adapters.dart` | Conectan los puertos de pedidos con los casos de uso del catálogo y de avisos, y con `SessionController` (puente hasta el AuthBloc) |
+| `lib/features/catalog/bloc/` | `CatalogBloc` (HU-2): eventos de escritura del comercio → `CatalogUseCases` → `CatalogRepository`; lecturas síncronas con la regla `isReachable`; `request()` devuelve un `CatalogResult` con mensaje en español |
 | `tool/admin_seed.dart` | Crea/actualiza las 3 cuentas demo con `service_role` (idempotente) |
 | `supabase/functions/send-university-code/` | Envía el código al correo institucional con Resend |
 | `supabase/functions/university-revalidation/` | Cron: revalida, revoca Campus y avisa |
@@ -279,7 +280,7 @@ correr las verificaciones de abajo.
 | 4 | Borrado solo lógico (`deleted_at`); el DELETE duro de negocio, sede y plato falla | ✅ código · ⏳ aplicar 0028 | `0028` §2, `deleteDish`, `test/unit/hu2_guards_test.dart` |
 | 5 | El comprador solo recibe datos públicos del negocio (sin banco ni documentos) | ✅ código · ⏳ aplicar 0028 | `0028` §3 (`businesses_public` = id, brand, cuisine, description), `_fetchRows` + `CatalogRows.businesses` |
 | 6 | Sin red el catálogo abre con la última copia y avisa; sin copia muestra error con reintento | ✅ | `lib/data/repositories/catalog_snapshot.dart`, `lib/core/widgets/offline_banner.dart`, `test/unit/catalog_offline_test.dart`, `test/widget/offline_banner_test.dart` |
-| 7 | Una escritura que RLS rechaza (0 filas) no se muestra como guardada | ✅ | `CatalogWriteDenied` (`.select('id')` en update/delete/agotado/pausa), switch «Disponible» revierte en `merchant_menu_screen.dart` |
+| 7 | Una escritura que RLS rechaza (0 filas) no se muestra como guardada | ✅ | `CatalogWriteDenied` (`.select('id')` en update/delete/agotado/pausa) → `CatalogResult('forbidden')`; «Disponible» se revierte en el caso de uso `SetDishAvailability` |
 | 8 | Favoritos privados y sin "fantasmas" si falla la escritura | ✅ | `SessionController._revertFavorite`, `editor/hu2_rls.sql` (6) |
 | 9 | Fotos de platos solo en la carpeta del propio negocio, máx. 5 MiB e imágenes | ✅ código · ⏳ aplicar 0028 | `0028` §5 (`dish_images_update` con `WITH CHECK`), `editor/hu2_rls.sql` (7) |
 
@@ -299,8 +300,10 @@ correr las verificaciones de abajo.
 - `refresh()` nunca lanza; marca `offline` y lee la copia del disco **una sola
   vez** y solo si la memoria está vacía. Al volver Realtime (`subscribed`)
   estando sin red, recarga.
-- `CatalogSyncStatus` es una interfaz aparte: `CatalogRepository` no cambió, y
-  la demo en memoria nunca está "sin conexión".
+- `CatalogRepository` (en `lib/domain/repositories/`) implementa
+  `CatalogSyncStatus`: la demo en memoria nunca está "sin conexión"
+  (`offline == false`). El `CatalogBloc` publica `offline` en su estado y el
+  `OfflineBanner` lo lee con `context.watch<CatalogBloc>()`.
 - La regla de cobertura expone el motivo con `coverageGap` (solo campus → sin
   repartidores → fuera de radio); `isReachable` es `coverageGap == null`.
 
@@ -448,13 +451,13 @@ Orden sugerido. Cada punto tiene criterio de aceptación.
 | Realtime | Requiere `0010_realtime.sql` (publica `branches`, `dishes`, `orders`, `order_events`) y `0028` (`dish_options`, `catalog_revision`). Realtime **no** emite eventos de filas que RLS oculta: pausar/borrar un plato solo llega al comprador por el UPDATE de `catalog_revision`. No quitar sus triggers. Sin Realtime todo funciona, pero hay que reabrir la app. |
 | `businesses` | Tiene RLS de dueño. El comprador lee **`businesses_public`** (id, brand, cuisine, description); el dueño recibe además su fila completa y `CatalogRows.businesses` la mezcla por id. La vista corre con permisos de su dueño a propósito: no añadirle columnas privadas. |
 | Copia sin conexión | `biffy.catalog.v1` en `shared_preferences`, formato `{'v':1,…}`. Si cambia el formato, subir `v`: las copias viejas se ignoran solas. |
-| Escrituras de catálogo | Un UPDATE que RLS filtra devuelve 0 filas **sin error**. Toda escritura de catálogo usa `.select('id')` y lanza `CatalogWriteDenied` si vuelve vacía. |
+| Escrituras de catálogo | Un UPDATE que RLS filtra devuelve 0 filas **sin error**. Toda escritura de catálogo usa `.select('id')` y lanza `CatalogWriteDenied` si vuelve vacía; el repositorio lo entrega como `CatalogResult` con código `forbidden` (nunca lanza hacia la pantalla). |
 | Migraciones 0027/0028 | `0027` está reservado para `0027_server_guards.sql` de `origin/hu4-cierre-entrega`. Al integrarla, regenerar `apply_all.sql` y conservar en `0099_verify.sql` los chequeos de las dos ramas (ver HU-2 arriba). |
 | Prueba SQL de HU-2 fuera de CI | Límite conocido: `supabase/tests/editor/hu2_rls.sql` **no corre en el job `sql-tests`** (que solo toma `supabase/tests/hu*.sql`). Está escrita para el SQL Editor: inserta en `auth.users` columnas que los stubs locales no tienen (`instance_id`, `aud`, `encrypted_password`…) y fija el usuario con `request.jwt.claims`, mientras el stub de `auth.uid()` lee `request.jwt.claim.sub`. Se corre a mano; para llevarla a CI habría que adaptarla. |
 | Evidencia | Se sube a `delivery-evidence/<order_uuid>/`; `courier_deliver` exige que el objeto exista. Máx. 5 MB, jpeg/png/webp. El bucket es privado: para mostrarla hace falta URL firmada (pendiente). |
 | Fechas | `timestamptz` llega en UTC: el mapeo usa `.toLocal()` y `scheduled_for` se envía con `.toUtc()`. Sin eso las horas y los días (ganancias, seguimiento) salen corridos 5 h. |
 | Imágenes | `image_url` acepta una ruta `assets/...` o una URL de Storage; `catalogImage` en `lib/core/widgets/ui.dart` elige asset o red. Hoy las 4 filas de Qbano tienen `null` (se ve el emoji). |
-| Ids demo | En Supabase las sedes tienen uuid: no enlazar a ids fijos como `qbano-icesi`; usar `CatalogController.qbanoIcesi` o buscar en el catálogo. |
+| Ids demo | En Supabase las sedes tienen uuid: no enlazar a ids fijos como `qbano-icesi`; usar `CatalogBloc.qbanoIcesi` o buscar en el catálogo. |
 | Datos locales | Preferencias, favoritos, ajustes y cupones **no** se guardan en Supabase todavía (Fase 4). |
 | Datos de prueba | Existe el pedido `BF-2041` entregado y `legacy_gotas_rewards` (tabla antigua conservada y bloqueada). |
 | Confirmación de correo | Desactivada a propósito. Al publicar hay que activarla. |

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
@@ -6,7 +7,7 @@ import '../../../core/constants/catalog_constants.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/ui.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../shared/state/controller_scope.dart';
 
@@ -27,7 +28,7 @@ class _MerchantMenuScreenState extends State<MerchantMenuScreen> {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final t = Theme.of(context).textTheme;
     final branches = catalog.branchesOf(session.businessId!);
     final all = catalog.productsOf(session.businessId!);
@@ -187,17 +188,15 @@ class _MerchantMenuScreenState extends State<MerchantMenuScreen> {
                                 Switch(
                                   value: d.active,
                                   onChanged: (v) async {
-                                    d.active = v;
-                                    try {
-                                      await catalog.saveDish(d);
-                                    } on Object {
-                                      // La base no lo guardó: se revierte.
-                                      d.active = !v;
-                                      if (!context.mounted) return;
-                                      setState(() {});
+                                    // Si la base no lo guarda, el caso de
+                                    // uso lo revierte y el estado se repinta.
+                                    final r = await catalog.request(
+                                      DishAvailabilityChanged(d, v),
+                                    );
+                                    if (!r.ok && context.mounted) {
                                       showSnack(
                                         context,
-                                        'No pudimos guardar el cambio.',
+                                        r.message,
                                         error: true,
                                       );
                                     }
@@ -213,13 +212,13 @@ class _MerchantMenuScreenState extends State<MerchantMenuScreen> {
                                   key: Key('soldout-${d.id}'),
                                   value: d.soldOut,
                                   onChanged: (v) async {
-                                    try {
-                                      await catalog.setSoldOut(d, v);
-                                    } on Object {
-                                      if (!context.mounted) return;
+                                    final r = await catalog.request(
+                                      DishSoldOutChanged(d, v),
+                                    );
+                                    if (!r.ok && context.mounted) {
                                       showSnack(
                                         context,
-                                        'No pudimos guardar el cambio.',
+                                        r.message,
                                         error: true,
                                       );
                                     }
@@ -250,20 +249,15 @@ class _MerchantMenuScreenState extends State<MerchantMenuScreen> {
                                   destructive: true,
                                 );
                                 if (ok) {
-                                  try {
-                                    await catalog.deleteDish(d.id);
-                                    if (context.mounted) {
-                                      showSnack(context, 'Producto eliminado');
-                                    }
-                                  } on Object {
-                                    if (context.mounted) {
-                                      showSnack(
-                                        context,
-                                        'No pudimos eliminar el producto.',
-                                        error: true,
-                                      );
-                                    }
-                                  }
+                                  final r = await catalog.request(
+                                    DishDeleted(d.id),
+                                  );
+                                  if (!context.mounted) return;
+                                  showSnack(
+                                    context,
+                                    r.ok ? 'Producto eliminado' : r.message,
+                                    error: !r.ok,
+                                  );
                                 }
                               },
                             ),

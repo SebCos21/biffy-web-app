@@ -8,7 +8,7 @@ import '../../data/models/cart.dart';
 import '../../data/models/catalog.dart';
 import '../../data/models/user.dart';
 import '../../features/buyer/cart/bloc/cart_cubit.dart';
-import '../../shared/state/catalog_controller.dart';
+import '../../features/catalog/bloc/catalog_bloc.dart';
 import '../../shared/state/session_controller.dart';
 import '../constants/catalog_constants.dart';
 import '../utils/format.dart';
@@ -177,7 +177,7 @@ Future<void> showDeliveryPointSheet(BuildContext context) {
                     onTap: () {
                       session.setPoint(p.id);
                       Navigator.pop(ctx);
-                      final n = getIt<CatalogController>()
+                      final n = getIt<CatalogBloc>()
                           .reachableRestaurants
                           .length;
                       showSnack(

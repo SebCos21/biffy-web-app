@@ -5,7 +5,7 @@ import '../../domain/pricing.dart';
 import '../../core/utils/clock.dart';
 import '../../domain/repositories/courier_repository.dart';
 import '../../domain/repositories/order_repository.dart';
-import '../../shared/state/catalog_controller.dart';
+import '../../domain/repositories/catalog_repository.dart';
 import '../../shared/state/session_controller.dart';
 import '../models/address.dart';
 import '../models/cart.dart';
@@ -18,7 +18,7 @@ import '../models/user.dart';
 void applyDemoSeed(
   SessionController session,
   OrderRepository orders,
-  CatalogController catalog,
+  CatalogRepository catalog,
   Clock clock,
   CourierRepository couriers,
 ) {

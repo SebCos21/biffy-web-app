@@ -1,7 +1,7 @@
 import '../entities/order.dart';
 
 /// Lo que el caso de uso de calificar necesita del catálogo: actualizar el
-/// promedio de la sede. Lo implementa un adaptador sobre `CatalogController`.
+/// promedio de la sede. Lo implementa un adaptador sobre los casos de uso del catálogo.
 abstract interface class BranchRatingPort {
   /// Guarda el promedio nuevo de [restaurantId].
   void setRestaurantRating(String restaurantId, double rating);

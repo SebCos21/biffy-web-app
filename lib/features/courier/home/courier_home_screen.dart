@@ -7,7 +7,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/order.dart';
 import '../../../data/models/user.dart';
 import '../../../domain/order_rules.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
 import '../bloc/courier_cubit.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
@@ -27,7 +27,7 @@ class CourierHomeScreen extends StatelessWidget {
     final session = context.watchController<SessionController>();
     final orders = context.watch<OrdersBloc>();
     final center = context.watch<NotificationsBloc>();
-    final now = getIt<CatalogController>().now;
+    final now = getIt<CatalogBloc>().now;
     final t = Theme.of(context).textTheme;
     final u = session.user!;
     final courier = context.watch<CourierCubit>();

@@ -12,7 +12,7 @@ import '../../../domain/catalog_rules.dart';
 import '../../../domain/entities/catalog.dart';
 import '../../../domain/pricing.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'bloc/cart_cubit.dart';
 import 'bloc/checkout_cubit.dart';
@@ -59,7 +59,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartCubit>();
     context.watchController<SessionController>();
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final t = Theme.of(context).textTheme;
     final draft = _checkout.draft;
     final r = draft.restaurant;

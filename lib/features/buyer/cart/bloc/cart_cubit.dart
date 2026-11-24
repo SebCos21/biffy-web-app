@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../data/models/catalog.dart';
-import '../../../../data/repositories/catalog_repository.dart';
+import '../../../../domain/entities/catalog.dart';
+import '../../../../domain/repositories/catalog_repository.dart';
 import '../../../../domain/entities/cart.dart';
 import '../../../../domain/pricing.dart';
 

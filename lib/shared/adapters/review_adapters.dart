@@ -1,13 +1,13 @@
 import '../../domain/entities/order.dart';
 import '../../domain/ports/review_ports.dart';
-import '../state/catalog_controller.dart';
+import '../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
 
-/// Conecta el puerto de promedio de sede con `CatalogController`.
+/// Conecta el puerto de promedio de sede con los casos de uso del catálogo.
 class CatalogRatingAdapter implements BranchRatingPort {
-  /// Recibe el catálogo compartido.
+  /// Recibe los casos de uso del catálogo.
   CatalogRatingAdapter(this._catalog);
-  final CatalogController _catalog;
+  final CatalogUseCases _catalog;
 
   /// Guarda el promedio en la sede del catálogo.
   @override
@@ -20,7 +20,7 @@ class LocalReviewNotifier implements ReviewNotifier {
   /// Recibe el caso de uso de avisos y el catálogo para saber el negocio.
   LocalReviewNotifier(this._push, this._catalog);
   final PushNotification _push;
-  final CatalogController _catalog;
+  final CatalogQueries _catalog;
 
   /// Crea el aviso «Nueva calificación» para el negocio del pedido.
   @override

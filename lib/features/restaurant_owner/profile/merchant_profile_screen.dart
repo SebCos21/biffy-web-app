@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
@@ -7,7 +8,7 @@ import '../../../core/widgets/actions.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/user.dart';
 import '../../../domain/catalog_rules.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../buyer/profile/profile_screen.dart';
 import '../../../shared/state/controller_scope.dart';
@@ -21,7 +22,7 @@ class MerchantProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final t = Theme.of(context).textTheme;
     final b = catalog.businessById(session.businessId!)!;
     final branches = catalog.branchesOf(b.id);
@@ -87,15 +88,11 @@ class MerchantProfileScreen extends StatelessWidget {
                     ),
                     value: !paused,
                     onChanged: (v) async {
-                      try {
-                        await catalog.setBusinessPaused(b.id, !v);
-                      } on Object {
-                        if (!context.mounted) return;
-                        showSnack(
-                          context,
-                          'No pudimos cambiar el estado.',
-                          error: true,
-                        );
+                      final r = await catalog.request(
+                        BusinessPauseChanged(b.id, !v),
+                      );
+                      if (!r.ok && context.mounted) {
+                        showSnack(context, r.message, error: true);
                       }
                     },
                   ),
@@ -105,7 +102,8 @@ class MerchantProfileScreen extends StatelessWidget {
                       'Se muestra en los platos que la tengan',
                     ),
                     value: b.nutritionInfo,
-                    onChanged: (v) => catalog.setNutritionInfo(b.id, v),
+                    onChanged: (v) =>
+                        catalog.add(NutritionInfoChanged(b.id, v)),
                   ),
                 ],
               ),

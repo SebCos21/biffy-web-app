@@ -1,11 +1,12 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/models/catalog.dart';
 import '../../domain/pricing.dart';
-import '../../shared/state/catalog_controller.dart';
+import '../../features/catalog/bloc/catalog_bloc.dart';
 import '../../shared/state/session_controller.dart';
 import '../utils/format.dart';
 import 'actions.dart';
@@ -65,7 +66,7 @@ class DishCard extends StatelessWidget {
   /// Dibuja la tarjeta con foto, nombre, precio y botón de agregar.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final r = catalog.restaurantById(dish.restaurantId);
 
     return SizedBox(
@@ -128,7 +129,7 @@ class DishTile extends StatelessWidget {
   /// Dibuja la fila con foto, datos y avisos del plato.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final session = context.watchController<SessionController>();
     final r = catalog.restaurantById(dish.restaurantId);
 
@@ -230,7 +231,7 @@ class RestaurantCard extends StatelessWidget {
   /// Dibuja la tarjeta y aplica el ancho si se indicó.
   @override
   Widget build(BuildContext context) {
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final session = context.watchController<SessionController>();
     final r = restaurant;
 

@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/app_colors.dart';
-import '../../shared/state/catalog_controller.dart';
-import '../../shared/state/controller_scope.dart';
+import '../../features/catalog/bloc/catalog_bloc.dart';
 import 'ui.dart';
 
 /// Aviso de catálogo sin conexión: franja si hay copia guardada y pantalla de
 /// error con reintento si no hay nada que mostrar. Con red no ocupa espacio.
 class OfflineBanner extends StatelessWidget {
-  /// Crea el aviso; lee el estado del [CatalogController] del árbol.
+  /// Crea el aviso; lee el estado del [CatalogBloc] del árbol.
   const OfflineBanner({super.key});
 
   /// Dibuja el aviso según el estado de conexión del catálogo.
   @override
   Widget build(BuildContext context) {
-    // TODO(puente): el catálogo sigue en ChangeNotifier hasta el CatalogBloc.
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     if (!catalog.offline) return const SizedBox.shrink();
 
     if (!catalog.hasCatalog) {
@@ -25,7 +24,7 @@ class OfflineBanner extends StatelessWidget {
         body:
             'No hay una copia guardada del menú en este equipo. '
             'Conéctate a internet e inténtalo de nuevo.',
-        onRetry: catalog.refresh,
+        onRetry: () => catalog.add(CatalogRefreshRequested()),
       );
     }
 
@@ -50,7 +49,7 @@ class OfflineBanner extends StatelessWidget {
           ),
           TextButton(
             style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: catalog.refresh,
+            onPressed: () => catalog.add(CatalogRefreshRequested()),
             child: const Text('Reintentar'),
           ),
         ],

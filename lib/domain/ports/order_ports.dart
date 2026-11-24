@@ -3,7 +3,7 @@ import '../entities/order.dart';
 import '../entities/user.dart';
 
 /// Lo que los casos de uso de pedidos necesitan saber del catálogo.
-/// Lo implementa `CatalogController`.
+/// Lo implementa un adaptador sobre los casos de uso del catálogo.
 abstract class OrderCatalogPort {
   Dish? dishById(String id);
   Restaurant? restaurantById(String id);

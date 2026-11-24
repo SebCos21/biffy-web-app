@@ -11,7 +11,7 @@ import '../../../data/models/catalog.dart';
 import '../../../domain/catalog_rules.dart';
 import '../../../domain/pricing.dart';
 import 'bloc/cart_cubit.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'cart_draft.dart';
@@ -54,7 +54,7 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartCubit>();
     final session = context.watchController<SessionController>();
-    final catalog = context.watchController<CatalogController>();
+    final catalog = context.watch<CatalogBloc>();
     final orders = context.read<OrdersBloc>();
     final t = Theme.of(context).textTheme;
 
@@ -349,7 +349,7 @@ class _CartScreenState extends State<CartScreen> {
     final when = await showScheduleSheet(
       context,
       restaurant: r,
-      now: getIt<CatalogController>().now,
+      now: getIt<CatalogBloc>().now,
       initial: cart.scheduledFor,
     );
     if (when != null) cart.setSchedule(when);

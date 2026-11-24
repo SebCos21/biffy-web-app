@@ -11,7 +11,7 @@ import '../../../data/models/order.dart';
 import '../../../data/models/user.dart';
 import '../../../domain/payment_errors.dart';
 import '../../../domain/pricing.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../cart/cart_screen.dart';
@@ -344,7 +344,7 @@ class _DemoControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = getIt<SessionController>();
-    final catalog = getIt<CatalogController>();
+    final catalog = getIt<CatalogBloc>();
     final r = catalog.restaurantById(order.restaurantId);
     final owner = r == null ? null : session.auth.byBusiness(r.businessId);
     final kitchen =

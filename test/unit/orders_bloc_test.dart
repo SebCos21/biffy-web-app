@@ -53,7 +53,7 @@ void main() {
     bloc = OrdersBloc(
       OrderUseCases(
         repo: repo,
-        catalog: CatalogOrderAdapter(s.catalog),
+        catalog: CatalogOrderAdapter(s.catalog.useCases),
         buyers: session,
         wallet: RecordingWallet(),
         notifier: RecordingNotifier(),

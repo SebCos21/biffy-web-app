@@ -32,8 +32,8 @@ void main() {
       RateOrderCubit(
         rateOrder: RateOrder(
           _FakeReviews(outcome),
-          CatalogRatingAdapter(s.catalog),
-          LocalReviewNotifier(s.pushNotification, s.catalog),
+          CatalogRatingAdapter(s.catalog.useCases),
+          LocalReviewNotifier(s.pushNotification, s.catalog.useCases.queries),
         ),
         order: o,
         userId: o.buyerId,

@@ -7,7 +7,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../domain/order_rules.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
-import '../../../shared/state/catalog_controller.dart';
+import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'earnings_cubit.dart';
 import '../../../app/di/injection.dart';
@@ -20,7 +20,7 @@ class EarningsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = getIt<SessionController>();
-    final catalog = getIt<CatalogController>();
+    final catalog = getIt<CatalogBloc>();
     return BlocProvider(
       create: (_) => getIt<EarningsCubit>(param1: session.user!.id),
       child: BlocBuilder<EarningsCubit, EarningsSummary>(
