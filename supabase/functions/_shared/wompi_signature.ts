@@ -53,7 +53,9 @@ export async function integritySignature(
   currency: string,
   secret: string,
 ): Promise<string> {
-  return await sha256Hex(`${reference}${amountInCents}${currency}${secret}`);
+  return await sha256Hex(
+    `${reference}${amountInCents}${currency}${secret.trim()}`,
+  );
 }
 
 /// Verifica el checksum de un evento de Wompi.
@@ -78,7 +80,12 @@ export async function verifyEventSignature(
     .join('');
   if (!values) return false;
 
-  const computed = await sha256Hex(`${values}${timestamp}${secret}`);
-  const provided = (headerChecksum ?? signature.checksum ?? '').toLowerCase();
-  return timingSafeEqual(computed, provided);
+  const computed = await sha256Hex(
+    `${values}${timestamp}${secret.trim()}`,
+  );
+  // Wompi envía el checksum en el header y en el body. Algunos proxies
+  // entregan el header vacío: se acepta si coincide cualquiera de los dos.
+  const header = (headerChecksum ?? '').trim().toLowerCase();
+  const body = (signature.checksum ?? '').trim().toLowerCase();
+  return timingSafeEqual(computed, header) || timingSafeEqual(computed, body);
 }

@@ -233,12 +233,18 @@ Rama `hu5-pasarela-pagos`.
   `flutter test` **251/251**.
 - ✅ Webhook probado con un evento firmado de la transacción aprobada:
   `payment_events.result = applied` y `signature_valid = true`.
+- ✅ Wompi llama al webhook con la URL configurada en **pruebas** y el secreto
+  `test_events_…` correcto. Se corrigió un `401`: la función acepta el checksum
+  del header **o** del body (algunos proxies entregan el header vacío) y recorta
+  el secreto. Un evento simulado con header inválido y body correcto devolvió
+  `200 ok`.
 - ✅ Cron de vencidos: `.github/workflows/expire-payments.yml` cada 15 minutos
   con el secret `CRON_SECRET` (cargado en GitHub y en Supabase).
 - ✅ PR **#6** mergeado en `dev` (`89823c2`); la rama `hu5-pasarela-pagos` se
-  eliminó. Solo falta pegar la URL `…/functions/v1/wompi-webhook` en el panel de
-  Wompi (ambiente de pruebas) para que los eventos reales lleguen solos; el
-  endpoint ya responde (`GET` devuelve 405 `method_not_allowed`).
+  eliminó.
+- ⏳ Wompi reintenta el evento de BF-2052 a los 30 min / 3 h / 24 h o se confirma
+  con un pago nuevo; el pedido ya quedó aprobado y el endpoint ya acepta los
+  eventos reales.
 
 Calidad actual (HU-3 + HU-4 + HU-5): `flutter analyze` limpio · `flutter test`
 **251/251** (21 pruebas de integración se saltan sin credenciales de Supabase) ·

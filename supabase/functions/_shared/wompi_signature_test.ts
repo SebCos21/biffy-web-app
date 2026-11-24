@@ -64,6 +64,8 @@ Deno.test('evento: checksum válido en header y en el body', async () => {
 
   assertEquals(await verifyEventSignature(event, checksum, secret), true);
   assertEquals(await verifyEventSignature(event, null, secret), true);
+  // Algunos proxies entregan el header vacío; debe usar el checksum del body.
+  assertEquals(await verifyEventSignature(event, '', secret), true);
 });
 
 Deno.test('evento: checksum inválido o secreto equivocado se rechaza', async () => {
@@ -72,7 +74,11 @@ Deno.test('evento: checksum inválido o secreto equivocado se rechaza', async ()
   const checksum = sha(`tx-1APPROVED1365000${timestamp}${secret}`);
   const event = eventWith(checksum, timestamp);
 
-  assertEquals(await verifyEventSignature(event, 'deadbeef', secret), false);
+  // Un header inválido no importa si el body trae el checksum correcto.
+  assertEquals(await verifyEventSignature(event, 'deadbeef', secret), true);
+  // Si ambos checksums son inválidos, se rechaza.
+  const bad = eventWith('deadbeef', timestamp);
+  assertEquals(await verifyEventSignature(bad, 'deadbeef', secret), false);
   assertEquals(await verifyEventSignature(event, checksum, 'otro-secreto'), false);
 });
 
