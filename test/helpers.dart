@@ -9,9 +9,12 @@ import 'package:biffy/domain/repositories/rewards_repository.dart';
 import 'package:biffy/domain/usecases/rate_order.dart';
 import 'package:biffy/features/orders/bloc/orders_bloc.dart';
 import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
+import 'package:biffy/features/addresses/bloc/addresses_cubit.dart';
 import 'package:biffy/features/catalog/bloc/catalog_bloc.dart';
 import 'package:biffy/domain/usecases/notifications/notification_usecases.dart';
 import 'package:biffy/features/notifications/bloc/notifications_bloc.dart';
+import 'package:biffy/features/preferences/bloc/preferences_cubit.dart';
+import 'package:biffy/features/university/bloc/university_cubit.dart';
 import 'package:biffy/features/wallet/bloc/wallet_cubit.dart';
 import 'package:biffy/shared/state/session_controller.dart';
 import 'package:biffy/core/constants/catalog_constants.dart';
@@ -41,6 +44,9 @@ class TestServices {
   PaymentRepository get payment => getIt<PaymentRepository>();
   NotificationsBloc get notifications => getIt<NotificationsBloc>();
   WalletCubit get wallet => getIt<WalletCubit>();
+  PreferencesCubit get preferences => getIt<PreferencesCubit>();
+  AddressesCubit get addresses => getIt<AddressesCubit>();
+  UniversityCubit get university => getIt<UniversityCubit>();
 
   /// Saldo de Gotas de la cuenta con sesión (0 sin sesión).
   int get gotas => wallet.balanceOf(session.user?.id);
@@ -153,7 +159,7 @@ Future<Order> placeQbano(
           ),
         ),
       ],
-      address: s.session.data.defaultAddress,
+      address: s.addresses.defaultOf(s.session.user?.id),
       payment: PaymentMethod.cash,
       useGotas: useGotas,
       tip: TipOption.ten,

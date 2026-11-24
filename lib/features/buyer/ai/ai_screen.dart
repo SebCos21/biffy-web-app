@@ -8,6 +8,7 @@ import '../../../data/models/catalog.dart';
 import '../../../domain/assistant.dart';
 import '../../../domain/recommendation.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
+import '../../preferences/bloc/preferences_cubit.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import 'recommendation_input.dart';
@@ -87,6 +88,7 @@ class _AiScreenState extends State<AiScreen> {
   Widget build(BuildContext context) {
     context.watchController<SessionController>();
     context.watch<CatalogBloc>();
+    context.watch<PreferencesCubit>();
     context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final input = buildRecommendationInput(context, seed: _seed);

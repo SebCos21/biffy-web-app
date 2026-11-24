@@ -5,6 +5,7 @@ import '../../domain/entities/user.dart';
 import '../../domain/ports/order_ports.dart';
 import '../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
+import '../../domain/usecases/university/university_usecases.dart';
 import '../../domain/usecases/wallet/wallet_usecases.dart';
 import '../state/session_controller.dart';
 
@@ -32,20 +33,21 @@ class CatalogOrderAdapter implements OrderCatalogPort {
   void recordSale(String dishId, int qty) => _catalog.recordSale(dishId, qty);
 }
 
-// TODO(puente): lee de SessionController (ChangeNotifier) la verificación,
-// el punto y la cuenta activa hasta que el AuthBloc la reemplace (módulo 6).
+// TODO(puente): lee de SessionController (ChangeNotifier) el punto de entrega
+// y la cuenta activa hasta que el AuthBloc la reemplace (módulo 6).
 /// Conecta los puertos de comprador y billetera de pedidos con la sesión y
 /// con los casos de uso de la billetera.
 class SessionOrderAdapter implements OrderBuyerPort, OrderWalletPort {
-  /// Recibe la sesión y la billetera.
-  SessionOrderAdapter(this._session, this._wallet);
+  /// Recibe la sesión, la billetera y la verificación universitaria.
+  SessionOrderAdapter(this._session, this._wallet, this._university);
   final SessionController _session;
   final WalletUseCases _wallet;
+  final UniversityQueries _university;
 
   /// Universidad verificada del comprador (descuento de campus).
   @override
   String? verifiedUniversityId(String userId) =>
-      _session.dataFor(userId).verifiedUniversityId;
+      _university.statusOf(userId).verifiedUniversityId;
 
   /// Saldo de Gotas del comprador.
   @override

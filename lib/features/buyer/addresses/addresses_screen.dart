@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
@@ -6,6 +7,7 @@ import '../../../core/constants/catalog_constants.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/address.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../addresses/bloc/addresses_cubit.dart';
 import '../../../app/di/injection.dart';
 import '../../../shared/state/controller_scope.dart';
 
@@ -17,8 +19,9 @@ class AddressesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
-    final list = session.data.addresses;
-    final def = session.data.defaultAddress?.id;
+    final addresses = context.watch<AddressesCubit>();
+    final list = addresses.addressesOf(session.user?.id);
+    final def = addresses.defaultOf(session.user?.id)?.id;
     return Scaffold(
       appBar: AppBar(title: const Text('Direcciones')),
       floatingActionButton: FloatingActionButton.extended(
@@ -89,7 +92,10 @@ class AddressesScreen extends StatelessWidget {
                                   Flexible(
                                     child: TextButton(
                                       onPressed: () {
-                                        session.setDefaultAddress(a.id);
+                                        addresses.setDefault(
+                                          session.user?.id,
+                                          a.id,
+                                        );
                                         session.setPoint(a.pointId);
                                         showSnack(
                                           context,
@@ -121,7 +127,9 @@ class AddressesScreen extends StatelessWidget {
                                       confirm: 'Eliminar',
                                       destructive: true,
                                     );
-                                    if (ok) session.deleteAddress(a.id);
+                                    if (ok) {
+                                      addresses.delete(session.user?.id, a.id);
+                                    }
                                   },
                                 ),
                               ],
@@ -151,7 +159,8 @@ class AddressFormScreen extends StatefulWidget {
 class _AddressFormScreenState extends State<AddressFormScreen> {
   final _form = GlobalKey<FormState>();
   late final SessionController _session = getIt<SessionController>();
-  late final Address? _orig = _session.addressById(widget.id);
+  late final AddressesCubit _addresses = getIt<AddressesCubit>();
+  late final Address? _orig = _addresses.byId(_session.user?.id, widget.id);
   late final _label = TextEditingController(text: _orig?.label);
   late final _line = TextEditingController(text: _orig?.line);
   late final _details = TextEditingController(text: _orig?.details);
@@ -159,8 +168,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   late final _ref = TextEditingController(text: _orig?.reference);
   late String _pointId = _orig?.pointId ?? _session.pointId;
   late bool _default = _orig == null
-      ? _session.data.addresses.isEmpty
-      : _session.data.defaultAddressId == _orig.id;
+      ? _addresses.addressesOf(_session.user?.id).isEmpty
+      : _addresses.defaultOf(_session.user?.id)?.id == _orig.id;
 
   /// Confirma que la sesión se leyó con el contexto activo.
   @override
@@ -275,7 +284,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     reference: _ref.text.trim(),
                     pointId: _pointId,
                   );
-                  _session.saveAddress(a, makeDefault: _default);
+                  _addresses.save(_session.user?.id, a, makeDefault: _default);
                   if (_default) _session.setPoint(_pointId);
                   showSnack(context, 'Dirección guardada');
                   context.pop();

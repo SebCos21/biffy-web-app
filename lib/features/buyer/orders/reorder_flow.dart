@@ -10,6 +10,7 @@ import '../cart/bloc/cart_cubit.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../addresses/bloc/addresses_cubit.dart';
 import '../cart/cart_screen.dart';
 import '../../../app/di/injection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -92,7 +93,7 @@ Future<void> orderNow(BuildContext context, Order order) async {
     buyer: session.user,
     restaurant: c.restaurant,
     items: c.items,
-    address: session.data.defaultAddress,
+    address: getIt<AddressesCubit>().defaultOf(session.user?.id),
     payment: session.data.defaultPayment,
   );
   final totals = orders.preview(draft);

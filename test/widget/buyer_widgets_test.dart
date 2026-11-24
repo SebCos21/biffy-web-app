@@ -216,7 +216,7 @@ void main() {
     expect(find.text('Inicia sesión para guardar favoritos'), findsOneWidget);
     await tester.tap(find.text('Ahora no'));
     await tester.pumpAndSettle();
-    expect(s.session.data.favoriteDishes, isEmpty);
+    expect(s.preferences.favoriteDishes(s.session.user?.id), isEmpty);
   });
 
   testWidgets('de noche se ofrece el horario de demostración', (tester) async {

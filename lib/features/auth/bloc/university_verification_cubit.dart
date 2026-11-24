@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../shared/state/session_controller.dart';
+import '../../../domain/university_errors.dart';
+import '../../../domain/usecases/university/university_usecases.dart';
 
 /// Estado de la verificación del correo institucional.
 class UniversityVerificationState {
@@ -58,26 +59,31 @@ class UniversityVerificationState {
 
 /// Cubit de Campus: envía el código, lo confirma y controla el vencimiento.
 ///
-/// La lógica de negocio sigue en `SessionController`; este cubit solo expone
-/// el estado de la pantalla y traduce los resultados a mensajes.
+/// Las reglas (correo, dominio, códigos del servidor) viven en los casos de
+/// uso de `domain/usecases/university`; este cubit solo expone el estado de
+/// la pantalla y muestra el mensaje en español de cada resultado.
 class UniversityVerificationCubit extends Cubit<UniversityVerificationState> {
-  /// Sincroniza el estado inicial con la sesión actual.
-  UniversityVerificationCubit(this._session)
+  /// Sincroniza el estado inicial con la cuenta activa ([currentUserId]).
+  UniversityVerificationCubit(this._useCases, this._currentUserId)
     : super(
         UniversityVerificationState(
-          isVerified: _session.isVerifiedStudent,
-          expiresAt: _session.verificationExpiresAt,
+          isVerified: _useCases.queries.isVerifiedStudent(_currentUserId()),
+          expiresAt: _useCases.queries.expiresAt(_currentUserId()),
         ),
       );
 
-  final SessionController _session;
+  final UniversityUseCases _useCases;
 
-  /// Vuelve a leer el estado desde la sesión (por ejemplo al reabrir Campus).
+  /// Id de la cuenta con sesión (o `null`).
+  final String? Function() _currentUserId;
+
+  /// Vuelve a leer el estado (por ejemplo al reabrir Campus).
   void refresh() {
+    final id = _currentUserId();
     emit(
       state.copyWith(
-        isVerified: _session.isVerifiedStudent,
-        expiresAt: _session.verificationExpiresAt,
+        isVerified: _useCases.queries.isVerifiedStudent(id),
+        expiresAt: _useCases.queries.expiresAt(id),
       ),
     );
   }
@@ -99,7 +105,9 @@ class UniversityVerificationCubit extends Cubit<UniversityVerificationState> {
   }) async {
     if (state.sending) return;
     emit(state.copyWith(sending: true, error: null));
-    final result = await _session.sendUniversityCodeAsync(
+    final id = _currentUserId();
+    final result = await _useCases.sendCode(
+      id,
       universityId,
       email,
       renewal: renewal,
@@ -111,12 +119,12 @@ class UniversityVerificationCubit extends Cubit<UniversityVerificationState> {
         state.copyWith(
           sending: false,
           codeSent: true,
-          demoCode: _session.pendingUniversityCode,
+          demoCode: _useCases.queries.pendingCodeOf(id),
         ),
       );
       return;
     }
-    emit(state.copyWith(sending: false, error: _message(result)));
+    emit(state.copyWith(sending: false, error: verifyResultMessage(result)));
   }
 
   /// Confirma el código y activa Campus por 30 días.
@@ -127,7 +135,9 @@ class UniversityVerificationCubit extends Cubit<UniversityVerificationState> {
   }) async {
     if (state.confirming) return;
     emit(state.copyWith(confirming: true, error: null));
-    final result = await _session.confirmUniversityCodeAsync(
+    final id = _currentUserId();
+    final result = await _useCases.confirmCode(
+      id,
       universityId: universityId,
       email: email,
       code: code,
@@ -141,28 +151,11 @@ class UniversityVerificationCubit extends Cubit<UniversityVerificationState> {
           codeSent: false,
           demoCode: null,
           isVerified: true,
-          expiresAt: _session.verificationExpiresAt,
+          expiresAt: _useCases.queries.expiresAt(id),
         ),
       );
       return;
     }
-    emit(state.copyWith(confirming: false, error: _message(result)));
+    emit(state.copyWith(confirming: false, error: verifyResultMessage(result)));
   }
-
-  /// Traduce el resultado de la verificación a un mensaje en español.
-  String _message(VerifyResult result) => switch (result) {
-    VerifyResult.ok || VerifyResult.codeSent => '',
-    VerifyResult.invalidEmail => 'Escribe un correo válido',
-    VerifyResult.domainMismatch => 'El correo no pertenece a la universidad',
-    VerifyResult.unknownUniversity => 'No encontramos esa universidad',
-    VerifyResult.notAuthenticated ||
-    VerifyResult.notLoggedIn => 'Inicia sesión primero',
-    VerifyResult.invalidToken => 'El código no es correcto',
-    VerifyResult.expiredToken => 'El código venció. Pide uno nuevo',
-    VerifyResult.tooManyAttempts => 'Demasiados intentos. Pide un código nuevo',
-    VerifyResult.notFound => 'No hay una verificación pendiente',
-    VerifyResult.rateLimited => 'Espera un momento antes de pedir otro código',
-    VerifyResult.tokenRequired => 'Primero pide el código a tu correo',
-    VerifyResult.rpcError => 'No pudimos completar la verificación',
-  };
 }

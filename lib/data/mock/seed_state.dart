@@ -1,12 +1,17 @@
 import '../../core/constants/catalog_constants.dart';
 import '../../domain/catalog_rules.dart';
 import '../../domain/order_rules.dart';
+import '../../domain/entities/preferences_status.dart';
 import '../../domain/pricing.dart';
 import '../../core/utils/clock.dart';
 import '../../domain/repositories/courier_repository.dart';
 import '../../domain/repositories/order_repository.dart';
+import '../../domain/repositories/preferences_repository.dart';
 import '../../domain/repositories/wallet_repository.dart';
+import '../../domain/repositories/address_repository.dart';
 import '../../domain/repositories/catalog_repository.dart';
+import '../../domain/repositories/university_repository.dart';
+import '../../domain/entities/university_status.dart';
 import '../../shared/state/session_controller.dart';
 import '../models/address.dart';
 import '../models/cart.dart';
@@ -23,22 +28,37 @@ void applyDemoSeed(
   Clock clock,
   CourierRepository couriers,
   WalletRepository wallet,
+  PreferencesRepository preferences,
+  AddressRepository addresses,
+  UniversityRepository university,
 ) {
   final now = clock.now();
 
   // Comprador con historial, preferencias y verificación simulada.
-  final diego = session.dataFor('u-diego')
-    ..prefs = const Preferences(
-      likes: {'sandwich', 'saludable'},
-      budget: 30000,
-      universityId: 'icesi',
-    )
-    ..prefsCompleted = true
-    ..surveyRewarded = true
+  preferences.replace(
+    'u-diego',
+    const PreferencesStatus(
+      prefs: Preferences(
+        likes: {'sandwich', 'saludable'},
+        budget: 30000,
+        universityId: 'icesi',
+      ),
+      completed: true,
+      rewarded: true,
+      favoriteDishes: {'qbano-especial', 'bowl-proteico'},
+      favoriteBranches: {'qbano-icesi'},
+    ),
+  );
+  session.dataFor('u-diego')
     ..welcomeGranted = true
-    ..verifiedUniversityId = 'icesi'
-    ..universityEmail = 'diego.demo@icesi.edu.co'
     ..defaultPayment = PaymentMethod.nequi;
+  university.setStatus(
+    'u-diego',
+    const UniversityStatus(
+      verifiedUniversityId: 'icesi',
+      email: 'diego.demo@icesi.edu.co',
+    ),
+  );
   wallet.insertSeed(
     'u-diego',
     gotas: 750,
@@ -55,7 +75,7 @@ void applyDemoSeed(
       ),
     ],
   );
-  diego.addresses.addAll([
+  final diegoAddresses = [
     Address(
       id: 'addr-diego-1',
       label: 'Biblioteca Icesi',
@@ -82,12 +102,13 @@ void applyDemoSeed(
       reference: 'Portería principal',
       pointId: 'chapinero',
     ),
-  ]);
-  diego.defaultAddressId = 'addr-diego-1';
-  diego.favoriteDishes.addAll({'qbano-especial', 'bowl-proteico'});
-  diego.favoriteRestaurants.add('qbano-icesi');
+  ];
+  addresses.insertSeed('u-diego', diegoAddresses, defaultId: 'addr-diego-1');
 
-  session.dataFor('u-andres').verifiedUniversityId = 'icesi';
+  university.setStatus(
+    'u-andres',
+    const UniversityStatus(verifiedUniversityId: 'icesi'),
+  );
   couriers.insertSeed(
     'u-andres',
     const CourierProfile(
@@ -113,7 +134,7 @@ void applyDemoSeed(
     ),
   );
 
-  final campusAddress = diego.addresses.first;
+  final campusAddress = diegoAddresses.first;
   /// Construye e inserta un pedido semilla con el estado indicado.
   Order seed(
     String id,

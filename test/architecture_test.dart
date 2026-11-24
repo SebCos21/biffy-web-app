@@ -223,6 +223,134 @@ void main() {
     }
   });
 
+  test('el cubit de preferencias solo conoce el dominio', () {
+    final bad = _violations(
+      'lib/features/preferences',
+      RegExp(r"(\.\./)+(data|shared)/|supabase"),
+    );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test('los repositorios de preferencias implementan la interfaz', () {
+    for (final f in [
+      'lib/data/repositories/in_memory_preferences_repository.dart',
+      'lib/data/repositories/supabase_preferences_repository.dart',
+    ]) {
+      final src = File(f).readAsStringSync();
+      expect(src, contains('implements PreferencesRepository'), reason: f);
+      expect(
+        src,
+        contains('domain/repositories/preferences_repository.dart'),
+        reason: f,
+      );
+    }
+  });
+
+  test('preferencias y favoritos no viven en la sesión', () {
+    final src = File(
+      'lib/shared/state/session_controller.dart',
+    ).readAsStringSync();
+    for (final m in [
+      'savePreferences(',
+      'toggleFavoriteDish(',
+      'toggleFavoriteRestaurant(',
+      'favoriteDishes',
+      'prefsCompleted',
+      'Preferences get prefs',
+    ]) {
+      expect(src.contains(m), isFalse, reason: 'session_controller: $m');
+    }
+  });
+
+  test('el cubit de direcciones solo conoce el dominio', () {
+    final bad = _violations(
+      'lib/features/addresses',
+      RegExp(r"(\.\./)+(data|shared)/|supabase"),
+    );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test('los repositorios de direcciones implementan la interfaz', () {
+    for (final f in [
+      'lib/data/repositories/in_memory_address_repository.dart',
+      'lib/data/repositories/supabase_address_repository.dart',
+    ]) {
+      final src = File(f).readAsStringSync();
+      expect(src, contains('implements AddressRepository'), reason: f);
+      expect(
+        src,
+        contains('domain/repositories/address_repository.dart'),
+        reason: f,
+      );
+    }
+  });
+
+  test('las direcciones no viven en la sesión', () {
+    final src = File(
+      'lib/shared/state/session_controller.dart',
+    ).readAsStringSync();
+    for (final m in [
+      'saveAddress(',
+      'deleteAddress(',
+      'setDefaultAddress(',
+      'addressById(',
+      '.addresses',
+      'defaultAddressId',
+    ]) {
+      expect(src.contains(m), isFalse, reason: 'session_controller: $m');
+    }
+  });
+
+  test('los cubits de verificación universitaria solo conocen el dominio', () {
+    for (final dir in [
+      'lib/features/university',
+      'lib/features/auth/bloc/university_verification_cubit.dart',
+    ]) {
+      final bad = FileSystemEntity.isDirectorySync(dir)
+          ? _violations(dir, RegExp(r"(\.\./)+(data|shared)/|supabase"))
+          : [
+              for (final line in File(dir).readAsLinesSync())
+                if (line.trimLeft().startsWith('import ') &&
+                    RegExp(r"(\.\./)+(data|shared)/|supabase").hasMatch(line))
+                  '$dir: $line',
+            ];
+      expect(bad, isEmpty, reason: bad.join('\n'));
+    }
+  });
+
+  test('los repositorios de verificación implementan la interfaz', () {
+    for (final f in [
+      'lib/data/repositories/in_memory_university_repository.dart',
+      'lib/data/repositories/supabase_university_repository.dart',
+    ]) {
+      final src = File(f).readAsStringSync();
+      expect(src, contains('implements UniversityRepository'), reason: f);
+      expect(
+        src,
+        contains('domain/repositories/university_repository.dart'),
+        reason: f,
+      );
+    }
+  });
+
+  test('la verificación universitaria no vive en la sesión', () {
+    final src = File(
+      'lib/shared/state/session_controller.dart',
+    ).readAsStringSync();
+    for (final m in [
+      'enum VerifyResult',
+      'verifyUniversity',
+      'sendUniversityCodeAsync',
+      'confirmUniversityCodeAsync',
+      'isVerifiedStudent',
+      'verifiedUniversityId',
+      'universityEmail',
+      'void setUniversity(',
+    ]) {
+      expect(src.contains(m), isFalse, reason: 'session_controller: $m');
+    }
+  });
+
   test('no queda NotificationCenter (lo reemplazó NotificationsBloc)', () {
     expect(
       File('lib/shared/state/notification_center.dart').existsSync(),

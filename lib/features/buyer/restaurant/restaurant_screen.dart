@@ -12,6 +12,9 @@ import '../../../domain/catalog_rules.dart';
 import '../../../domain/pricing.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../university/bloc/university_cubit.dart';
+import '../../preferences/bloc/preferences_cubit.dart';
+import '../../../domain/entities/preferences_status.dart';
 import '../../../shared/state/controller_scope.dart';
 
 /// Menú de un restaurante con portada, filtros de sección y platos.
@@ -33,6 +36,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
     final session = context.watchController<SessionController>();
+    final uniCubit = context.watch<UniversityCubit>();
+    final prefsCubit = context.watch<PreferencesCubit>();
     final t = Theme.of(context).textTheme;
     final r = catalog.restaurantById(widget.id);
     if (r == null) {
@@ -53,8 +58,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         : menu.where((d) => d.section == _section).toList();
     final open = catalog.isOpen(r);
     final reachable = catalog.reachable(r);
-    final fav = session.data.favoriteRestaurants.contains(r.id);
-    final eligible = campusEligible(r, session.verifiedUniversityId);
+    final fav = prefsCubit.favoriteBranches(session.user?.id).contains(r.id);
+    final eligible = campusEligible(
+      r,
+      uniCubit.verifiedUniversityId(session.user?.id),
+    );
     final width = MediaQuery.of(context).size.width.clamp(0, 480).toDouble();
     final cardWidth = (width - 32 - 12) / 2;
 
@@ -119,7 +127,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                           )) {
                             return;
                           }
-                          session.toggleFavoriteRestaurant(r.id);
+                          prefsCubit.toggleFavorite(
+                            session.user?.id,
+                            FavoriteKind.branch,
+                            r.id,
+                          );
                         },
                       ),
                     ),

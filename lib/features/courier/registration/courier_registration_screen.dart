@@ -6,6 +6,7 @@ import '../../../core/constants/catalog_constants.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/user.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../university/bloc/university_cubit.dart';
 import '../../../app/di/injection.dart';
 import '../bloc/courier_cubit.dart';
 
@@ -39,7 +40,9 @@ class _CourierRegistrationScreenState extends State<CourierRegistrationScreen> {
   late final _plate = TextEditingController(text: _p?.plate);
   late String _docType = _p?.docType ?? 'CC';
   late Vehicle _vehicle = _p?.vehicle ?? Vehicle.bicycle;
-  late String? _uni = _p?.universityId ?? _s.verifiedUniversityId;
+  late String? _uni =
+      _p?.universityId ??
+      getIt<UniversityCubit>().verifiedUniversityId(_s.user?.id);
 
   /// Fuerza la creación de los datos precargados del perfil.
   @override

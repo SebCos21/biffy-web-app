@@ -1,6 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
-import '../models/address.dart';
 import '../models/user.dart';
 import 'auth_repository.dart';
 
@@ -102,34 +101,6 @@ class SupabaseAuthRepository implements AuthRepository {
     }
   }
 
-  /// Lee las direcciones activas del usuario.
-  @override
-  Future<List<Address>> addresses(String userId) async {
-    try {
-      final rows = await _client
-          .from('addresses')
-          .select('id, label, line, details, neighborhood, reference, point_id')
-          .eq('user_id', userId)
-          .filter('deleted_at', 'is', null)
-          .order('is_default', ascending: false);
-      return rows
-          .map(
-            (row) => Address(
-              id: row['id'] as String,
-              label: (row['label'] as String?) ?? '',
-              line: (row['line'] as String?) ?? '',
-              details: (row['details'] as String?) ?? '',
-              neighborhood: (row['neighborhood'] as String?) ?? '',
-              reference: (row['reference'] as String?) ?? '',
-              pointId: (row['point_id'] as String?) ?? 'icesi-biblioteca',
-            )..dbId = row['id'] as String,
-          )
-          .toList();
-    } on Object {
-      return const [];
-    }
-  }
-
   /// Mensaje en español para los códigos de `register_business`.
   static String _businessMessage(Object? result) => switch (result) {
     'not_authenticated' => 'Inicia sesión para registrar tu negocio.',
@@ -180,73 +151,6 @@ class SupabaseAuthRepository implements AuthRepository {
       }
     } on Object {
       throw AuthException('No pudimos guardar tus datos. Intenta de nuevo.');
-    }
-  }
-
-  /// Llama al RPC `verify_university` y devuelve su código de resultado.
-  @override
-  Future<String?> verifyUniversity(String universityId, String email) async {
-    try {
-      final res = await _client.rpc(
-        'verify_university',
-        params: {
-          'p_payload': {'university_id': universityId, 'email': email},
-        },
-      );
-      final map = res is Map ? res : const {};
-      return map['result'] as String?;
-    } on Object {
-      throw AuthException(
-        'No pudimos verificar tu correo. Revisa tu conexión e intenta de nuevo.',
-      );
-    }
-  }
-
-  /// Envía el código al correo institucional mediante la Edge Function.
-  @override
-  Future<({String result, String? demoCode})> sendUniversityCode({
-    required String userId,
-    required String universityId,
-    required String email,
-    bool renewal = false,
-  }) async {
-    try {
-      final res = await _client.functions.invoke(
-        'send-university-code',
-        body: {
-          'universityId': universityId,
-          'email': email.trim().toLowerCase(),
-          'mode': renewal ? 'renew' : 'initial',
-        },
-      );
-      final map = res.data is Map
-          ? Map<String, dynamic>.from(res.data as Map)
-          : const <String, dynamic>{};
-      return (
-        result: (map['result'] as String?) ?? 'rpc_error',
-        demoCode: map['demoCode'] as String?,
-      );
-    } on Object {
-      return (result: 'rpc_error', demoCode: null);
-    }
-  }
-
-  /// Confirma el código del correo institucional con el RPC.
-  @override
-  Future<String?> confirmUniversityCode({
-    required String userId,
-    required String email,
-    required String code,
-  }) async {
-    try {
-      final res = await _client.rpc(
-        'confirm_university_verification',
-        params: {'p_email': email.trim().toLowerCase(), 'p_token': code.trim()},
-      );
-      final map = res is Map ? res : const {};
-      return map['result'] as String?;
-    } on Object {
-      return 'rpc_error';
     }
   }
 

@@ -5,31 +5,40 @@ import '../../../core/config/app_config.dart';
 import '../../../core/utils/clock.dart';
 import '../../../data/mock/seed_users.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/in_memory_address_repository.dart';
 import '../../../data/repositories/in_memory_catalog_repository.dart';
 import '../../../data/repositories/in_memory_courier_repository.dart';
 import '../../../data/repositories/in_memory_notification_repository.dart';
 import '../../../data/repositories/in_memory_order_repository.dart';
 import '../../../data/repositories/in_memory_payment_repository.dart';
+import '../../../data/repositories/in_memory_preferences_repository.dart';
+import '../../../data/repositories/in_memory_university_repository.dart';
 import '../../../data/repositories/in_memory_wallet_repository.dart';
 import '../../../data/repositories/review_repository_impl.dart';
+import '../../../data/repositories/supabase_address_repository.dart';
 import '../../../data/repositories/supabase_auth_repository.dart';
 import '../../../data/repositories/supabase_catalog_repository.dart';
 import '../../../data/repositories/supabase_courier_repository.dart';
 import '../../../data/repositories/supabase_notification_repository.dart';
 import '../../../data/repositories/supabase_order_repository.dart';
 import '../../../data/repositories/supabase_payment_repository.dart';
+import '../../../data/repositories/supabase_preferences_repository.dart';
 import '../../../data/repositories/supabase_profile_repository.dart';
 import '../../../data/repositories/supabase_rewards_repository.dart';
+import '../../../data/repositories/supabase_university_repository.dart';
 import '../../../data/repositories/supabase_wallet_repository.dart';
+import '../../../domain/repositories/address_repository.dart';
 import '../../../domain/repositories/catalog_repository.dart';
 import '../../../domain/repositories/courier_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/notification_repository.dart';
 import '../../../domain/repositories/order_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
+import '../../../domain/repositories/preferences_repository.dart';
 import '../../../domain/repositories/profile_repository.dart';
 import '../../../domain/repositories/review_repository.dart';
 import '../../../domain/repositories/rewards_repository.dart';
+import '../../../domain/repositories/university_repository.dart';
 import '../../../domain/repositories/wallet_repository.dart';
 
 /// Módulo de datos: repositorios. Aquí está la única decisión de entorno de la
@@ -77,6 +86,24 @@ void _registerInMemory(GetIt g) {
       if (repo is InMemoryWalletRepository) repo.dispose();
     },
   );
+  g.registerLazySingleton<PreferencesRepository>(
+    InMemoryPreferencesRepository.new,
+    dispose: (repo) {
+      if (repo is InMemoryPreferencesRepository) repo.dispose();
+    },
+  );
+  g.registerLazySingleton<AddressRepository>(
+    InMemoryAddressRepository.new,
+    dispose: (repo) {
+      if (repo is InMemoryAddressRepository) repo.dispose();
+    },
+  );
+  g.registerLazySingleton<UniversityRepository>(
+    InMemoryUniversityRepository.new,
+    dispose: (repo) {
+      if (repo is InMemoryUniversityRepository) repo.dispose();
+    },
+  );
   g.registerLazySingleton<NotificationRepository>(
     InMemoryNotificationRepository.new,
     dispose: (repo) {
@@ -122,6 +149,24 @@ void _registerSupabase(GetIt g) {
     SupabaseWalletRepository.new,
     dispose: (repo) {
       if (repo is SupabaseWalletRepository) repo.dispose();
+    },
+  );
+  g.registerLazySingleton<PreferencesRepository>(
+    SupabasePreferencesRepository.new,
+    dispose: (repo) {
+      if (repo is SupabasePreferencesRepository) repo.dispose();
+    },
+  );
+  g.registerLazySingleton<AddressRepository>(
+    SupabaseAddressRepository.new,
+    dispose: (repo) {
+      if (repo is SupabaseAddressRepository) repo.dispose();
+    },
+  );
+  g.registerLazySingleton<UniversityRepository>(
+    SupabaseUniversityRepository.new,
+    dispose: (repo) {
+      if (repo is SupabaseUniversityRepository) repo.dispose();
     },
   );
   g.registerLazySingleton<NotificationRepository>(

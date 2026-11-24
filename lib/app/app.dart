@@ -7,10 +7,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../features/orders/bloc/orders_bloc.dart';
 import '../features/buyer/cart/bloc/cart_cubit.dart';
+import '../features/addresses/bloc/addresses_cubit.dart';
 import '../features/catalog/bloc/catalog_bloc.dart';
 import '../shared/state/controller_scope.dart';
 import '../features/courier/bloc/courier_cubit.dart';
 import '../features/notifications/bloc/notifications_bloc.dart';
+import '../features/preferences/bloc/preferences_cubit.dart';
+import '../features/university/bloc/university_cubit.dart';
 import '../features/wallet/bloc/wallet_cubit.dart';
 import '../shared/state/session_controller.dart';
 import 'di/injection.dart';
@@ -101,6 +104,13 @@ class _BiffyAppState extends State<BiffyApp> {
           ),
           BlocProvider<CourierCubit>.value(value: getIt<CourierCubit>()),
           BlocProvider<WalletCubit>.value(value: getIt<WalletCubit>()),
+          BlocProvider<AddressesCubit>.value(value: getIt<AddressesCubit>()),
+          BlocProvider<UniversityCubit>.value(
+            value: getIt<UniversityCubit>(),
+          ),
+          BlocProvider<PreferencesCubit>.value(
+            value: getIt<PreferencesCubit>(),
+          ),
         ],
         child: _DarkModeBuilder(
           session: getIt<SessionController>(),

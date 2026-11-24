@@ -9,6 +9,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/mock/seed_users.dart';
 import '../../../data/models/user.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../university/bloc/university_cubit.dart';
 import '../../buyer/profile/profile_screen.dart';
 import '../bloc/courier_cubit.dart';
 import '../../../shared/state/controller_scope.dart';
@@ -21,6 +22,7 @@ class CourierProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
+    final uniCubit = context.watch<UniversityCubit>();
     final p = context.watch<CourierCubit>().statusOf(session.user!.id).profile!;
     final t = Theme.of(context).textTheme;
     return Scaffold(
@@ -57,7 +59,7 @@ class CourierProfileScreen extends StatelessWidget {
                   ),
                   InfoRow(
                     'Modo Campus',
-                    session.isVerifiedStudent
+                    uniCubit.isVerifiedStudent(session.user?.id)
                         ? 'Habilitado (simulado)'
                         : 'Bloqueado',
                   ),

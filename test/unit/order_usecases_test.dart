@@ -88,7 +88,7 @@ void main() {
         buyer: s.session.user,
         restaurant: s.catalog.restaurantById('qbano-icesi'),
         items: [CartItem(lineId: 'l', dishId: 'qbano-especial', qty: 1)],
-        address: s.session.data.defaultAddress,
+        address: s.addresses.defaultOf(s.session.user?.id),
         payment: PaymentMethod.cash,
       );
       final before = s.orders.all.length;

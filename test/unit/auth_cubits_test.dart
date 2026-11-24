@@ -1,3 +1,4 @@
+import 'package:biffy/app/di/injection.dart';
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:biffy/domain/entities/user.dart';
@@ -110,7 +111,9 @@ void main() {
   group('UniversityVerificationCubit', () {
     test('envía el código demo y lo deja visible', () async {
       services.session.login(kDemoNewBuyerEmail, kDemoPassword);
-      final cubit = UniversityVerificationCubit(services.session);
+      // Adaptado: el cubit ahora recibe los casos de uso y la cuenta activa;
+      // se crea desde GetIt como en la app.
+      final cubit = getIt<UniversityVerificationCubit>();
 
       await cubit.sendCode(
         universityId: 'icesi',
@@ -125,7 +128,9 @@ void main() {
 
     test('un código incorrecto no activa Campus', () async {
       services.session.login(kDemoNewBuyerEmail, kDemoPassword);
-      final cubit = UniversityVerificationCubit(services.session);
+      // Adaptado: el cubit ahora recibe los casos de uso y la cuenta activa;
+      // se crea desde GetIt como en la app.
+      final cubit = getIt<UniversityVerificationCubit>();
       await cubit.sendCode(
         universityId: 'icesi',
         email: 'camila@icesi.edu.co',
@@ -144,7 +149,9 @@ void main() {
 
     test('el código correcto activa Campus y fija vencimiento', () async {
       services.session.login(kDemoNewBuyerEmail, kDemoPassword);
-      final cubit = UniversityVerificationCubit(services.session);
+      // Adaptado: el cubit ahora recibe los casos de uso y la cuenta activa;
+      // se crea desde GetIt como en la app.
+      final cubit = getIt<UniversityVerificationCubit>();
       await cubit.sendCode(
         universityId: 'icesi',
         email: 'camila@icesi.edu.co',

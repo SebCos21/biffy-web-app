@@ -12,6 +12,7 @@ import '../../notifications/bloc/notifications_bloc.dart';
 import '../bloc/courier_cubit.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../university/bloc/university_cubit.dart';
 import '../offers/offer_widgets.dart';
 import '../../../app/di/injection.dart';
 import '../../../shared/state/controller_scope.dart';
@@ -25,6 +26,8 @@ class CourierHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
+    final uniCubit = context.watch<UniversityCubit>();
+    final verified = uniCubit.isVerifiedStudent(session.user?.id);
     final orders = context.watch<OrdersBloc>();
     final center = context.watch<NotificationsBloc>();
     final now = getIt<CatalogBloc>().now;
@@ -41,7 +44,7 @@ class CourierHomeScreen extends StatelessWidget {
     final offers = orders.availableOffers(
       courierId: u.id,
       zone: st.zone,
-      universityId: session.verifiedUniversityId,
+      universityId: uniCubit.verifiedUniversityId(session.user?.id),
       vehicle: profile.vehicle,
     );
     final next = kCourierGoals.firstWhere(
@@ -121,7 +124,7 @@ class CourierHomeScreen extends StatelessWidget {
                         key: Key('zone-${z.name}'),
                         label: z == CourierZone.general
                             ? '🛵 General'
-                            : '🎓 Campus${session.isVerifiedStudent ? '' : ' 🔒'}',
+                            : '🎓 Campus${verified ? '' : ' 🔒'}',
                         selected: st.zone == z,
                         onTap: () {
                           final r = courier.setZone(z);
@@ -132,7 +135,7 @@ class CourierHomeScreen extends StatelessWidget {
                   ),
               ],
             ),
-            if (!session.isVerifiedStudent)
+            if (!verified)
               TextButton(
                 onPressed: () => context.push('/campus'),
                 child: const Text(

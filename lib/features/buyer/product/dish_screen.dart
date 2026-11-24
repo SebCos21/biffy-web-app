@@ -13,6 +13,7 @@ import '../../../domain/pricing.dart';
 import '../cart/bloc/cart_cubit.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../preferences/bloc/preferences_cubit.dart';
 import '../../../app/di/injection.dart';
 import '../../../shared/state/controller_scope.dart';
 
@@ -63,6 +64,7 @@ class _DishScreenState extends State<DishScreen> {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
     final session = context.watchController<SessionController>();
+    final prefsCubit = context.watch<PreferencesCubit>();
     final t = Theme.of(context).textTheme;
     final d = catalog.dishById(widget.id);
     if (d == null) {
@@ -82,8 +84,11 @@ class _DishScreenState extends State<DishScreen> {
     final editing = widget.editLineId != null;
     final unit = unitPrice(d, sel);
     final total = unit * _qty;
-    final conflicts = allergyConflicts(d, session.prefs.allergies);
-    final fav = session.data.favoriteDishes.contains(d.id);
+    final conflicts = allergyConflicts(
+      d,
+      prefsCubit.prefsOf(session.user?.id).allergies,
+    );
+    final fav = prefsCubit.favoriteDishes(session.user?.id).contains(d.id);
     final media = MediaQuery.of(context);
 
     return Scaffold(

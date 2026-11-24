@@ -5,6 +5,7 @@ import '../../../../domain/usecases/orders/checkout_draft.dart';
 import '../../../../shared/state/session_controller.dart';
 import '../../../orders/bloc/orders_bloc.dart';
 import '../../../wallet/bloc/wallet_cubit.dart';
+import '../../../addresses/bloc/addresses_cubit.dart';
 import 'cart_cubit.dart';
 import '../cart_draft.dart';
 
@@ -49,12 +50,14 @@ class CheckoutState {
 /// No guarda líneas ni totales propios: los lee del carrito y de los casos de
 /// uso de pedidos, para no duplicar la fuente de verdad.
 class CheckoutCubit extends Cubit<CheckoutState> {
-  /// Recibe los pedidos, la sesión, el carrito y la billetera compartidos.
+  /// Recibe los pedidos, la sesión, el carrito, la billetera y las
+  /// direcciones compartidos.
   CheckoutCubit({
     required this.orders,
     required this.session,
     required this.cart,
     required this.wallet,
+    required this.addresses,
   }) : _clientKey = null,
        super(const CheckoutState());
 
@@ -70,10 +73,13 @@ class CheckoutCubit extends Cubit<CheckoutState> {
   /// Billetera (cupón elegido).
   final WalletCubit wallet;
 
+  /// Direcciones (dirección elegida o la predeterminada).
+  final AddressesCubit addresses;
+
   String? _clientKey;
 
   /// Borrador actual del checkout.
-  CheckoutDraft get draft => draftFromCart(session, cart, wallet);
+  CheckoutDraft get draft => draftFromCart(session, cart, wallet, addresses);
 
   /// Totales calculados con las reglas de pedidos.
   CartTotals get totals => orders.preview(draft);

@@ -1,13 +1,21 @@
 import 'package:biffy/core/utils/clock.dart';
-import 'package:biffy/data/models/address.dart';
 import 'package:biffy/data/models/user.dart';
 import 'package:biffy/data/repositories/auth_repository.dart';
+import 'package:biffy/data/repositories/in_memory_address_repository.dart';
 import 'package:biffy/data/repositories/in_memory_courier_repository.dart';
 import 'package:biffy/data/repositories/in_memory_notification_repository.dart';
+import 'package:biffy/data/repositories/in_memory_preferences_repository.dart';
+import 'package:biffy/data/repositories/in_memory_university_repository.dart';
+import 'package:biffy/domain/entities/university_status.dart';
+import 'package:biffy/domain/repositories/university_repository.dart';
+import 'package:biffy/domain/university_errors.dart';
+import 'package:biffy/domain/usecases/university/university_usecases.dart';
 import 'package:biffy/data/repositories/in_memory_wallet_repository.dart';
 import 'package:biffy/domain/repositories/courier_repository.dart';
+import 'package:biffy/domain/usecases/addresses/address_usecases.dart';
 import 'package:biffy/domain/usecases/courier/courier_usecases.dart';
 import 'package:biffy/domain/usecases/notifications/notification_usecases.dart';
+import 'package:biffy/domain/usecases/preferences/preferences_usecases.dart';
 import 'package:biffy/domain/usecases/wallet/wallet_usecases.dart';
 import 'package:biffy/shared/adapters/courier_adapters.dart';
 import 'package:biffy/shared/state/session_controller.dart';
@@ -25,12 +33,6 @@ class _FakeRemoteAuth implements AuthRepository {
   }
 
   late AppUser user;
-
-  /// Código que devolverá el RPC de verificación.
-  String verifyCode = 'ok';
-
-  /// Llamadas al RPC de verificación.
-  int verifyCalls = 0;
 
   /// Últimos datos de perfil guardados.
   ({String? name, String? phone})? savedProfile;
@@ -78,42 +80,73 @@ class _FakeRemoteAuth implements AuthRepository {
   Future<AppUser?> restoreSession() async => user;
 
   @override
-  Future<List<Address>> addresses(String userId) async => const [];
-
-  @override
   Future<String?> registerBusiness(Map<String, dynamic> payload) async => null;
 
   @override
   Future<void> saveProfile(String userId, {String? name, String? phone}) async {
     savedProfile = (name: name, phone: phone);
   }
+}
 
-  @override
-  Future<String?> verifyUniversity(String universityId, String email) async {
-    verifyCalls++;
-    return verifyCode;
-  }
+/// Verificación universitaria "remota" falsa con resultados configurables
+/// (antes estos dobles vivían en el AuthRepository falso).
+class _FakeRemoteUniversity extends InMemoryUniversityRepository {
+  /// Código que devolverá el RPC de verificación.
+  String verifyCode = 'ok';
 
-  /// Resultado configurable de `sendUniversityCode`.
+  /// Llamadas al RPC de verificación.
+  int verifyCalls = 0;
+
+  /// Resultado configurable del envío del código.
   String sendCodeResult = 'ok';
 
-  /// Resultado configurable de `confirmUniversityCode`.
+  /// Resultado configurable de la confirmación del código.
   String confirmCodeResult = 'ok';
 
   @override
-  Future<({String result, String? demoCode})> sendUniversityCode({
+  bool get isRemote => true;
+
+  @override
+  Future<UniversityResult> verify(String universityId, String email) async {
+    verifyCalls++;
+    return UniversityResult(verifyCode);
+  }
+
+  @override
+  Future<UniversityResult> sendCode({
     required String userId,
     required String universityId,
     required String email,
     bool renewal = false,
-  }) async => (result: sendCodeResult, demoCode: null);
+  }) async => UniversityResult(sendCodeResult);
 
   @override
-  Future<String?> confirmUniversityCode({
+  Future<UniversityResult> confirmCode({
     required String userId,
     required String email,
     required String code,
-  }) async => confirmCodeResult;
+  }) async => UniversityResult(confirmCodeResult);
+}
+
+/// Casos de uso de verificación sobre [repo] (preferencias y avisos en
+/// memoria).
+UniversityUseCases _uni(UniversityRepository repo) {
+  final clock = Clock.fixed(DateTime(2026));
+  final notifications = NotificationUseCases(
+    repo: InMemoryNotificationRepository(),
+    clock: clock,
+  );
+  final wallet = WalletUseCases(repo: InMemoryWalletRepository(), clock: clock);
+  return UniversityUseCases(
+    repo: repo,
+    preferences: PreferencesUseCases(
+      repo: InMemoryPreferencesRepository(),
+      credit: wallet.credit,
+      push: notifications.push,
+    ),
+    push: notifications.push,
+    clock: clock,
+  );
 }
 
 /// Repositorio de repartidor "remoto" falso que registra el perfil guardado.
@@ -135,20 +168,34 @@ class _FakeRemoteCourier extends InMemoryCourierRepository {
 SessionController _session(
   _FakeRemoteAuth auth, {
   CourierRepository? couriers,
+  UniversityRepository? university,
 }) {
   final c = couriers ?? InMemoryCourierRepository();
+  final clock = Clock.fixed(DateTime(2026));
+  final notifications = NotificationUseCases(
+    repo: InMemoryNotificationRepository(),
+    clock: clock,
+  );
+  final wallet = WalletUseCases(repo: InMemoryWalletRepository(), clock: clock);
+  final preferences = PreferencesUseCases(
+    repo: InMemoryPreferencesRepository(),
+    credit: wallet.credit,
+    push: notifications.push,
+  );
   return SessionController(
     auth,
-    NotificationUseCases(
-      repo: InMemoryNotificationRepository(),
-      clock: Clock.fixed(DateTime(2026)),
-    ),
-    Clock.fixed(DateTime(2026)),
+    notifications,
+    clock,
     couriers: CourierQueries(c),
     loadCourier: LoadCourier(c),
-    wallet: WalletUseCases(
-      repo: InMemoryWalletRepository(),
-      clock: Clock.fixed(DateTime(2026)),
+    wallet: wallet,
+    preferences: preferences,
+    addresses: AddressUseCases(repo: InMemoryAddressRepository()),
+    university: UniversityUseCases(
+      repo: university ?? InMemoryUniversityRepository(),
+      preferences: preferences,
+      push: notifications.push,
+      clock: clock,
     ),
   );
 }
@@ -181,9 +228,10 @@ void main() {
 
       // Antes: s.saveCourierProfile; ahora el caso de uso del módulo
       // repartidor, conectado a la sesión por su adaptador.
-      final result = await RegisterCourier(couriers, SessionCourierAdapter(s))(
-        profile,
-      );
+      final result = await RegisterCourier(
+        couriers,
+        SessionCourierAdapter(s, _uni(InMemoryUniversityRepository()).queries),
+      )(profile);
 
       expect(result.ok, isTrue);
       expect(couriers.saved?.fullName, 'Ana Repartidora');
@@ -215,42 +263,50 @@ void main() {
 
   group('Verificación universitaria remota', () {
     test('un dominio distinto devuelve domainMismatch sin verificar', () async {
-      final auth = _FakeRemoteAuth()..verifyCode = 'domain_mismatch';
-      final s = _session(auth)..loginAs(auth.user);
+      final auth = _FakeRemoteAuth();
+      final remote = _FakeRemoteUniversity()..verifyCode = 'domain_mismatch';
+      final s = _session(auth, university: remote)..loginAs(auth.user);
+      final uni = _uni(remote);
 
-      final result = await s.verifyUniversityAsync('icesi', 'ana@gmail.com');
+      final result = await uni.verify(s.user?.id, 'icesi', 'ana@gmail.com');
 
       expect(result, VerifyResult.domainMismatch);
-      expect(auth.verifyCalls, 1);
-      expect(s.isVerifiedStudent, isFalse);
+      expect(remote.verifyCalls, 1);
+      expect(uni.queries.isVerifiedStudent(s.user?.id), isFalse);
     });
 
     test('un correo inválido no llama al backend', () async {
       final auth = _FakeRemoteAuth();
-      final s = _session(auth)..loginAs(auth.user);
+      final remote = _FakeRemoteUniversity();
+      final s = _session(auth, university: remote)..loginAs(auth.user);
+      final uni = _uni(remote);
 
-      final result = await s.verifyUniversityAsync('icesi', 'sin-arroba');
+      final result = await uni.verify(s.user?.id, 'icesi', 'sin-arroba');
 
       expect(result, VerifyResult.invalidEmail);
-      expect(auth.verifyCalls, 0);
+      expect(remote.verifyCalls, 0);
     });
 
     test('ok guarda la universidad verificada en la sesión', () async {
       final auth = _FakeRemoteAuth();
-      final s = _session(auth)..loginAs(auth.user);
+      final remote = _FakeRemoteUniversity();
+      final s = _session(auth, university: remote)..loginAs(auth.user);
+      final uni = _uni(remote);
 
-      final result = await s.verifyUniversityAsync('icesi', 'ana@icesi.edu.co');
+      final result = await uni.verify(s.user?.id, 'icesi', 'ana@icesi.edu.co');
 
       expect(result, VerifyResult.ok);
-      expect(s.verifiedUniversityId, 'icesi');
-      expect(s.data.universityEmail, 'ana@icesi.edu.co');
+      expect(uni.queries.verifiedUniversityId(s.user?.id), 'icesi');
+      expect(uni.queries.emailOf(s.user?.id), 'ana@icesi.edu.co');
     });
 
     test('un error del RPC se traduce a rpcError', () async {
-      final auth = _FakeRemoteAuth()..verifyCode = 'algo_raro';
-      final s = _session(auth)..loginAs(auth.user);
+      final auth = _FakeRemoteAuth();
+      final remote = _FakeRemoteUniversity()..verifyCode = 'algo_raro';
+      final s = _session(auth, university: remote)..loginAs(auth.user);
+      final uni = _uni(remote);
 
-      final result = await s.verifyUniversityAsync('icesi', 'ana@icesi.edu.co');
+      final result = await uni.verify(s.user?.id, 'icesi', 'ana@icesi.edu.co');
 
       expect(result, VerifyResult.rpcError);
     });
@@ -259,9 +315,12 @@ void main() {
   group('Código institucional', () {
     test('enviar el código devuelve codeSent', () async {
       final auth = _FakeRemoteAuth();
-      final s = _session(auth)..loginAs(auth.user);
+      final remote = _FakeRemoteUniversity();
+      final s = _session(auth, university: remote)..loginAs(auth.user);
+      final uni = _uni(remote);
 
-      final result = await s.sendUniversityCodeAsync(
+      final result = await uni.sendCode(
+        s.user?.id,
         'icesi',
         'ana@icesi.edu.co',
       );
@@ -271,42 +330,55 @@ void main() {
 
     test('un código correcto activa la verificación por 30 días', () async {
       final auth = _FakeRemoteAuth();
-      final s = _session(auth)..loginAs(auth.user);
+      final remote = _FakeRemoteUniversity();
+      final s = _session(auth, university: remote)..loginAs(auth.user);
+      final uni = _uni(remote);
 
-      final result = await s.confirmUniversityCodeAsync(
+      final result = await uni.confirmCode(
+        s.user?.id,
         universityId: 'icesi',
         email: 'ana@icesi.edu.co',
         code: '123456',
       );
 
       expect(result, VerifyResult.ok);
-      expect(s.isVerifiedStudent, isTrue);
-      expect(s.verificationExpiresAt, isNotNull);
+      expect(uni.queries.isVerifiedStudent(s.user?.id), isTrue);
+      expect(uni.queries.expiresAt(s.user?.id), isNotNull);
     });
 
     test('un código incorrecto devuelve invalidToken', () async {
-      final auth = _FakeRemoteAuth()..confirmCodeResult = 'invalid_token';
-      final s = _session(auth)..loginAs(auth.user);
+      final auth = _FakeRemoteAuth();
+      final remote = _FakeRemoteUniversity()
+        ..confirmCodeResult = 'invalid_token';
+      final s = _session(auth, university: remote)..loginAs(auth.user);
+      final uni = _uni(remote);
 
-      final result = await s.confirmUniversityCodeAsync(
+      final result = await uni.confirmCode(
+        s.user?.id,
         universityId: 'icesi',
         email: 'ana@icesi.edu.co',
         code: '000000',
       );
 
       expect(result, VerifyResult.invalidToken);
-      expect(s.isVerifiedStudent, isFalse);
+      expect(uni.queries.isVerifiedStudent(s.user?.id), isFalse);
     });
 
     test('una verificación vencida deja de contar', () async {
       final auth = _FakeRemoteAuth();
-      final s = _session(auth)..loginAs(auth.user);
-      s.data
-        ..verifiedUniversityId = 'icesi'
-        ..verificationExpiresAt = DateTime(2025);
+      final remote = _FakeRemoteUniversity();
+      final s = _session(auth, university: remote)..loginAs(auth.user);
+      final uni = _uni(remote);
+      remote.setStatus(
+        s.user!.id,
+        UniversityStatus(
+          verifiedUniversityId: 'icesi',
+          expiresAt: DateTime(2025),
+        ),
+      );
 
-      expect(s.isVerifiedStudent, isFalse);
-      expect(s.verifiedUniversityId, isNull);
+      expect(uni.queries.isVerifiedStudent(s.user?.id), isFalse);
+      expect(uni.queries.verifiedUniversityId(s.user?.id), isNull);
     });
   });
 }

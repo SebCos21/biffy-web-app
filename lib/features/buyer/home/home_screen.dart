@@ -13,6 +13,8 @@ import '../../catalog/bloc/catalog_bloc.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../university/bloc/university_cubit.dart';
+import '../../preferences/bloc/preferences_cubit.dart';
 import '../../wallet/bloc/wallet_cubit.dart';
 import '../ai/recommendation_input.dart';
 import '../../../shared/state/controller_scope.dart';
@@ -26,6 +28,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
+    final uniCubit = context.watch<UniversityCubit>();
+    final prefsCubit = context.watch<PreferencesCubit>();
     final wallet = context.watch<WalletCubit>();
     final catalog = context.watch<CatalogBloc>();
     final orders = context.watch<OrdersBloc>();
@@ -36,10 +40,11 @@ class HomeScreen extends StatelessWidget {
     final unread = session.settings.notifications
         ? notifications.unreadFor(user, session.activeRole)
         : 0;
-    final uni = universityById(session.verifiedUniversityId);
+    final uni = universityById(uniCubit.verifiedUniversityId(session.user?.id));
     final myOrders = user == null ? <Order>[] : orders.forBuyer(user.id);
     final active = myOrders.where((o) => !o.status.isFinal).toList();
-    final hasProfile = !session.prefs.isEmpty || myOrders.isNotEmpty;
+    final hasProfile =
+        !prefsCubit.prefsOf(session.user?.id).isEmpty || myOrders.isNotEmpty;
     final recs = recommend(buildRecommendationInput(context), limit: 8);
     final featuredDishes = hasProfile
         ? recs.map((e) => e.dish).toList()
@@ -264,7 +269,7 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ],
-                  if (!session.data.prefsCompleted) ...[
+                  if (!prefsCubit.completedOf(session.user?.id)) ...[
                     const SizedBox(height: 12),
                     BiffyCard(
                       key: const Key('prefs-invite'),

@@ -10,6 +10,7 @@ import '../../../data/models/order.dart';
 import '../../../data/models/user.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../university/bloc/university_cubit.dart';
 import '../../wallet/bloc/wallet_cubit.dart';
 import '../../../app/di/injection.dart';
 import '../../../shared/state/controller_scope.dart';
@@ -23,11 +24,13 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
+    final uniCubit = context.watch<UniversityCubit>();
+    final verified = uniCubit.isVerifiedStudent(session.user?.id);
     final wallet = context.watch<WalletCubit>();
     final orders = context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
     final u = session.user;
-    final uni = universityById(session.universityId);
+    final uni = universityById(uniCubit.universityIdOf(session.user?.id));
     final delivered = u == null
         ? 0
         : orders
@@ -111,13 +114,13 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               Tag(uni == null ? 'Sin universidad' : uni.name),
                               Tag(
-                                session.isVerifiedStudent
+                                verified
                                     ? 'Verificado (simulado)'
                                     : 'No verificado',
-                                color: session.isVerifiedStudent
+                                color: verified
                                     ? AppColors.success
                                     : null,
-                                textColor: session.isVerifiedStudent
+                                textColor: verified
                                     ? Colors.white
                                     : null,
                               ),

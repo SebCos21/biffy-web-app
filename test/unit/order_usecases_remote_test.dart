@@ -33,7 +33,11 @@ void main() {
     repo = FakeOrderRepository();
     wallet = RecordingWallet();
     notifier = RecordingNotifier();
-    final sessionAdapter = SessionOrderAdapter(s.session, s.wallet.useCases);
+    final sessionAdapter = SessionOrderAdapter(
+      s.session,
+      s.wallet.useCases,
+      s.university.useCases.queries,
+    );
     uc = OrderUseCases(
       repo: repo,
       catalog: CatalogOrderAdapter(s.catalog.useCases),
@@ -49,7 +53,7 @@ void main() {
 
   /// Dirección ya guardada en la cuenta (id = uuid de `addresses`).
   Address serverAddress() {
-    final a = s.session.data.defaultAddress!;
+    final a = s.addresses.defaultOf(s.session.user?.id)!;
     return Address(
       id: _addrId,
       label: a.label,
@@ -202,7 +206,7 @@ void main() {
     });
 
     test('dirección o cupón locales no se envían: se explican', () async {
-      final local = s.session.data.defaultAddress!;
+      final local = s.addresses.defaultOf(s.session.user?.id)!;
       expect(
         uc.validate(draft(address: local)).join(' '),
         contains('no está guardada en tu cuenta'),

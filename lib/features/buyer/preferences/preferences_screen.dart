@@ -9,6 +9,7 @@ import '../../../data/models/catalog.dart';
 import '../../../data/models/user.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
+import '../../preferences/bloc/preferences_cubit.dart';
 
 /// Encuesta opcional de 3 pasos: gustos, estilo de vida/alergias, presupuesto.
 class PreferencesScreen extends StatefulWidget {
@@ -22,7 +23,9 @@ class PreferencesScreen extends StatefulWidget {
 /// Estado con el paso actual y las preferencias en edición.
 class _PreferencesScreenState extends State<PreferencesScreen> {
   int _step = 0;
-  late Preferences _p = getIt<SessionController>().prefs;
+  late Preferences _p = getIt<PreferencesCubit>().prefsOf(
+    getIt<SessionController>().user?.id,
+  );
 
   /// Agrega o quita un valor del conjunto de selección.
   Set<String> _toggle(Set<String> s, String v) =>
@@ -63,7 +66,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                       setState(() => _step++);
                       return;
                     }
-                    final awarded = session.savePreferences(_p);
+                    final awarded = getIt<PreferencesCubit>()
+                        .save(session.user?.id, _p)
+                        .awarded;
                     showSnack(
                       context,
                       awarded > 0

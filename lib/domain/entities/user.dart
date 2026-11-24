@@ -1,4 +1,3 @@
-import 'address.dart';
 import 'catalog.dart';
 
 enum UserRole {
@@ -171,25 +170,6 @@ class AppSettings {
 
 /// Datos personales de un usuario dentro de la sesión de demostración.
 class UserData {
-  Preferences prefs = const Preferences();
-  bool prefsCompleted = false;
-  bool surveyRewarded = false;
   bool welcomeGranted = false;
-  final Set<String> favoriteDishes = {};
-  final Set<String> favoriteRestaurants = {};
-  final List<Address> addresses = [];
-  String? defaultAddressId;
   PaymentMethod defaultPayment = PaymentMethod.nequi;
-
-  /// Verificación universitaria (el correo se comprueba con un código).
-  String? verifiedUniversityId;
-  String? universityEmail;
-  DateTime? verificationExpiresAt;
-
-  Address? get defaultAddress {
-    for (final a in addresses) {
-      if (a.id == defaultAddressId) return a;
-    }
-    return addresses.isEmpty ? null : addresses.first;
-  }
 }

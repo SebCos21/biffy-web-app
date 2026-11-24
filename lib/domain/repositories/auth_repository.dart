@@ -1,4 +1,3 @@
-import '../entities/address.dart';
 import '../entities/user.dart';
 
 /// Error de autenticación con mensaje para el usuario.
@@ -61,30 +60,9 @@ abstract class AuthRepository {
   /// Recupera la sesión persistida (solo backend real).
   Future<AppUser?> restoreSession();
 
-  /// Direcciones guardadas del usuario (vacío en la demo).
-  Future<List<Address>> addresses(String userId);
-
   /// Crea el negocio y sus sedes del usuario autenticado.
   Future<String?> registerBusiness(Map<String, dynamic> payload);
 
   /// Guarda nombre y teléfono del perfil en el backend.
   Future<void> saveProfile(String userId, {String? name, String? phone});
-
-  /// Verifica el correo universitario contra el backend y devuelve su código.
-  Future<String?> verifyUniversity(String universityId, String email);
-
-  /// Envía un código al correo institucional.
-  Future<({String result, String? demoCode})> sendUniversityCode({
-    required String userId,
-    required String universityId,
-    required String email,
-    bool renewal = false,
-  });
-
-  /// Confirma el código recibido en el correo institucional.
-  Future<String?> confirmUniversityCode({
-    required String userId,
-    required String email,
-    required String code,
-  });
 }

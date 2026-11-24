@@ -8,6 +8,8 @@ import '../../data/models/catalog.dart';
 import '../../domain/pricing.dart';
 import '../../features/catalog/bloc/catalog_bloc.dart';
 import '../../shared/state/session_controller.dart';
+import '../../features/university/bloc/university_cubit.dart';
+import '../../features/preferences/bloc/preferences_cubit.dart';
 import '../utils/format.dart';
 import 'actions.dart';
 import 'ui.dart';
@@ -131,14 +133,17 @@ class DishTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
     final session = context.watchController<SessionController>();
+    final uniCubit = context.watch<UniversityCubit>();
+    final prefsCubit = context.watch<PreferencesCubit>();
     final r = catalog.restaurantById(dish.restaurantId);
 
     final conflicts = dish.allergens
-        .where(session.prefs.allergies.contains)
+        .where(prefsCubit.prefsOf(session.user?.id).allergies.contains)
         .toList();
 
     final campus =
-        r != null && campusEligible(r, session.verifiedUniversityId);
+        r != null &&
+        campusEligible(r, uniCubit.verifiedUniversityId(session.user?.id));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -233,10 +238,14 @@ class RestaurantCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
     final session = context.watchController<SessionController>();
+    final uniCubit = context.watch<UniversityCubit>();
     final r = restaurant;
 
     final open = catalog.isOpen(r);
-    final campus = campusEligible(r, session.verifiedUniversityId);
+    final campus = campusEligible(
+      r,
+      uniCubit.verifiedUniversityId(session.user?.id),
+    );
 
     final card = BiffyCard(
       padding: EdgeInsets.zero,

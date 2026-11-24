@@ -6,6 +6,7 @@ import '../../../domain/repositories/catalog_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
 import '../../../domain/repositories/profile_repository.dart';
+import '../../../domain/usecases/addresses/address_usecases.dart';
 import '../../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../../domain/usecases/courier/courier_usecases.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
@@ -15,8 +16,10 @@ import '../../../domain/usecases/orders/order_usecases.dart';
 import '../../../domain/usecases/payments/check_payment_status.dart';
 import '../../../domain/usecases/payments/retry_payment.dart';
 import '../../../domain/usecases/payments/start_payment.dart';
+import '../../../domain/usecases/preferences/preferences_usecases.dart';
 import '../../../domain/usecases/rate_order.dart';
 import '../../../domain/usecases/rewards_usecases.dart';
+import '../../../domain/usecases/university/university_usecases.dart';
 import '../../../domain/usecases/wallet/wallet_usecases.dart';
 import '../../../features/buyer/cart/bloc/cart_cubit.dart';
 import '../../../features/buyer/cart/bloc/checkout_cubit.dart';
@@ -24,6 +27,7 @@ import '../../../features/buyer/payment/bloc/payment_bloc.dart';
 import '../../../features/buyer/notifications/notifications_cubit.dart';
 import '../../../features/buyer/rewards/rewards_cubit.dart';
 import '../../../features/buyer/tracking/rate_order_cubit.dart';
+import '../../../features/addresses/bloc/addresses_cubit.dart';
 import '../../../features/auth/bloc/login_cubit.dart';
 import '../../../features/auth/bloc/register_cubit.dart';
 import '../../../features/auth/bloc/university_verification_cubit.dart';
@@ -32,7 +36,9 @@ import '../../../features/courier/bloc/courier_cubit.dart';
 import '../../../features/courier/earnings/earnings_cubit.dart';
 import '../../../features/notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
+import '../../../features/preferences/bloc/preferences_cubit.dart';
 import '../../../features/restaurant_owner/boxes/merchant_boxes_cubit.dart';
+import '../../../features/university/bloc/university_cubit.dart';
 import '../../../features/wallet/bloc/wallet_cubit.dart';
 import '../../../shared/state/session_controller.dart';
 
@@ -60,6 +66,9 @@ void _registerControllers(GetIt g) {
       couriers: g<CourierQueries>(),
       loadCourier: g<LoadCourier>(),
       wallet: g<WalletUseCases>(),
+      preferences: g<PreferencesUseCases>(),
+      addresses: g<AddressUseCases>(),
+      university: g<UniversityUseCases>(),
       profile: _optional<ProfileRepository>(g),
     ),
   );
@@ -75,6 +84,18 @@ void _registerBlocs(GetIt g) {
   g.registerLazySingleton<OrdersBloc>(
     () => OrdersBloc(g<OrderUseCases>()),
     dispose: (bloc) => bloc.close(),
+  );
+  g.registerLazySingleton<UniversityCubit>(
+    () => UniversityCubit(g<UniversityUseCases>()),
+    dispose: (cubit) => cubit.close(),
+  );
+  g.registerLazySingleton<AddressesCubit>(
+    () => AddressesCubit(g<AddressUseCases>()),
+    dispose: (cubit) => cubit.close(),
+  );
+  g.registerLazySingleton<PreferencesCubit>(
+    () => PreferencesCubit(g<PreferencesUseCases>()),
+    dispose: (cubit) => cubit.close(),
   );
   g.registerLazySingleton<WalletCubit>(
     () => WalletCubit(g<WalletUseCases>()),
@@ -129,7 +150,10 @@ void _registerBlocs(GetIt g) {
   g.registerFactory<LoginCubit>(() => LoginCubit(g<SessionController>()));
   g.registerFactory<RegisterCubit>(() => RegisterCubit(g<SessionController>()));
   g.registerFactory<UniversityVerificationCubit>(
-    () => UniversityVerificationCubit(g<SessionController>()),
+    () => UniversityVerificationCubit(
+      g<UniversityUseCases>(),
+      () => g<SessionController>().user?.id,
+    ),
   );
   g.registerFactory<CheckoutCubit>(
     () => CheckoutCubit(
@@ -137,6 +161,7 @@ void _registerBlocs(GetIt g) {
       session: g<SessionController>(),
       cart: g<CartCubit>(),
       wallet: g<WalletCubit>(),
+      addresses: g<AddressesCubit>(),
     ),
   );
   g.registerFactoryParam<PaymentBloc, String, void>(

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../shared/state/controller_scope.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +12,8 @@ import '../../data/models/catalog.dart';
 import '../../data/models/user.dart';
 import '../../features/buyer/cart/bloc/cart_cubit.dart';
 import '../../features/catalog/bloc/catalog_bloc.dart';
+import '../../features/preferences/bloc/preferences_cubit.dart';
+import '../../domain/entities/preferences_status.dart';
 import '../../shared/state/session_controller.dart';
 import '../constants/catalog_constants.dart';
 import '../utils/format.dart';
@@ -115,10 +120,12 @@ Future<void> toggleFavoriteDish(BuildContext context, Dish dish) async {
   if (!await requireLogin(context, reason: 'guardar favoritos')) return;
   if (!context.mounted) return;
   final s = getIt<SessionController>();
-  s.toggleFavoriteDish(dish.id);
+  final prefs = context.read<PreferencesCubit>();
+  // La caché cambia al instante; si el servidor falla se revierte sola.
+  unawaited(prefs.toggleFavorite(s.user?.id, FavoriteKind.dish, dish.id));
   showSnack(
     context,
-    s.data.favoriteDishes.contains(dish.id)
+    prefs.isFavoriteDish(s.user?.id, dish.id)
         ? 'Agregado a favoritos ❤️'
         : 'Quitado de favoritos',
   );

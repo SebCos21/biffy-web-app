@@ -74,6 +74,7 @@ void main() {
         session: s.session,
         cart: s.cart,
         wallet: s.wallet,
+        addresses: s.addresses,
       ),
       act: (c) => c.submit(),
       expect: () => [
@@ -100,6 +101,7 @@ void main() {
         session: s.session,
         cart: s.cart,
         wallet: s.wallet,
+        addresses: s.addresses,
       ),
       act: (c) => c.submit(),
       expect: () => [

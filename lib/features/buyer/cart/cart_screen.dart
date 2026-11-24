@@ -15,6 +15,7 @@ import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../wallet/bloc/wallet_cubit.dart';
+import '../../addresses/bloc/addresses_cubit.dart';
 import 'cart_draft.dart';
 import 'schedule_sheet.dart';
 import '../../../app/di/injection.dart';
@@ -56,6 +57,7 @@ class _CartScreenState extends State<CartScreen> {
     final cart = context.watch<CartCubit>();
     final session = context.watchController<SessionController>();
     final wallet = context.watch<WalletCubit>();
+    final addresses = context.watch<AddressesCubit>();
     final catalog = context.watch<CatalogBloc>();
     final orders = context.read<OrdersBloc>();
     final t = Theme.of(context).textTheme;
@@ -74,10 +76,12 @@ class _CartScreenState extends State<CartScreen> {
     }
 
     final r = cart.restaurant!;
-    final address = session.isLoggedIn ? cartAddress(session, cart) : null;
+    final address = session.isLoggedIn
+        ? cartAddress(session, cart, addresses)
+        : null;
     final point = address == null ? session.point : pointById(address.pointId);
     final reachable = isReachable(r, point);
-    final draft = draftFromCart(session, cart, wallet);
+    final draft = draftFromCart(session, cart, wallet, addresses);
     final totals = orders.preview(draft);
     final payment = cart.payment ?? session.data.defaultPayment;
     final coupons = wallet.availableCoupons(session.user?.id);
@@ -361,6 +365,7 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _pickAddress(BuildContext context) async {
     final session = getIt<SessionController>();
     final cart = getIt<CartCubit>();
+    final addresses = getIt<AddressesCubit>();
     await showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -373,11 +378,11 @@ class _CartScreenState extends State<CartScreen> {
               style: Theme.of(ctx).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            for (final a in session.data.addresses)
+            for (final a in addresses.addressesOf(session.user?.id))
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(
-                  a.id == cartAddress(session, cart)?.id
+                  a.id == cartAddress(session, cart, addresses)?.id
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off,
                   color: AppColors.primary,

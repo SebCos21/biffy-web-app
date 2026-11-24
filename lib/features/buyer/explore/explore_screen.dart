@@ -12,6 +12,8 @@ import '../../../data/models/catalog.dart';
 import '../../../domain/catalog_rules.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../university/bloc/university_cubit.dart';
+import '../../preferences/bloc/preferences_cubit.dart';
 import '../../../app/di/injection.dart';
 import '../../../shared/state/controller_scope.dart';
 
@@ -83,8 +85,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
         catalog.reachableDishes,
         _filters,
         catalog.filterContext(
-          allergies: session.prefs.allergies,
-          universityId: session.universityId,
+          allergies: getIt<PreferencesCubit>()
+              .prefsOf(session.user?.id)
+              .allergies,
+          universityId: getIt<UniversityCubit>().universityIdOf(
+            session.user?.id,
+          ),
         ),
       );
 
@@ -93,6 +99,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
     final session = context.watchController<SessionController>();
+    // Repinta cuando cambian las alergias o la universidad verificada.
+    context.watch<PreferencesCubit>();
+    context.watch<UniversityCubit>();
     final t = Theme.of(context).textTheme;
     final results = _results(catalog, session);
     final browsing = _filters.isEmpty;
@@ -227,7 +236,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             onTap: () {
                               if (label.contains('alérgenos') &&
                                   !on &&
-                                  session.prefs.allergies.isEmpty) {
+                                  getIt<PreferencesCubit>()
+                                      .prefsOf(session.user?.id)
+                                      .allergies
+                                      .isEmpty) {
                                 showSnack(
                                   context,
                                   'No has declarado alergias. Puedes hacerlo en Preferencias.',
@@ -399,6 +411,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Future<void> _openFilters(BuildContext context) async {
     final catalog = getIt<CatalogBloc>();
     final session = getIt<SessionController>();
+    final uniCubit = getIt<UniversityCubit>();
     final result = await showModalBottomSheet<DishFilters>(
       context: context,
       isScrollControlled: true,
@@ -408,8 +421,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
           catalog.reachableDishes,
           f,
           catalog.filterContext(
-            allergies: session.prefs.allergies,
-            universityId: session.universityId,
+            allergies: getIt<PreferencesCubit>()
+                .prefsOf(session.user?.id)
+                .allergies,
+            universityId: uniCubit.universityIdOf(session.user?.id),
           ),
         ).length,
       ),

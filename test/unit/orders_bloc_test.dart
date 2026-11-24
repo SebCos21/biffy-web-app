@@ -49,7 +49,11 @@ void main() {
   setUp(() async {
     final s = await makeServices();
     repo = FakeOrderRepository();
-    final session = SessionOrderAdapter(s.session, s.wallet.useCases);
+    final session = SessionOrderAdapter(
+      s.session,
+      s.wallet.useCases,
+      s.university.useCases.queries,
+    );
     bloc = OrdersBloc(
       OrderUseCases(
         repo: repo,

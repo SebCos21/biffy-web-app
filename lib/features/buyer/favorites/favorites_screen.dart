@@ -6,6 +6,7 @@ import '../../../core/widgets/catalog_cards.dart';
 import '../../../core/widgets/ui.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../preferences/bloc/preferences_cubit.dart';
 import '../../../shared/state/controller_scope.dart';
 
 /// Lista los platos y restaurantes marcados como favoritos.
@@ -16,12 +17,14 @@ class FavoritesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
+    final prefsCubit = context.watch<PreferencesCubit>();
     final catalog = context.watch<CatalogBloc>();
     final dishes = [
-      for (final id in session.data.favoriteDishes) ?catalog.dishById(id),
+      for (final id in prefsCubit.favoriteDishes(session.user?.id))
+        ?catalog.dishById(id),
     ];
     final restaurants = [
-      for (final id in session.data.favoriteRestaurants)
+      for (final id in prefsCubit.favoriteBranches(session.user?.id))
         ?catalog.restaurantById(id),
     ];
     return Scaffold(

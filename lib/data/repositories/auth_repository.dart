@@ -1,6 +1,5 @@
 import '../../core/constants/catalog_constants.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../models/address.dart';
 import '../models/user.dart';
 
 export '../../domain/repositories/auth_repository.dart';
@@ -17,7 +16,6 @@ class InMemoryAuthRepository implements AuthRepository {
 
   final Map<String, AppUser> _users = {};
   final Map<String, String> _passwords = {};
-  final Map<String, String> _uniCodes = {};
   int _seq = 1;
 
   /// La demo nunca habla con un backend.
@@ -117,10 +115,6 @@ class InMemoryAuthRepository implements AuthRepository {
   @override
   Future<AppUser?> restoreSession() async => null;
 
-  /// Direcciones guardadas: vacío en la demo.
-  @override
-  Future<List<Address>> addresses(String userId) async => const [];
-
   @override
   Future<String?> registerBusiness(Map<String, dynamic> payload) async =>
       throw AuthException('El alta de negocios necesita Supabase.');
@@ -132,33 +126,4 @@ class InMemoryAuthRepository implements AuthRepository {
     String? name,
     String? phone,
   }) async {}
-
-  /// La verificación universitaria de la demo es local.
-  @override
-  Future<String?> verifyUniversity(String universityId, String email) async =>
-      null;
-
-  /// En la demo el código siempre es 123456 y se muestra en la app.
-  @override
-  Future<({String result, String? demoCode})> sendUniversityCode({
-    required String userId,
-    required String universityId,
-    required String email,
-    bool renewal = false,
-  }) async {
-    _uniCodes[userId] = '123456';
-    return (result: 'ok', demoCode: '123456');
-  }
-
-  /// Valida el código de demostración.
-  @override
-  Future<String?> confirmUniversityCode({
-    required String userId,
-    required String email,
-    required String code,
-  }) async {
-    if (_uniCodes[userId] != code.trim()) return 'invalid_token';
-    _uniCodes.remove(userId);
-    return 'ok';
-  }
 }

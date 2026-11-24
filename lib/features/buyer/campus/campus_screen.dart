@@ -10,6 +10,7 @@ import '../../../core/widgets/ui.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../shared/state/controller_scope.dart';
 import '../../../shared/state/session_controller.dart';
+import '../../university/bloc/university_cubit.dart';
 import '../../auth/bloc/university_verification_cubit.dart';
 import '../../orders/bloc/orders_bloc.dart';
 import '../../../app/di/injection.dart';
@@ -36,7 +37,8 @@ class _CampusScreenState extends State<CampusScreen> {
   void initState() {
     super.initState();
     final session = getIt<SessionController>();
-    _email.text = session.data.universityEmail ?? '';
+    final uniCubit = getIt<UniversityCubit>();
+    _email.text = uniCubit.emailOf(session.user?.id) ?? '';
     _verification = getIt<UniversityVerificationCubit>();
   }
 
@@ -51,14 +53,15 @@ class _CampusScreenState extends State<CampusScreen> {
 
   /// Envía el código al correo institucional.
   Future<void> _send(SessionController session, String uniId) async {
+    final uniCubit = getIt<UniversityCubit>();
     final email = _email.text.trim().isEmpty
-        ? (session.data.universityEmail ?? '')
+        ? (uniCubit.emailOf(session.user?.id) ?? '')
         : _email.text.trim();
     await _verification.sendCode(
       universityId: uniId,
       email: email,
       renewal:
-          session.isVerifiedStudent && session.verifiedUniversityId == uniId,
+          uniCubit.verifiedUniversityId(session.user?.id) == uniId,
     );
     if (!mounted) return;
     if (_verification.state.codeSent) {
@@ -68,8 +71,9 @@ class _CampusScreenState extends State<CampusScreen> {
 
   /// Confirma el código y activa Campus por 30 días.
   Future<void> _confirm(SessionController session, String uniId) async {
+    final uniCubit = getIt<UniversityCubit>();
     final email = _email.text.trim().isEmpty
-        ? (session.data.universityEmail ?? '')
+        ? (uniCubit.emailOf(session.user?.id) ?? '')
         : _email.text.trim();
     await _verification.confirmCode(
       universityId: uniId,
@@ -77,7 +81,7 @@ class _CampusScreenState extends State<CampusScreen> {
       code: _code.text,
     );
     if (!mounted) return;
-    if (session.isVerifiedStudent) {
+    if (uniCubit.isVerifiedStudent(session.user?.id)) {
       _code.clear();
       showSnack(context, 'Universidad verificada por 30 días 🎓');
     }
@@ -87,14 +91,16 @@ class _CampusScreenState extends State<CampusScreen> {
   @override
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
+    final uniCubit = context.watch<UniversityCubit>();
     final catalog = context.watch<CatalogBloc>();
     final orders = context.watch<OrdersBloc>();
     final t = Theme.of(context).textTheme;
-    final uniId = _uniId ?? session.universityId ?? 'icesi';
+    final uniId =
+        _uniId ?? uniCubit.universityIdOf(session.user?.id) ?? 'icesi';
     final uni = universityById(uniId)!;
     final verified =
-        session.isVerifiedStudent && session.verifiedUniversityId == uniId;
-    final expiry = session.verificationExpiresAt;
+        uniCubit.verifiedUniversityId(session.user?.id) == uniId;
+    final expiry = uniCubit.expiresAt(session.user?.id);
     final now = catalog.now;
     final list = catalog.campusRestaurants(uniId);
     int ordersToday(String rid) => orders.all
@@ -123,8 +129,9 @@ class _CampusScreenState extends State<CampusScreen> {
                       onTap: () {
                         setState(() => _uniId = u.id);
                         _verification.clearCode();
-                        if (session.isLoggedIn && !session.isVerifiedStudent) {
-                          session.setUniversity(u.id);
+                        if (session.isLoggedIn &&
+                            !uniCubit.isVerifiedStudent(session.user?.id)) {
+                          uniCubit.choose(session.user?.id, u.id);
                         }
                       },
                     ),

@@ -5,15 +5,19 @@ import '../../../domain/ports/catalog_ports.dart';
 import '../../../domain/ports/courier_ports.dart';
 import '../../../domain/ports/order_ports.dart';
 import '../../../domain/ports/review_ports.dart';
+import '../../../domain/repositories/address_repository.dart';
 import '../../../domain/repositories/catalog_repository.dart';
 import '../../../domain/repositories/courier_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/notification_repository.dart';
 import '../../../domain/repositories/order_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
+import '../../../domain/repositories/preferences_repository.dart';
 import '../../../domain/repositories/review_repository.dart';
 import '../../../domain/repositories/rewards_repository.dart';
+import '../../../domain/repositories/university_repository.dart';
 import '../../../domain/repositories/wallet_repository.dart';
+import '../../../domain/usecases/addresses/address_usecases.dart';
 import '../../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../../domain/usecases/courier/courier_usecases.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
@@ -23,8 +27,10 @@ import '../../../domain/usecases/orders/order_usecases.dart';
 import '../../../domain/usecases/payments/check_payment_status.dart';
 import '../../../domain/usecases/payments/retry_payment.dart';
 import '../../../domain/usecases/payments/start_payment.dart';
+import '../../../domain/usecases/preferences/preferences_usecases.dart';
 import '../../../domain/usecases/rate_order.dart';
 import '../../../domain/usecases/rewards_usecases.dart';
+import '../../../domain/usecases/university/university_usecases.dart';
 import '../../../domain/usecases/wallet/wallet_usecases.dart';
 import '../../../shared/adapters/courier_adapters.dart';
 import '../../../shared/adapters/order_adapters.dart';
@@ -48,10 +54,18 @@ void _registerPorts(GetIt g) {
     () => CatalogOrderAdapter(g<CatalogUseCases>()),
   );
   g.registerLazySingleton<OrderBuyerPort>(
-    () => SessionOrderAdapter(g<SessionController>(), g<WalletUseCases>()),
+    () => SessionOrderAdapter(
+      g<SessionController>(),
+      g<WalletUseCases>(),
+      g<UniversityUseCases>().queries,
+    ),
   );
   g.registerLazySingleton<OrderWalletPort>(
-    () => SessionOrderAdapter(g<SessionController>(), g<WalletUseCases>()),
+    () => SessionOrderAdapter(
+      g<SessionController>(),
+      g<WalletUseCases>(),
+      g<UniversityUseCases>().queries,
+    ),
   );
   // Con servidor los avisos los crea la base (0022); en demo, la app.
   g.registerLazySingleton<OrderNotifier>(
@@ -60,7 +74,10 @@ void _registerPorts(GetIt g) {
         : NotificationOrderAdapter(g<PushNotification>(), demo: true),
   );
   g.registerLazySingleton<CourierSessionPort>(
-    () => SessionCourierAdapter(g<SessionController>()),
+    () => SessionCourierAdapter(
+      g<SessionController>(),
+      g<UniversityUseCases>().queries,
+    ),
   );
   g.registerLazySingleton<CatalogContextPort>(
     () => SessionCatalogAdapter(g<SessionController>()),
@@ -117,6 +134,30 @@ void _registerUseCases(GetIt g) {
   // Billetera: Gotas y cupones (la sesión, el WalletCubit y pedidos).
   g.registerFactory<WalletUseCases>(
     () => WalletUseCases(repo: g<WalletRepository>(), clock: g<Clock>()),
+  );
+
+  // Direcciones de entrega (la sesión crea la inicial y las carga).
+  g.registerFactory<AddressUseCases>(
+    () => AddressUseCases(repo: g<AddressRepository>()),
+  );
+
+  // Preferencias y favoritos (la encuesta acredita Gotas y avisa).
+  g.registerFactory<PreferencesUseCases>(
+    () => PreferencesUseCases(
+      repo: g<PreferencesRepository>(),
+      credit: g<WalletUseCases>().credit,
+      push: g<PushNotification>(),
+    ),
+  );
+
+  // Verificación universitaria (usa preferencias y avisos).
+  g.registerFactory<UniversityUseCases>(
+    () => UniversityUseCases(
+      repo: g<UniversityRepository>(),
+      preferences: g<PreferencesUseCases>(),
+      push: g<PushNotification>(),
+      clock: g<Clock>(),
+    ),
   );
 
   // Catálogo: lecturas con la regla de alcance y escrituras del comercio.
