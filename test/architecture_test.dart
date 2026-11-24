@@ -78,6 +78,53 @@ void main() {
     }
   });
 
+  test('el cubit del repartidor solo conoce el dominio', () {
+    final bad = _violations(
+      'lib/features/courier/bloc',
+      RegExp(r"(\.\./)+(data|shared)/|supabase"),
+    );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test(
+    'los repositorios del repartidor implementan la interfaz del dominio',
+    () {
+      for (final f in [
+        'lib/data/repositories/in_memory_courier_repository.dart',
+        'lib/data/repositories/supabase_courier_repository.dart',
+      ]) {
+        final src = File(f).readAsStringSync();
+        expect(src, contains('implements CourierRepository'), reason: f);
+        expect(
+          src,
+          contains('domain/repositories/courier_repository.dart'),
+          reason: f,
+        );
+      }
+    },
+  );
+
+  test('las pantallas del repartidor no cambian su estado en la sesión', () {
+    // Disponibilidad, zona y registro pasan por el CourierCubit.
+    final bad = <String>[];
+    for (final f
+        in Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))) {
+      final src = f.readAsStringSync();
+      for (final m in [
+        'setCourierOnline',
+        'setCourierZone',
+        'saveCourierProfile',
+        'courierProfile =',
+      ]) {
+        if (src.contains(m)) bad.add('${f.path}: $m');
+      }
+    }
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
   test('no queda NotificationCenter (lo reemplazó NotificationsBloc)', () {
     expect(
       File('lib/shared/state/notification_center.dart').existsSync(),

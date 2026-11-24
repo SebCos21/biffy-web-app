@@ -1,14 +1,17 @@
 import 'package:get_it/get_it.dart';
 
 import '../../../core/utils/clock.dart';
+import '../../../domain/ports/courier_ports.dart';
 import '../../../domain/ports/order_ports.dart';
 import '../../../domain/ports/review_ports.dart';
+import '../../../domain/repositories/courier_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/notification_repository.dart';
 import '../../../domain/repositories/order_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
 import '../../../domain/repositories/review_repository.dart';
 import '../../../domain/repositories/rewards_repository.dart';
+import '../../../domain/usecases/courier/courier_usecases.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
 import '../../../domain/usecases/merchant_boxes_usecases.dart';
 import '../../../domain/usecases/notifications/notification_usecases.dart';
@@ -18,6 +21,7 @@ import '../../../domain/usecases/payments/retry_payment.dart';
 import '../../../domain/usecases/payments/start_payment.dart';
 import '../../../domain/usecases/rate_order.dart';
 import '../../../domain/usecases/rewards_usecases.dart';
+import '../../../shared/adapters/courier_adapters.dart';
 import '../../../shared/adapters/order_adapters.dart';
 import '../../../shared/adapters/review_adapters.dart';
 import '../../../shared/adapters/server_order_notifier.dart';
@@ -49,6 +53,9 @@ void _registerPorts(GetIt g) {
     () => g<OrderRepository>().isRemote
         ? const ServerOrderNotifier()
         : NotificationOrderAdapter(g<PushNotification>(), demo: true),
+  );
+  g.registerLazySingleton<CourierSessionPort>(
+    () => SessionCourierAdapter(g<SessionController>()),
   );
   g.registerLazySingleton<BranchRatingPort>(
     () => CatalogRatingAdapter(g<CatalogController>()),
@@ -92,6 +99,19 @@ void _registerUseCases(GetIt g) {
   g.registerFactory<PushNotification>(
     () => PushNotification(g<NotificationRepository>(), g<Clock>()),
   );
+
+  // Repartidor: el paquete completo (para el CourierCubit) y las dos piezas
+  // que solo leen el repositorio (para la sesión, sin ciclo con el puerto).
+  g.registerFactory<CourierUseCases>(
+    () => CourierUseCases(
+      repo: g<CourierRepository>(),
+      session: g<CourierSessionPort>(),
+    ),
+  );
+  g.registerFactory<CourierQueries>(
+    () => CourierQueries(g<CourierRepository>()),
+  );
+  g.registerFactory<LoadCourier>(() => LoadCourier(g<CourierRepository>()));
 
   // Pagos: iniciar, consultar y reintentar (sin estado propio).
   g.registerFactory<StartPayment>(() => StartPayment(g<PaymentRepository>()));

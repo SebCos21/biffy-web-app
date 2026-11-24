@@ -3,6 +3,7 @@ import '../../domain/catalog_rules.dart';
 import '../../domain/order_rules.dart';
 import '../../domain/pricing.dart';
 import '../../core/utils/clock.dart';
+import '../../domain/repositories/courier_repository.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../../shared/state/catalog_controller.dart';
 import '../../shared/state/session_controller.dart';
@@ -19,6 +20,7 @@ void applyDemoSeed(
   OrderRepository orders,
   CatalogController catalog,
   Clock clock,
+  CourierRepository couriers,
 ) {
   final now = clock.now();
 
@@ -80,9 +82,10 @@ void applyDemoSeed(
   diego.favoriteDishes.addAll({'qbano-especial', 'bowl-proteico'});
   diego.favoriteRestaurants.add('qbano-icesi');
 
-  session.dataFor('u-andres')
-    ..verifiedUniversityId = 'icesi'
-    ..courierProfile = const CourierProfile(
+  session.dataFor('u-andres').verifiedUniversityId = 'icesi';
+  couriers.insertSeed(
+    'u-andres',
+    const CourierProfile(
       fullName: 'Andrés Repartidor (demo)',
       docType: 'CC',
       docNumber: '1000000003',
@@ -91,14 +94,18 @@ void applyDemoSeed(
       plate: 'ABC12D',
       universityId: 'icesi',
       contactEmail: 'andres.repartidor@demo.biffy.co',
-    );
-  session.dataFor('u-valentina').courierProfile = const CourierProfile(
-    fullName: 'Valentina Repartidora (demo)',
-    docType: 'CC',
-    docNumber: '1000000004',
-    phone: '300 000 0004',
-    vehicle: Vehicle.bicycle,
-    contactEmail: 'valentina.repartidora@demo.biffy.co',
+    ),
+  );
+  couriers.insertSeed(
+    'u-valentina',
+    const CourierProfile(
+      fullName: 'Valentina Repartidora (demo)',
+      docType: 'CC',
+      docNumber: '1000000004',
+      phone: '300 000 0004',
+      vehicle: Vehicle.bicycle,
+      contactEmail: 'valentina.repartidora@demo.biffy.co',
+    ),
   );
 
   final campusAddress = diego.addresses.first;

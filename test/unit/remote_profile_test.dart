@@ -2,8 +2,12 @@ import 'package:biffy/core/utils/clock.dart';
 import 'package:biffy/data/models/address.dart';
 import 'package:biffy/data/models/user.dart';
 import 'package:biffy/data/repositories/auth_repository.dart';
+import 'package:biffy/data/repositories/in_memory_courier_repository.dart';
 import 'package:biffy/data/repositories/in_memory_notification_repository.dart';
+import 'package:biffy/domain/repositories/courier_repository.dart';
+import 'package:biffy/domain/usecases/courier/courier_usecases.dart';
 import 'package:biffy/domain/usecases/notifications/notification_usecases.dart';
+import 'package:biffy/shared/adapters/courier_adapters.dart';
 import 'package:biffy/shared/state/session_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -28,9 +32,6 @@ class _FakeRemoteAuth implements AuthRepository {
 
   /// Últimos datos de perfil guardados.
   ({String? name, String? phone})? savedProfile;
-
-  /// Último perfil de repartidor guardado.
-  CourierProfile? savedCourier;
 
   @override
   bool get isRemote => true;
@@ -81,19 +82,11 @@ class _FakeRemoteAuth implements AuthRepository {
   Future<List<Address>> addresses(String userId) async => const [];
 
   @override
-  Future<CourierProfile?> courierProfile(String userId) async => null;
-
-  @override
   Future<String?> registerBusiness(Map<String, dynamic> payload) async => null;
 
   @override
   Future<void> saveProfile(String userId, {String? name, String? phone}) async {
     savedProfile = (name: name, phone: phone);
-  }
-
-  @override
-  Future<void> saveCourierProfile(String userId, CourierProfile profile) async {
-    savedCourier = profile;
   }
 
   @override
@@ -124,15 +117,38 @@ class _FakeRemoteAuth implements AuthRepository {
   }) async => confirmCodeResult;
 }
 
+/// Repositorio de repartidor "remoto" falso que registra el perfil guardado.
+class _FakeRemoteCourier extends InMemoryCourierRepository {
+  /// Último perfil de repartidor guardado.
+  CourierProfile? saved;
+
+  @override
+  bool get isRemote => true;
+
+  @override
+  Future<CourierResult> saveProfile(String userId, CourierProfile profile) {
+    saved = profile;
+    return super.saveProfile(userId, profile);
+  }
+}
+
 /// Crea un controlador de sesión con el repositorio remoto falso.
-SessionController _session(_FakeRemoteAuth auth) => SessionController(
-  auth,
-  NotificationUseCases(
-    repo: InMemoryNotificationRepository(),
-    clock: Clock.fixed(DateTime(2026)),
-  ),
-  Clock.fixed(DateTime(2026)),
-);
+SessionController _session(
+  _FakeRemoteAuth auth, {
+  CourierRepository? couriers,
+}) {
+  final c = couriers ?? InMemoryCourierRepository();
+  return SessionController(
+    auth,
+    NotificationUseCases(
+      repo: InMemoryNotificationRepository(),
+      clock: Clock.fixed(DateTime(2026)),
+    ),
+    Clock.fixed(DateTime(2026)),
+    couriers: CourierQueries(c),
+    loadCourier: LoadCourier(c),
+  );
+}
 
 void main() {
   group('Perfil remoto', () {
@@ -149,7 +165,8 @@ void main() {
 
     test('guardar perfil de repartidor lo persiste y activa el rol', () async {
       final auth = _FakeRemoteAuth();
-      final s = _session(auth)..loginAs(auth.user);
+      final couriers = _FakeRemoteCourier();
+      final s = _session(auth, couriers: couriers)..loginAs(auth.user);
       const profile = CourierProfile(
         fullName: 'Ana Repartidora',
         docType: 'CC',
@@ -159,10 +176,15 @@ void main() {
         contactEmail: 'ana@icesi.edu.co',
       );
 
-      await s.saveCourierProfile(profile);
+      // Antes: s.saveCourierProfile; ahora el caso de uso del módulo
+      // repartidor, conectado a la sesión por su adaptador.
+      final result = await RegisterCourier(couriers, SessionCourierAdapter(s))(
+        profile,
+      );
 
-      expect(auth.savedCourier?.fullName, 'Ana Repartidora');
-      expect(auth.savedCourier?.vehicle, Vehicle.bicycle);
+      expect(result.ok, isTrue);
+      expect(couriers.saved?.fullName, 'Ana Repartidora');
+      expect(couriers.saved?.vehicle, Vehicle.bicycle);
       expect(s.activeRole, UserRole.courier);
       expect(s.hasCourierProfile, isTrue);
     });

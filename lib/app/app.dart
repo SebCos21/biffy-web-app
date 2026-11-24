@@ -9,6 +9,7 @@ import '../features/orders/bloc/orders_bloc.dart';
 import '../features/buyer/cart/bloc/cart_cubit.dart';
 import '../shared/state/catalog_controller.dart';
 import '../shared/state/controller_scope.dart';
+import '../features/courier/bloc/courier_cubit.dart';
 import '../features/notifications/bloc/notifications_bloc.dart';
 import '../shared/state/session_controller.dart';
 import 'di/injection.dart';
@@ -97,6 +98,7 @@ class _BiffyAppState extends State<BiffyApp> {
           BlocProvider<NotificationsBloc>.value(
             value: getIt<NotificationsBloc>(),
           ),
+          BlocProvider<CourierCubit>.value(value: getIt<CourierCubit>()),
         ],
         child: _DarkModeBuilder(
           session: getIt<SessionController>(),

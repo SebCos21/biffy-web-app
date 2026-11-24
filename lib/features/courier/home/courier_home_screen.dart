@@ -9,6 +9,7 @@ import '../../../data/models/user.dart';
 import '../../../domain/order_rules.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
+import '../bloc/courier_cubit.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../offers/offer_widgets.dart';
@@ -29,8 +30,9 @@ class CourierHomeScreen extends StatelessWidget {
     final now = getIt<CatalogController>().now;
     final t = Theme.of(context).textTheme;
     final u = session.user!;
-    final d = session.data;
-    final profile = d.courierProfile!;
+    final courier = context.watch<CourierCubit>();
+    final st = courier.statusOf(u.id);
+    final profile = st.profile!;
     final active = orders.activeForCourier(u.id);
     final today = orders
         .deliveredBy(u.id)
@@ -38,7 +40,7 @@ class CourierHomeScreen extends StatelessWidget {
     final earnings = computeEarnings(today);
     final offers = orders.availableOffers(
       courierId: u.id,
-      zone: d.courierZone,
+      zone: st.zone,
       universityId: session.verifiedUniversityId,
       vehicle: profile.vehicle,
     );
@@ -83,7 +85,7 @@ class CourierHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             BiffyCard(
-              color: d.courierOnline
+              color: st.online
                   ? AppColors.success.withValues(alpha: 0.12)
                   : null,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -91,19 +93,19 @@ class CourierHomeScreen extends StatelessWidget {
                 key: const Key('courier-online'),
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  d.courierOnline ? 'CONECTADO' : 'DESCONECTADO',
+                  st.online ? 'CONECTADO' : 'DESCONECTADO',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: d.courierOnline ? AppColors.success : null,
+                    color: st.online ? AppColors.success : null,
                   ),
                 ),
                 subtitle: Text(
-                  d.courierOnline
+                  st.online
                       ? 'Recibes ofertas de pedidos listos'
                       : 'Conéctate para ver ofertas',
                 ),
-                value: d.courierOnline,
-                onChanged: (v) => session.setCourierOnline(v),
+                value: st.online,
+                onChanged: (v) => courier.setOnline(v),
               ),
             ),
             const SizedBox(height: 12),
@@ -120,15 +122,10 @@ class CourierHomeScreen extends StatelessWidget {
                         label: z == CourierZone.general
                             ? '🛵 General'
                             : '🎓 Campus${session.isVerifiedStudent ? '' : ' 🔒'}',
-                        selected: d.courierZone == z,
+                        selected: st.zone == z,
                         onTap: () {
-                          if (!session.setCourierZone(z)) {
-                            showSnack(
-                              context,
-                              'El modo Campus requiere universidad verificada (simulada)',
-                              error: true,
-                            );
-                          }
+                          final r = courier.setZone(z);
+                          if (!r.ok) showSnack(context, r.message, error: true);
                         },
                       ),
                     ),
@@ -187,7 +184,7 @@ class CourierHomeScreen extends StatelessWidget {
             ),
             const SectionHeader('Demanda cerca de ti'),
             DemandMap(
-              labels: d.courierZone == CourierZone.campus
+              labels: st.zone == CourierZone.campus
                   ? const ['Plazoleta', 'Biblioteca', 'Edificio D']
                   : const ['Campus Icesi', 'Pance', 'Chapinero'],
             ),
@@ -230,15 +227,15 @@ class CourierHomeScreen extends StatelessWidget {
               ),
             ],
             SectionHeader(
-              'Pedidos disponibles${d.courierOnline ? ' (${offers.length})' : ''}',
+              'Pedidos disponibles${st.online ? ' (${offers.length})' : ''}',
             ),
-            if (!d.courierOnline)
+            if (!st.online)
               EmptyState(
                 emoji: '😴',
                 title: 'Estás desconectado',
                 body: 'Conéctate para recibir ofertas.',
                 actionLabel: 'Conectarme',
-                onAction: () => session.setCourierOnline(true),
+                onAction: () => courier.setOnline(true),
               )
             else if (active != null)
               Text(
@@ -251,22 +248,16 @@ class CourierHomeScreen extends StatelessWidget {
                 title: 'No hay ofertas en este momento',
                 body:
                     'Las ofertas aparecen cuando un restaurante marca un pedido como listo.',
-                actionLabel: d.courierZone == CourierZone.campus
+                actionLabel: st.zone == CourierZone.campus
                     ? 'Cambiar a General'
                     : 'Ver modo Campus',
                 onAction: () {
-                  final ok = session.setCourierZone(
-                    d.courierZone == CourierZone.campus
+                  final r = courier.setZone(
+                    st.zone == CourierZone.campus
                         ? CourierZone.general
                         : CourierZone.campus,
                   );
-                  if (!ok) {
-                    showSnack(
-                      context,
-                      'El modo Campus requiere universidad verificada',
-                      error: true,
-                    );
-                  }
+                  if (!r.ok) showSnack(context, r.message, error: true);
                 },
               )
             else

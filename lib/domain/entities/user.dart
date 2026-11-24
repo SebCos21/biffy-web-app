@@ -189,10 +189,6 @@ class UserData {
   String? universityEmail;
   DateTime? verificationExpiresAt;
 
-  CourierProfile? courierProfile;
-  bool courierOnline = false;
-  CourierZone courierZone = CourierZone.general;
-
   Address? get defaultAddress {
     for (final a in addresses) {
       if (a.id == defaultAddressId) return a;

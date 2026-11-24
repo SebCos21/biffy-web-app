@@ -6,6 +6,7 @@ import '../../../data/repositories/catalog_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
 import '../../../domain/repositories/profile_repository.dart';
+import '../../../domain/usecases/courier/courier_usecases.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
 import '../../../domain/usecases/merchant_boxes_usecases.dart';
 import '../../../domain/usecases/notifications/notification_usecases.dart';
@@ -24,6 +25,7 @@ import '../../../features/buyer/tracking/rate_order_cubit.dart';
 import '../../../features/auth/bloc/login_cubit.dart';
 import '../../../features/auth/bloc/register_cubit.dart';
 import '../../../features/auth/bloc/university_verification_cubit.dart';
+import '../../../features/courier/bloc/courier_cubit.dart';
 import '../../../features/courier/earnings/earnings_cubit.dart';
 import '../../../features/notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
@@ -33,8 +35,9 @@ import '../../../shared/state/session_controller.dart';
 
 /// Módulo de presentación: estado que consumen las pantallas.
 ///
-/// - Controladores (`ChangeNotifier`, aún sin migrar), `OrdersBloc` y
-///   `NotificationsBloc`: un solo objeto para toda la app (`LazySingleton`).
+/// - Controladores (`ChangeNotifier`, aún sin migrar), `OrdersBloc`,
+///   `NotificationsBloc` y `CourierCubit`: un solo objeto para toda la app
+///   (`LazySingleton`).
 /// - Cubits de una pantalla: `Factory`, uno nuevo cada vez que se abre.
 void registerPresentationModule(GetIt g) {
   _registerControllers(g);
@@ -51,6 +54,8 @@ void _registerControllers(GetIt g) {
       g<AuthRepository>(),
       g<NotificationUseCases>(),
       g<Clock>(),
+      couriers: g<CourierQueries>(),
+      loadCourier: g<LoadCourier>(),
       profile: _optional<ProfileRepository>(g),
     ),
   );
@@ -69,6 +74,10 @@ void _registerBlocs(GetIt g) {
   g.registerLazySingleton<OrdersBloc>(
     () => OrdersBloc(g<OrderUseCases>()),
     dispose: (bloc) => bloc.close(),
+  );
+  g.registerLazySingleton<CourierCubit>(
+    () => CourierCubit(g<CourierUseCases>()),
+    dispose: (cubit) => cubit.close(),
   );
   g.registerLazySingleton<NotificationsBloc>(
     () => NotificationsBloc(g<NotificationUseCases>()),

@@ -67,17 +67,11 @@ abstract class AuthRepository {
   /// Direcciones guardadas del usuario (vacío en la demo).
   Future<List<Address>> addresses(String userId);
 
-  /// Perfil de repartidor (solo rol `courier`). `null` en la demo.
-  Future<CourierProfile?> courierProfile(String userId);
-
   /// Crea el negocio y sus sedes del usuario autenticado.
   Future<String?> registerBusiness(Map<String, dynamic> payload);
 
   /// Guarda nombre y teléfono del perfil en el backend.
   Future<void> saveProfile(String userId, {String? name, String? phone});
-
-  /// Guarda el perfil de repartidor del usuario en el backend.
-  Future<void> saveCourierProfile(String userId, CourierProfile profile);
 
   /// Verifica el correo universitario contra el backend y devuelve su código.
   Future<String?> verifyUniversity(String universityId, String email);

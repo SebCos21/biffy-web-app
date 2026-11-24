@@ -6,17 +6,20 @@ import '../../../core/utils/clock.dart';
 import '../../../data/mock/seed_users.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/catalog_repository.dart';
+import '../../../data/repositories/in_memory_courier_repository.dart';
 import '../../../data/repositories/in_memory_notification_repository.dart';
 import '../../../data/repositories/in_memory_order_repository.dart';
 import '../../../data/repositories/in_memory_payment_repository.dart';
 import '../../../data/repositories/review_repository_impl.dart';
 import '../../../data/repositories/supabase_auth_repository.dart';
 import '../../../data/repositories/supabase_catalog_repository.dart';
+import '../../../data/repositories/supabase_courier_repository.dart';
 import '../../../data/repositories/supabase_notification_repository.dart';
 import '../../../data/repositories/supabase_order_repository.dart';
 import '../../../data/repositories/supabase_payment_repository.dart';
 import '../../../data/repositories/supabase_profile_repository.dart';
 import '../../../data/repositories/supabase_rewards_repository.dart';
+import '../../../domain/repositories/courier_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/notification_repository.dart';
 import '../../../domain/repositories/order_repository.dart';
@@ -53,6 +56,12 @@ void _registerInMemory(GetIt g) {
   g.registerLazySingleton<ReviewRepository>(
     () => InMemoryReviewRepository(g<OrderRepository>()),
   );
+  g.registerLazySingleton<CourierRepository>(
+    InMemoryCourierRepository.new,
+    dispose: (repo) {
+      if (repo is InMemoryCourierRepository) repo.dispose();
+    },
+  );
   g.registerLazySingleton<NotificationRepository>(
     InMemoryNotificationRepository.new,
     dispose: (repo) {
@@ -88,6 +97,12 @@ void _registerSupabase(GetIt g) {
     dispose: (repo) => repo.dispose(),
   );
   g.registerLazySingleton<ProfileRepository>(SupabaseProfileRepository.new);
+  g.registerLazySingleton<CourierRepository>(
+    SupabaseCourierRepository.new,
+    dispose: (repo) {
+      if (repo is SupabaseCourierRepository) repo.dispose();
+    },
+  );
   g.registerLazySingleton<NotificationRepository>(
     SupabaseNotificationRepository.new,
     dispose: (repo) {

@@ -1,4 +1,6 @@
+import 'package:biffy/app/di/injection.dart';
 import 'package:biffy/data/models/order.dart';
+import 'package:biffy/features/courier/bloc/courier_cubit.dart';
 import 'package:biffy/domain/order_rules.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -94,7 +96,7 @@ Future<void> runFullOrderFlow(WidgetTester tester, TestServices s) async {
     s.orders
         .availableOffers(
           courierId: 'u-andres',
-          zone: s.session.data.courierZone,
+          zone: getIt<CourierCubit>().statusOf('u-andres').zone,
         )
         .map((o) => o.id),
     contains(order.id),
@@ -120,7 +122,7 @@ Future<void> runFullOrderFlow(WidgetTester tester, TestServices s) async {
     s.orders
         .availableOffers(
           courierId: 'u-valentina',
-          zone: s.session.data.courierZone,
+          zone: getIt<CourierCubit>().statusOf('u-valentina').zone,
         )
         .map((o) => o.id),
     isNot(contains(order.id)),

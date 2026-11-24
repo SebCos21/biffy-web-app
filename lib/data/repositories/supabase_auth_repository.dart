@@ -145,49 +145,6 @@ class SupabaseAuthRepository implements AuthRepository {
     }
   }
 
-  /// Lee el perfil de repartidor del usuario.
-  @override
-  Future<CourierProfile?> courierProfile(String userId) async {
-    try {
-      final row = await _client
-          .from('courier_profiles')
-          .select(
-            'full_name, doc_type, doc_number, phone, vehicle, plate, university_id',
-          )
-          .eq('user_id', userId)
-          .maybeSingle();
-      if (row == null) return null;
-      return CourierProfile(
-        fullName: (row['full_name'] as String?) ?? '',
-        docType: (row['doc_type'] as String?) ?? 'CC',
-        docNumber: (row['doc_number'] as String?) ?? '',
-        phone: (row['phone'] as String?) ?? '',
-        vehicle: _vehicle(row['vehicle'] as String?),
-        plate: row['plate'] as String?,
-        universityId: row['university_id'] as String?,
-        contactEmail: _cache[userId]?.email ?? '',
-      );
-    } on Object {
-      return null;
-    }
-  }
-
-  /// Traduce el vehículo guardado a su enum.
-  static Vehicle _vehicle(String? value) => switch (value) {
-    'bicycle' => Vehicle.bicycle,
-    'scooter' => Vehicle.scooter,
-    'walking' => Vehicle.walking,
-    _ => Vehicle.moto,
-  };
-
-  /// Traduce el vehículo del perfil al valor de la base.
-  static String _vehicleValue(Vehicle value) => switch (value) {
-    Vehicle.bicycle => 'bicycle',
-    Vehicle.scooter => 'scooter',
-    Vehicle.walking => 'walking',
-    Vehicle.moto => 'moto',
-  };
-
   /// Mensaje en español para los códigos de `register_business`.
   static String _businessMessage(Object? result) => switch (result) {
     'not_authenticated' => 'Inicia sesión para registrar tu negocio.',
@@ -238,27 +195,6 @@ class SupabaseAuthRepository implements AuthRepository {
       }
     } on Object {
       throw AuthException('No pudimos guardar tus datos. Intenta de nuevo.');
-    }
-  }
-
-  /// Crea o actualiza la fila de `courier_profiles` del usuario.
-  @override
-  Future<void> saveCourierProfile(String userId, CourierProfile profile) async {
-    try {
-      await _client.from('courier_profiles').upsert({
-        'user_id': userId,
-        'full_name': profile.fullName,
-        'doc_type': profile.docType,
-        'doc_number': profile.docNumber,
-        'phone': profile.phone,
-        'vehicle': _vehicleValue(profile.vehicle),
-        'plate': profile.plate,
-        'university_id': profile.universityId,
-      });
-    } on Object {
-      throw AuthException(
-        'No pudimos guardar tu perfil de repartidor. Intenta de nuevo.',
-      );
     }
   }
 

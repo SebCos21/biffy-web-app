@@ -125,10 +125,6 @@ class InMemoryAuthRepository implements AuthRepository {
   @override
   Future<List<Address>> addresses(String userId) async => const [];
 
-  /// Perfil de repartidor: no aplica en la demo.
-  @override
-  Future<CourierProfile?> courierProfile(String userId) async => null;
-
   @override
   Future<String?> registerBusiness(Map<String, dynamic> payload) async =>
       throw AuthException('El alta de negocios necesita Supabase.');
@@ -140,13 +136,6 @@ class InMemoryAuthRepository implements AuthRepository {
     String? name,
     String? phone,
   }) async {}
-
-  /// La demo guarda el perfil de repartidor solo en memoria.
-  @override
-  Future<void> saveCourierProfile(
-    String userId,
-    CourierProfile profile,
-  ) async {}
 
   /// La verificación universitaria de la demo es local.
   @override

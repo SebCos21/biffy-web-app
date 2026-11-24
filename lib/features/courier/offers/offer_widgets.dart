@@ -10,6 +10,7 @@ import '../../../shared/state/catalog_controller.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
+import '../bloc/courier_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Describe el pago del pedido tal como lo ve el repartidor.
@@ -24,7 +25,11 @@ Future<void> acceptOffer(BuildContext context, Order o) async {
     OfferAccepted(
       o.id,
       session.user!,
-      vehicle: session.data.courierProfile?.vehicle,
+      vehicle: context
+          .read<CourierCubit>()
+          .statusOf(session.user!.id)
+          .profile
+          ?.vehicle,
     ),
   );
   if (!context.mounted) return;

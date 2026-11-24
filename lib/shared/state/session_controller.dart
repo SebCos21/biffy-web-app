@@ -7,6 +7,7 @@ import '../../data/models/catalog.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/repositories/profile_repository.dart';
+import '../../domain/usecases/courier/courier_usecases.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
 
 /// Beneficio canjeable con Gotas (valores de demostración).
@@ -79,8 +80,12 @@ class SessionController extends ChangeNotifier {
     this._auth,
     this._notifications,
     this._clock, {
+    required CourierQueries couriers,
+    required LoadCourier loadCourier,
     ProfileRepository? profile,
-  }) : _profile = profile; // ignore: prefer_initializing_formals
+  }) : _couriers = couriers, // ignore: prefer_initializing_formals
+       _loadCourier = loadCourier, // ignore: prefer_initializing_formals
+       _profile = profile; // ignore: prefer_initializing_formals
 
   final AuthRepository _auth;
 
@@ -88,6 +93,11 @@ class SessionController extends ChangeNotifier {
   // de notificaciones hasta que el AuthBloc la reemplace (módulo 6).
   final NotificationUseCases _notifications;
   final Clock _clock;
+
+  // TODO(puente): la sesión lee el perfil de repartidor (router) y lo carga al
+  // iniciar sesión hasta que el AuthBloc la reemplace (módulo 6).
+  final CourierQueries _couriers;
+  final LoadCourier _loadCourier;
 
   /// Repositorio de datos personales; null en modo demo.
   final ProfileRepository? _profile;
@@ -153,7 +163,7 @@ class SessionController extends ChangeNotifier {
   String get pointId => _pointId;
 
   /// `true` si el usuario ya registró perfil de repartidor.
-  bool get hasCourierProfile => data.courierProfile != null;
+  bool get hasCourierProfile => _couriers.hasProfile(_user?.id);
 
   /// Negocio vinculado a la cuenta, si es restaurante.
   String? get businessId => _user?.businessId;
@@ -349,7 +359,7 @@ class SessionController extends ChangeNotifier {
     // Las tres lecturas base van en paralelo.
     final balanceF = _auth.gotasBalance(u.id);
     final savedF = _auth.addresses(u.id);
-    final courierF = _auth.courierProfile(u.id);
+    final courierF = _loadCourier(u.id, contactEmail: u.email);
 
     final balance = await balanceF;
     final saved = await savedF;
@@ -369,15 +379,9 @@ class SessionController extends ChangeNotifier {
       _pointId = saved.first.pointId;
     }
 
-    // Perfil de repartidor: evita pedirle el registro a una cuenta que ya lo tiene.
-    final courier = await courierF;
-    if (courier != null) {
-      d.courierProfile = courier;
-      d.courierOnline = true;
-      d.courierZone = courier.universityId == null
-          ? CourierZone.general
-          : CourierZone.campus;
-    }
+    // Perfil de repartidor: evita pedirle el registro a una cuenta que ya lo
+    // tiene (si existe, queda conectada y en su zona).
+    await courierF;
 
     // Preferencias, ajustes y favoritos del usuario (en paralelo).
     final profile = _profile;
@@ -883,33 +887,13 @@ class SessionController extends ChangeNotifier {
 
   // ------------------------------------------------------- Repartidor
 
-  /// Guarda el perfil de repartidor (local y remoto) y activa ese rol.
-  Future<void> saveCourierProfile(CourierProfile p) async {
-    data.courierProfile = p;
-    if (_user != null && p.phone.isNotEmpty && _user!.phone.isEmpty) {
-      _user!.phone = p.phone;
+  /// Pasa al rol repartidor tras registrarse; si la cuenta no tenía teléfono
+  /// guarda el del registro. Lo llama el adaptador de `RegisterCourier`.
+  void activateCourierRole({required String phone}) {
+    if (_user != null && phone.isNotEmpty && _user!.phone.isEmpty) {
+      _user!.phone = phone;
     }
     _activeRole = UserRole.courier;
     notifyListeners();
-
-    final u = _user;
-    if (u != null && _auth.isRemote) {
-      await _auth.saveCourierProfile(u.id, p);
-    }
-  }
-
-  /// Cambia la disponibilidad del repartidor.
-  void setCourierOnline(bool online) {
-    if (!hasCourierProfile) return;
-    data.courierOnline = online;
-    notifyListeners();
-  }
-
-  /// El modo Campus exige universidad verificada (simulación).
-  bool setCourierZone(CourierZone zone) {
-    if (zone == CourierZone.campus && !isVerifiedStudent) return false;
-    data.courierZone = zone;
-    notifyListeners();
-    return true;
   }
 }

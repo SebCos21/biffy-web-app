@@ -1,5 +1,6 @@
 import 'package:biffy/data/models/user.dart';
 import 'package:biffy/data/repositories/supabase_auth_repository.dart';
+import 'package:biffy/data/repositories/supabase_courier_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -101,8 +102,9 @@ void main() {
         await expectProfile(client, 'courier');
 
         final id = client.auth.currentUser!.id;
-        final repo = SupabaseAuthRepository(client: client);
-        await repo.saveCourierProfile(
+        // El perfil de repartidor ahora vive en su propio repositorio.
+        final repo = SupabaseCourierRepository(client: client);
+        final saved = await repo.saveProfile(
           id,
           const CourierProfile(
             fullName: 'QA HU-1',
@@ -113,6 +115,8 @@ void main() {
             contactEmail: 'hu1.qa.repartidor@demo.biffy.co',
           ),
         );
+        // Antes un fallo lanzaba excepción; ahora vuelve como resultado.
+        expect(saved.ok, isTrue, reason: saved.message);
 
         final row = await client
             .from('courier_profiles')

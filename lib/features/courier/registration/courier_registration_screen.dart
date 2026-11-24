@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/catalog_constants.dart';
@@ -6,6 +7,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/user.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
+import '../bloc/courier_cubit.dart';
 
 /// Placa colombiana de moto: 3 letras, 2 números y 1 letra (p. ej. ABC12D).
 bool isValidMotoPlate(String v) =>
@@ -25,7 +27,9 @@ class CourierRegistrationScreen extends StatefulWidget {
 class _CourierRegistrationScreenState extends State<CourierRegistrationScreen> {
   final _form = GlobalKey<FormState>();
   late final SessionController _s = getIt<SessionController>();
-  late final CourierProfile? _p = _s.data.courierProfile;
+  late final CourierProfile? _p = _s.user == null
+      ? null
+      : getIt<CourierCubit>().statusOf(_s.user!.id).profile;
   late final _name = TextEditingController(text: _p?.fullName ?? _s.user?.name);
   late final _doc = TextEditingController(text: _p?.docNumber);
   late final _phone = TextEditingController(text: _p?.phone ?? _s.user?.phone);
@@ -203,27 +207,25 @@ class _CourierRegistrationScreenState extends State<CourierRegistrationScreen> {
                 label: 'Guardar y empezar',
                 onPressed: () async {
                   if (!_form.currentState!.validate()) return;
-                  try {
-                    await _s.saveCourierProfile(
-                      CourierProfile(
-                        fullName: _name.text.trim(),
-                        docType: _docType,
-                        docNumber: _doc.text.trim(),
-                        phone: _phone.text.trim(),
-                        vehicle: _vehicle,
-                        plate: _vehicle == Vehicle.moto
-                            ? _plate.text.trim().toUpperCase()
-                            : null,
-                        universityId: _uni,
-                        contactEmail: _email.text.trim(),
-                      ),
-                    );
-                  } on Object catch (e) {
-                    if (!context.mounted) return;
-                    showSnack(context, '$e', error: true);
+                  final result = await context.read<CourierCubit>().register(
+                    CourierProfile(
+                      fullName: _name.text.trim(),
+                      docType: _docType,
+                      docNumber: _doc.text.trim(),
+                      phone: _phone.text.trim(),
+                      vehicle: _vehicle,
+                      plate: _vehicle == Vehicle.moto
+                          ? _plate.text.trim().toUpperCase()
+                          : null,
+                      universityId: _uni,
+                      contactEmail: _email.text.trim(),
+                    ),
+                  );
+                  if (!context.mounted) return;
+                  if (!result.ok) {
+                    showSnack(context, result.message, error: true);
                     return;
                   }
-                  if (!context.mounted) return;
                   showSnack(context, 'Datos de repartidor guardados');
                   context.go('/repartidor');
                 },

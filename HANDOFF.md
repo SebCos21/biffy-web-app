@@ -389,6 +389,8 @@ Orden sugerido. Cada punto tiene criterio de aceptación.
 | Datos de prueba | Existe el pedido `BF-2041` entregado y `legacy_gotas_rewards` (tabla antigua conservada y bloqueada). |
 | Confirmación de correo | Desactivada a propósito. Al publicar hay que activarla. |
 | Registro abierto | `disable_signup = false`: cualquiera con la URL y la clave publicable puede crear cuenta. Es aceptable en demo, no en producción. |
+| Disponibilidad y zona del repartidor | Límite conocido (HU-2): `CourierRepository.setOnline/setZone` son **locales en los dos modos**; no se guardan en Supabase. Al iniciar sesión con servidor, una cuenta con `courier_profiles` queda conectada y en zona Campus si su perfil tiene universidad. Solo el perfil se persiste. |
+| Avisos creados por la app | Límite conocido (HU-2): la escritura de `SupabaseNotificationRepository.push` en `notifications` (avisos `user:<id>`) **no tiene test automático**; la caché, `load`, `markRead` y la regla de visibilidad sí están probadas. |
 
 ---
 

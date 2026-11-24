@@ -1,4 +1,6 @@
+import 'package:biffy/app/di/injection.dart';
 import 'package:biffy/core/constants/catalog_constants.dart';
+import 'package:biffy/features/courier/bloc/courier_cubit.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:biffy/data/models/user.dart';
 import 'package:biffy/data/repositories/auth_repository.dart';
@@ -140,8 +142,10 @@ void main() {
 
     test('modo Campus del repartidor requiere verificación', () {
       s.login(kDemoCourier2Email, kDemoPassword);
-      expect(s.setCourierZone(CourierZone.campus), isFalse);
-      expect(s.setCourierZone(CourierZone.general), isTrue);
+      // La zona ahora la cambia el CourierCubit (antes s.setCourierZone).
+      final courier = getIt<CourierCubit>();
+      expect(courier.setZone(CourierZone.campus).ok, isFalse);
+      expect(courier.setZone(CourierZone.general).ok, isTrue);
     });
   });
 }

@@ -1,4 +1,5 @@
 import '../../data/mock/seed_state.dart';
+import '../../domain/repositories/courier_repository.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../../shared/state/catalog_controller.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
@@ -32,6 +33,7 @@ void bootstrapDemo({bool seedData = true}) {
       getIt<OrderRepository>(),
       getIt<CatalogController>(),
       getIt<Clock>(),
+      getIt<CourierRepository>(),
     );
   }
   getIt<PushNotification>()(
