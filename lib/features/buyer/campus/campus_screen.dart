@@ -11,6 +11,7 @@ import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/controller_scope.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../orders/bloc/orders_bloc.dart';
+import '../../../app/di/injection.dart';
 
 /// Campus Live: restaurantes de la universidad y verificación del correo
 /// institucional con un código enviado por correo.
@@ -36,7 +37,7 @@ class _CampusScreenState extends State<CampusScreen> {
   @override
   void initState() {
     super.initState();
-    _email.text = context.read<SessionController>().data.universityEmail ?? '';
+    _email.text = getIt<SessionController>().data.universityEmail ?? '';
   }
 
   /// Libera los controladores del correo y del código.

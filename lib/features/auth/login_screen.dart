@@ -8,6 +8,7 @@ import '../../data/mock/seed_users.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../shared/state/session_controller.dart';
+import '../../shared/state/controller_scope.dart';
 import '../../app/di/injection.dart';
 
 /// Navega tras iniciar sesión: retoma la ruta de origen o el panel del rol.
@@ -100,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final remote = context.watch<SessionController>().auth.isRemote;
+    final remote = context.watchController<SessionController>().auth.isRemote;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(

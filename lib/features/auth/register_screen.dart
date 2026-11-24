@@ -6,6 +6,7 @@ import '../../core/widgets/ui.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../shared/state/session_controller.dart';
+import '../../shared/state/controller_scope.dart';
 import 'login_screen.dart';
 import '../../app/di/injection.dart';
 
@@ -77,7 +78,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final remote = context.watch<SessionController>().auth.isRemote;
+    final remote = context.watchController<SessionController>().auth.isRemote;
     return Scaffold(
       appBar: AppBar(title: const Text('Crear cuenta')),
       body: MobileFrame(
