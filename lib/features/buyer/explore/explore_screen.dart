@@ -5,6 +5,7 @@ import '../../../core/constants/catalog_constants.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/actions.dart';
 import '../../../core/widgets/catalog_cards.dart';
+import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
 import '../../../domain/catalog_rules.dart';
@@ -136,6 +137,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         bottom: false,
         child: CustomScrollView(
           slivers: [
+            const SliverToBoxAdapter(child: OfflineBanner()),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),

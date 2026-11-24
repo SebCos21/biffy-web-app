@@ -148,3 +148,53 @@ begin
   raise notice 'Biffy OK · % tablas · % políticas RLS · % funciones en public',
     v_tables, v_policies, v_functions;
 end $$;
+
+-- ============================================================================
+-- >>> HU-2 · Catálogo en tiempo real (0028_catalog_hu2.sql) >>>
+-- Bloque independiente: al integrar otra rama que también agregue chequeos a
+-- este archivo, conservar los dos bloques completos.
+-- ============================================================================
+do $$
+declare
+  v_table text;
+begin
+  if not exists (
+    select 1 from pg_tables
+    where schemaname = 'public' and tablename = 'catalog_revision'
+  ) then
+    raise exception 'Falta la tabla public.catalog_revision; revisa 0028_catalog_hu2.sql';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'bump_catalog_revision'
+  ) then
+    raise exception 'Falta la función public.bump_catalog_revision; revisa 0028_catalog_hu2.sql';
+  end if;
+
+  foreach v_table in array array['branches', 'dishes', 'dish_options'] loop
+    if not exists (
+      select 1
+      from pg_trigger t
+      join pg_class c on c.oid = t.tgrelid
+      join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public'
+        and c.relname = v_table
+        and t.tgname = 'bump_catalog_revision'
+    ) then
+      raise exception 'Falta el trigger bump_catalog_revision en public.%', v_table;
+    end if;
+  end loop;
+
+  -- Borrado lógico obligatorio: los usuarios no pueden hacer DELETE.
+  foreach v_table in array array['businesses', 'branches', 'dishes'] loop
+    if has_table_privilege('authenticated', 'public.' || v_table, 'DELETE') then
+      raise exception 'authenticated no debe tener DELETE sobre public.%', v_table;
+    end if;
+  end loop;
+
+  raise notice 'HU-2 OK · catalog_revision, triggers y borrado lógico';
+end $$;
+-- <<< fin HU-2 <<<

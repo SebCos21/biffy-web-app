@@ -171,6 +171,8 @@ supabase/
     hu1_university.sql            # código, verificación, revalidación y revocación
     hu5_payments.sql              # pagos, gating, efectivo, rechazo y expiración
     hu4_*.sql                     # pruebas de RLS y RPC de HU-4 (con ROLLBACK)
+    editor/
+      hu2_rls.sql                 # RLS del catálogo entre comercios (a mano en el SQL Editor, no en CI)
 ```
 
 > `apply_all.sql` se regenera concatenando `migrations/*.sql`. No se edita a
@@ -238,6 +240,13 @@ Decisiones pensadas para no volver a tocar la base:
   `order_json`) **no son llamables por clientes**.
 - Storage: `dish-images` público; `delivery-evidence` y `merchant-docs`
   privados por carpeta (pedido / negocio).
+- Catálogo con borrado lógico obligatorio (0028): `authenticated` no tiene
+  `DELETE` sobre `businesses`, `branches` ni `dishes`; se marca `deleted_at`.
+- `catalog_revision` (0028) sube con cada cambio de sedes, platos u opciones
+  para que Realtime avise también de filas que RLS oculta; es de solo lectura.
+- `dish-images` (0028): máx. 5 MiB, solo JPEG/PNG/WebP, y renombrar exige que
+  el destino siga en la carpeta del propio negocio. Prueba:
+  `supabase/tests/editor/hu2_rls.sql` (a mano en el SQL Editor).
 - Gotas: `gotas_ledger` es la única fuente del saldo. El cliente no puede
   insertar, editar ni borrar movimientos; `credit_gotas` solo la llaman los RPC
   y falla si el saldo quedaría negativo, así `profiles.gotas` siempre es la
@@ -353,6 +362,14 @@ existente; así corre en el CI (job `sql-tests`).
 | `hu4_resenas.sql` | solo pedidos propios entregados, una vez, promedio de la sede |
 | `hu4_notificaciones.sql` | avisos por rol en cada estado, privacidad y `read_at` |
 | `hu1_university.sql` | código de 6 dígitos, verificación, revalidación y revocación de Campus |
+
+**Prueba que se corre a mano (no en CI):** `supabase/tests/editor/hu2_rls.sql`
+(RLS del catálogo entre comercios, HU-2). Requiere `0028_catalog_hu2.sql`
+aplicada. Supabase Dashboard → SQL Editor → pegar todo → Run; corre en
+`begin … rollback` y termina con el aviso `OK n` (un fallo se detiene con
+`FALLO: …`). No está en `supabase/tests/hu*.sql` porque usa columnas reales de
+`auth.users` y `request.jwt.claims`, que los stubs de `tool/test_supabase_sql.sh`
+no tienen.
 
 ## Cuentas demo
 

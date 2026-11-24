@@ -1,53 +1,93 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import '../models/business.dart';
 import '../models/catalog.dart';
 import 'catalog_repository.dart';
+import 'catalog_snapshot.dart';
 
-/// Catálogo real: hidrata una caché en memoria al arrancar y la refresca con
-/// Realtime. Así las pantallas siguen leyendo de forma síncrona.
-///
-/// Las escrituras de comercio llegan en la fase 2d; por ahora se aplican solo
-/// en la caché local.
-class SupabaseCatalogRepository implements CatalogRepository {
-  /// Constructor privado: usar [load].
-  SupabaseCatalogRepository._(this._client);
+/// Fuente de filas del catálogo (la red en producción, un doble en pruebas).
+typedef CatalogRowsSource = Future<CatalogRows> Function();
+
+/// Catálogo real: hidrata una caché en memoria al arrancar, la refresca con
+/// Realtime y guarda una copia en disco para abrir el menú sin conexión. Así
+/// las pantallas siguen leyendo de forma síncrona.
+class SupabaseCatalogRepository
+    implements CatalogRepository, CatalogSyncStatus {
+  /// Constructor privado: usar [load] o [SupabaseCatalogRepository.forTest].
+  SupabaseCatalogRepository._(this._client, this._cache, this._source);
 
   /// Carga la caché, se suscribe a Realtime y devuelve el repositorio.
-  static Future<SupabaseCatalogRepository> load({sb.SupabaseClient? client}) async {
+  static Future<SupabaseCatalogRepository> load({
+    sb.SupabaseClient? client,
+    CatalogCache? cache,
+  }) async {
     final repo = SupabaseCatalogRepository._(
       client ?? sb.Supabase.instance.client,
+      cache ?? SharedPrefsCatalogCache(),
+      null,
     );
     await repo.refresh();
     repo._subscribe();
     return repo;
   }
 
-  final sb.SupabaseClient _client;
+  /// Repositorio sin cliente ni Realtime que lee de [source] (para pruebas).
+  @visibleForTesting
+  factory SupabaseCatalogRepository.forTest({
+    required CatalogRowsSource source,
+    CatalogCache? cache,
+  }) =>
+      SupabaseCatalogRepository._(null, cache ?? MemoryCatalogCache(), source);
+
+  final sb.SupabaseClient? _client;
+  final CatalogCache _cache;
+  final CatalogRowsSource? _source;
   final _changes = StreamController<void>.broadcast();
 
   final List<Business> _businesses = [];
   final List<Restaurant> _restaurants = [];
   final List<Dish> _dishes = [];
 
+  bool _offline = false;
+  DateTime? _lastSync;
+  bool _triedDiskCopy = false;
+
   sb.RealtimeChannel? _channel;
   StreamSubscription<sb.AuthState>? _authSub;
+  Timer? _reloadTimer;
+
+  /// Espera para agrupar varios eventos de Realtime en una sola recarga.
+  static const _debounce = Duration(milliseconds: 300);
+
+  /// Cliente de Supabase; solo falta en el repositorio de pruebas.
+  sb.SupabaseClient get _db =>
+      _client ?? (throw StateError('Repositorio de pruebas sin Supabase'));
 
   /// Emite cuando Realtime trae cambios.
   @override
   Stream<void> get changes => _changes.stream;
+
+  /// `true` si la última lectura falló y se muestra la copia guardada.
+  @override
+  bool get offline => _offline;
+
+  /// Momento de la última lectura correcta del backend.
+  @override
+  DateTime? get lastSync => _lastSync;
 
   // ------------------------------------------------------------- Lectura
 
   /// Negocios en caché (solo lectura).
   @override
   List<Business> get businesses => List.unmodifiable(_businesses);
+
   /// Sedes en caché (solo lectura).
   @override
   List<Restaurant> get restaurants => List.unmodifiable(_restaurants);
+
   /// Platos en caché (solo lectura).
   @override
   List<Dish> get dishes => List.unmodifiable(_dishes);
@@ -80,48 +120,126 @@ class SupabaseCatalogRepository implements CatalogRepository {
   }
 
   /// Vuelve a leer el catálogo completo. Nunca lanza: si falla la red se
-  /// conserva lo que ya estaba en caché.
+  /// conserva lo que ya estaba en memoria y, si no había nada, se intenta
+  /// (una sola vez) la copia guardada en disco.
   @override
   Future<void> refresh() async {
+    final CatalogRows rows;
     try {
-      // Las cuatro lecturas van en paralelo: el login no espera en cadena.
-      final businessF = _client.from('businesses').select();
-      final branchF = _client.from('branches').select();
-      final dishF = _client.from('dishes').select();
-      final optionF = _client.from('dish_options').select();
-
-      final businessRows = await businessF;
-      final branchRows = await branchF;
-      final dishRows = await dishF;
-      final optionRows = await optionF;
-
-      final optionsByDish = <String, Map<String, List<DishOption>>>{};
-      for (final row in optionRows) {
-        final dishId = row['dish_id'] as String?;
-        final kind = row['kind'] as String?;
-        if (dishId == null || kind == null) continue;
-        final option = DishOption(
-          row['id'] as String,
-          (row['label'] as String?) ?? '',
-          ((row['price_delta'] as num?) ?? 0).toInt(),
-        );
-        optionsByDish
-            .putIfAbsent(dishId, () => {'size': [], 'side': [], 'extra': []})
-            .putIfAbsent(kind, () => <DishOption>[])
-            .add(option);
-      }
-
-      _businesses
-        ..clear()
-        ..addAll(businessRows.map(_business));
-      _restaurants
-        ..clear()
-        ..addAll(branchRows.map(_restaurant));
-      _dishes
-        ..clear()
-        ..addAll(dishRows.map((row) => _dish(row, optionsByDish)));
+      rows = await (_source ?? _fetchRows)();
+      _apply(rows);
     } on Object {
-      // Sin conexión: se mantiene la última copia buena.
+      _offline = true;
+      if (!_triedDiskCopy && _restaurants.isEmpty && _dishes.isEmpty) {
+        _triedDiskCopy = true;
+        await _loadCopy();
+      }
+      return;
+    }
+    _offline = false;
+    _lastSync = DateTime.now();
+    await _saveCopy(rows);
+  }
+
+  /// Lee en paralelo las tablas del catálogo. `businesses` es opcional: RLS
+  /// solo deja ver la del dueño y el anónimo puede no tener permiso.
+  Future<CatalogRows> _fetchRows() async {
+    final db = _db;
+    final results = await Future.wait<List<Map<String, dynamic>>>([
+      db.from('businesses_public').select(),
+      _optional(db.from('businesses').select()),
+      db.from('branches').select(),
+      db.from('dishes').select(),
+      db.from('dish_options').select(),
+    ]);
+    return CatalogRows(
+      publicBusinesses: results[0],
+      ownBusinesses: results[1],
+      branches: results[2],
+      dishes: results[3],
+      options: results[4],
+    );
+  }
+
+  /// Devuelve las filas de [query] o una lista vacía si PostgREST la rechaza.
+  static Future<List<Map<String, dynamic>>> _optional(
+    Future<List<Map<String, dynamic>>> query,
+  ) async {
+    try {
+      return await query;
+    } on sb.PostgrestException {
+      return const [];
+    }
+  }
+
+  /// Reemplaza la caché en memoria. Descarta sedes y platos con borrado
+  /// lógico (el dueño sí los recibe por RLS) y las opciones de esos platos.
+  void _apply(CatalogRows rows) {
+    final deletedBranches = <Object?>{
+      for (final row in rows.branches)
+        if (row['deleted_at'] != null) row['id'],
+    };
+    final dishRows = [
+      for (final row in rows.dishes)
+        if (row['deleted_at'] == null &&
+            !deletedBranches.contains(row['branch_id']))
+          row,
+    ];
+    final liveDishes = {for (final row in dishRows) row['id']};
+
+    final optionsByDish = <String, Map<String, List<DishOption>>>{};
+    for (final row in rows.options) {
+      final dishId = row['dish_id'] as String?;
+      final kind = row['kind'] as String?;
+      if (dishId == null || kind == null || !liveDishes.contains(dishId)) {
+        continue;
+      }
+      final option = DishOption(
+        row['id'] as String,
+        (row['label'] as String?) ?? '',
+        ((row['price_delta'] as num?) ?? 0).toInt(),
+      );
+      optionsByDish
+          .putIfAbsent(dishId, () => {'size': [], 'side': [], 'extra': []})
+          .putIfAbsent(kind, () => <DishOption>[])
+          .add(option);
+    }
+
+    // Se mapea todo antes de tocar la caché: una fila dañada no la deja a medias.
+    final businesses = rows.businesses.map(_business).toList();
+    final restaurants = [
+      for (final row in rows.branches)
+        if (row['deleted_at'] == null) _restaurant(row),
+    ];
+    final dishes = [for (final row in dishRows) _dish(row, optionsByDish)];
+
+    _businesses
+      ..clear()
+      ..addAll(businesses);
+    _restaurants
+      ..clear()
+      ..addAll(restaurants);
+    _dishes
+      ..clear()
+      ..addAll(dishes);
+  }
+
+  /// Guarda la copia en disco (mejor esfuerzo: un fallo no afecta a la app).
+  Future<void> _saveCopy(CatalogRows rows) async {
+    try {
+      await _cache.write(encodeCatalogRows(rows));
+    } on Object {
+      // Sin disco disponible: la próxima lectura correcta lo vuelve a intentar.
+    }
+  }
+
+  /// Carga la copia del disco si existe y es válida.
+  Future<void> _loadCopy() async {
+    try {
+      final rows = decodeCatalogRows(await _cache.read());
+      if (rows != null && !rows.isEmpty) _apply(rows);
+    } on Object {
+      // Copia ilegible: se queda vacío y la pantalla avisa.
     }
   }
 
@@ -129,29 +247,41 @@ class SupabaseCatalogRepository implements CatalogRepository {
 
   /// Abre el canal de Realtime y escucha los cambios de sesión.
   void _subscribe() {
+    final db = _db;
     try {
-      _channel = _client
-          .channel('biffy-catalog')
-          .onPostgresChanges(
-            event: sb.PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'dishes',
-            callback: (_) => _reload(),
-          )
-          .onPostgresChanges(
-            event: sb.PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'branches',
-            callback: (_) => _reload(),
-          )
-          .subscribe();
+      var channel = db.channel('biffy-catalog');
+      for (final table in const [
+        'dishes',
+        'branches',
+        'dish_options',
+        'catalog_revision',
+      ]) {
+        channel = channel.onPostgresChanges(
+          event: sb.PostgresChangeEvent.all,
+          schema: 'public',
+          table: table,
+          callback: (_) => _scheduleReload(),
+        );
+      }
+      _channel = channel.subscribe((status, _) {
+        // Al reconectar después de un fallo de red se pone al día.
+        if (status == sb.RealtimeSubscribeStatus.subscribed && _offline) {
+          _scheduleReload();
+        }
+      });
     } on Object {
       // Realtime es opcional: si no está habilitado seguimos con la caché.
     }
 
     // El catálogo se hidrata antes del login; al cambiar la sesión se recarga
     // con el JWT nuevo (p. ej. el comerciante pasa a ver su negocio por RLS).
-    _authSub = _client.auth.onAuthStateChange.listen((_) => _reload());
+    _authSub = db.auth.onAuthStateChange.listen((_) => _reload());
+  }
+
+  /// Agrupa los eventos de Realtime que llegan seguidos en una sola recarga.
+  void _scheduleReload() {
+    _reloadTimer?.cancel();
+    _reloadTimer = Timer(_debounce, _reload);
   }
 
   /// Recarga la caché y avisa a los oyentes.
@@ -162,16 +292,17 @@ class SupabaseCatalogRepository implements CatalogRepository {
 
   /// Libera el canal de Realtime y el stream de cambios.
   Future<void> dispose() async {
+    _reloadTimer?.cancel();
     await _authSub?.cancel();
     final channel = _channel;
     if (channel != null) {
-      await _client.removeChannel(channel);
+      await _db.removeChannel(channel);
       _channel = null;
     }
     await _changes.close();
   }
 
-  // ------------------------------------------- Escrituras (fase 2d)
+  // ------------------------------------------------------------ Escrituras
 
   /// Agrega un negocio y sus sedes solo en la caché.
   @override
@@ -180,7 +311,8 @@ class SupabaseCatalogRepository implements CatalogRepository {
     _restaurants.addAll(branches);
   }
 
-  /// Crea o actualiza el plato en la base y refresca la caché.
+  /// Crea o actualiza el plato en la base y refresca la caché. Lanza
+  /// [CatalogWriteDenied] si RLS no deja editarlo.
   @override
   Future<void> upsertDish(Dish dish) async {
     final row = <String, dynamic>{
@@ -216,14 +348,19 @@ class SupabaseCatalogRepository implements CatalogRepository {
     // Los ids `dish-new-*` son temporales: la base asigna el uuid.
     String dishId;
     if (dish.id.startsWith('dish-new-')) {
-      final inserted = await _client
+      final inserted = await _db
           .from('dishes')
           .insert(row)
           .select('id')
           .single();
       dishId = inserted['id'] as String;
     } else {
-      await _client.from('dishes').update(row).eq('id', dish.id);
+      final updated = await _db
+          .from('dishes')
+          .update(row)
+          .eq('id', dish.id)
+          .select('id');
+      if (updated.isEmpty) throw const CatalogWriteDenied('editar el plato');
       dishId = dish.id;
     }
 
@@ -235,7 +372,7 @@ class SupabaseCatalogRepository implements CatalogRepository {
 
   /// Reemplaza los tamaños, acompañantes y extras del plato en `dish_options`.
   Future<void> _syncOptions(String dishId, Dish dish) async {
-    await _client.from('dish_options').delete().eq('dish_id', dishId);
+    await _db.from('dish_options').delete().eq('dish_id', dishId);
 
     final options = <Map<String, dynamic>>[
       for (var i = 0; i < dish.sizes.length; i++)
@@ -265,17 +402,20 @@ class SupabaseCatalogRepository implements CatalogRepository {
     ];
 
     if (options.isNotEmpty) {
-      await _client.from('dish_options').insert(options);
+      await _db.from('dish_options').insert(options);
     }
   }
 
-  /// Borrado lógico del plato: conserva el historial de pedidos.
+  /// Borrado lógico del plato (marca `deleted_at`): conserva el historial de
+  /// pedidos. Lanza [CatalogWriteDenied] si RLS no deja borrarlo.
   @override
   Future<void> deleteDish(String id) async {
-    await _client
+    final updated = await _db
         .from('dishes')
         .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
+    if (updated.isEmpty) throw const CatalogWriteDenied('eliminar el plato');
     await refresh();
     if (!_changes.isClosed) _changes.add(null);
   }
@@ -287,24 +427,32 @@ class SupabaseCatalogRepository implements CatalogRepository {
     if (dish != null) dish.soldToday += qty;
   }
 
-  /// Persiste el estado de agotado y refresca la caché.
+  /// Persiste el estado de agotado y refresca la caché. Lanza
+  /// [CatalogWriteDenied] si RLS no deja cambiarlo.
   @override
   Future<void> setDishSoldOut(String dishId, bool soldOut) async {
-    await _client
+    final updated = await _db
         .from('dishes')
         .update({'sold_out': soldOut})
-        .eq('id', dishId);
+        .eq('id', dishId)
+        .select('id');
+    if (updated.isEmpty) {
+      throw const CatalogWriteDenied('cambiar el estado de agotado');
+    }
     await refresh();
     if (!_changes.isClosed) _changes.add(null);
   }
 
-  /// Persiste la pausa de una sede y refresca la caché.
+  /// Persiste la pausa de una sede y refresca la caché. Lanza
+  /// [CatalogWriteDenied] si RLS no deja pausarla.
   @override
   Future<void> setBranchPaused(String branchId, bool paused) async {
-    await _client
+    final updated = await _db
         .from('branches')
         .update({'paused': paused})
-        .eq('id', branchId);
+        .eq('id', branchId)
+        .select('id');
+    if (updated.isEmpty) throw const CatalogWriteDenied('pausar la sede');
     await refresh();
     if (!_changes.isClosed) _changes.add(null);
   }
@@ -316,16 +464,15 @@ class SupabaseCatalogRepository implements CatalogRepository {
     required Uint8List bytes,
   }) async {
     try {
-      final path =
-          '$businessId/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      await _client.storage
+      final path = '$businessId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      await _db.storage
           .from('dish-images')
           .uploadBinary(
             path,
             bytes,
             fileOptions: const sb.FileOptions(contentType: 'image/jpeg'),
           );
-      return _client.storage.from('dish-images').getPublicUrl(path);
+      return _db.storage.from('dish-images').getPublicUrl(path);
     } on Object {
       return null;
     }
@@ -370,7 +517,9 @@ class SupabaseCatalogRepository implements CatalogRepository {
     openHour: ((row['open_hour'] as num?) ?? 8).toInt(),
     closeHour: ((row['close_hour'] as num?) ?? 22).toInt(),
     closedWeekdays:
-        (row['closed_weekdays'] as List?)?.map((e) => (e as num).toInt()).toList() ??
+        (row['closed_weekdays'] as List?)
+            ?.map((e) => (e as num).toInt())
+            .toList() ??
         const [],
     campusId: row['campus_id'] as String?,
     studentDiscount: ((row['student_discount'] as num?) ?? 0).toDouble(),

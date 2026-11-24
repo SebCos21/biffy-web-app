@@ -182,7 +182,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '⚠️ No entrega en ${session.point.name}${r.couriersNearby == 0 ? ' (sin repartidores cerca)' : ''}.',
+                              '⚠️ No entrega en ${session.point.name}${coverageGap(r, session.point) == CoverageGap.noCouriers ? ' (sin repartidores cerca)' : ''}.',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.error,
