@@ -4,7 +4,7 @@
 -- Uso: Supabase Dashboard -> SQL Editor -> New query -> pegar todo -> Run.
 -- Se genera concatenando supabase/migrations/*.sql. No editar a mano.
 -- Proyecto: jwdzpwsfwtkdeeuceaco
--- Generado: 2026-11-24 12:45
+-- Generado: 2026-11-24 12:48
 --
 -- AVISO: la migración 0000 reemplaza las tablas de public. Las tablas con
 -- filas NO se borran: se conservan como legacy_<nombre> con RLS activo.
@@ -6890,7 +6890,7 @@ begin
 
   elsif new.status = 'ready' then
     perform public.notify(o.buyer_id, 'buyer', 'user:' || o.buyer_id,
-      'Pedido listo 🥡',
+      'Pedido listo 🛍️',
       'Tu pedido ' || o.code || ' está listo. Buscando repartidor.',
       v_buyer_route, o.id);
     for c in

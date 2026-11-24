@@ -744,7 +744,7 @@ begin
 
   elsif new.status = 'ready' then
     perform public.notify(o.buyer_id, 'buyer', 'user:' || o.buyer_id,
-      'Pedido listo 🥡',
+      'Pedido listo 🛍️',
       'Tu pedido ' || o.code || ' está listo. Buscando repartidor.',
       v_buyer_route, o.id);
     for c in
