@@ -106,6 +106,8 @@ supabase functions deploy refund-payment --no-verify-jwt
   idempotente.
 - Webhook: `https://<ref>.supabase.co/functions/v1/wompi-webhook` con el evento
   `transaction.updated` (ambiente de pruebas).
+- Cron: `.github/workflows/expire-payments.yml` cada 15 minutos con el secret
+  `CRON_SECRET` del repositorio (el mismo de Supabase).
 - Guía paso a paso: [`GUIA_SANDBOX_WOMPI.md`](../GUIA_SANDBOX_WOMPI.md).
 
 Programa `university-revalidation` una vez al día (por ejemplo 08:00) desde

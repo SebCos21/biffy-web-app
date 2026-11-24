@@ -190,14 +190,22 @@ Guarda en `tool/evidence/hu5_payments/`:
   eventos:
   `https://jwdzpwsfwtkdeeuceaco.supabase.co/functions/v1/wompi-webhook`
   con el evento `transaction.updated`.
+
+  > La URL es **solo** el endpoint. No le agregues `evento: transaction.updated`
+  > al final (eso produce `404 Requested function was not found`); el evento se
+  > selecciona aparte en la lista del panel.
+
 - [x] Compra aprobada en sandbox (`BF-2046`, $23.910, VISA-0057). Se aplicó
   manualmente porque la URL de eventos aún no estaba configurada; el siguiente
   pago debe entrar solo por el webhook.
-- [ ] Compra rechazada (`4917 4800 0000 0008`) para la evidencia.
+- [x] Webhook probado con un evento firmado de esa misma transacción:
+  `payment_events.result = applied` y `signature_valid = true`.
 - [x] Flutter: `PaymentBloc`, `/pago/:id`, banner de rechazo con motivo,
   reintento y efectivo con billetes/vueltas.
-- [ ] Guardar la evidencia en `tool/evidence/hu5_payments/`.
-- [ ] Agendar `expire-payments` (cron con `x-cron-secret`).
+- [x] Cron de vencidos: `.github/workflows/expire-payments.yml` cada 15 minutos
+  con el secret `CRON_SECRET` (ya configurado en GitHub y Supabase).
+- [—] Compra rechazada y carpeta de evidencia: **no se adjuntan**; el equipo
+  mostrará el proceso al profesor.
 
 ### Seguridad de las llaves
 
