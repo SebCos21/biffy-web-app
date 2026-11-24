@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/app_colors.dart';
-import '../../shared/state/cart_controller.dart';
+import '../../features/buyer/cart/bloc/cart_cubit.dart';
 import '../utils/format.dart';
 import '../widgets/ui.dart';
-import '../../shared/state/controller_scope.dart';
 
 /// Ítem de la barra de navegación inferior.
 class NavItem {
@@ -96,7 +96,7 @@ class CartBar extends StatelessWidget {
   /// Dibuja la barra solo cuando el carrito tiene productos.
   @override
   Widget build(BuildContext context) {
-    final cart = context.watchController<CartController>();
+    final cart = context.watch<CartCubit>();
     if (cart.isEmpty) return const SizedBox.shrink();
     return SafeArea(
       top: false,

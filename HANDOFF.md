@@ -157,6 +157,30 @@ remoto** (ver «Cómo probarlo» abajo).
 - ⏳ Adjuntar al informe la salida literal de `0099_verify.sql` (la consulta ya
   se ejecutó en el SQL Editor; falta el pantallazo/texto).
 
+### Migración a Bloc · rama `blocs`
+
+- **Fase 1a completada:** `LoginCubit`, `RegisterCubit` y
+  `UniversityVerificationCubit`; `AuthRepository`/`AuthException` viven en
+  `lib/domain/repositories/` con re-export de compatibilidad.
+- Las pantallas de login, registro y Campus usan los cubits; la lógica de
+  sesión sigue en `SessionController` para no romper las otras 45 pantallas.
+- `test/architecture_test.dart` impide que los cubits de auth importen `data/`
+  o Supabase.
+- **Fase 2 completada:** `CartCubit` reemplaza a `CartController` (se eliminó el
+  archivo) y `CheckoutCubit` maneja el envío, la idempotencia y los errores.
+  El checkout sigue usando `OrdersBloc` como única fuente de pedidos.
+- **Integración con GetIt:** la rama se rebasó sobre el `dev` con inyección de
+  dependencias. `CartCubit` se registra como `LazySingleton` y se publica con
+  `BlocProvider` en `app.dart` (no va en `ControllerScope`: no es `Listenable`);
+  `LoginCubit`, `RegisterCubit`, `UniversityVerificationCubit` y `CheckoutCubit`
+  son `Factory` en `presentation_module.dart`. Las pantallas los piden con
+  `getIt<T>()` y observan controladores con `context.watchController<T>()`.
+- **Pendiente 1b:** `SessionBloc` que reemplace `SessionController` y migre sus
+  consumidores; se hará como slice independiente.
+- **Pendiente 3:** `CatalogBloc`/`ExploreCubit` y el resto de pantallas.
+- Calidad de la rama: `flutter analyze` limpio · **235/235** tests ·
+  21 pruebas saltadas (las que necesitan credenciales de Supabase).
+
 ### HU-4 · Gotas, recompensas, cupones, reseñas y notificaciones
 
 Rama `hu4-gotas-recompensas-notificaciones`.

@@ -7,7 +7,7 @@ import 'package:biffy/data/repositories/in_memory_order_repository.dart';
 import 'package:biffy/domain/repositories/rewards_repository.dart';
 import 'package:biffy/domain/usecases/rate_order.dart';
 import 'package:biffy/features/orders/bloc/orders_bloc.dart';
-import 'package:biffy/shared/state/cart_controller.dart';
+import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
 import 'package:biffy/shared/state/catalog_controller.dart';
 import 'package:biffy/shared/state/notification_center.dart';
 import 'package:biffy/shared/state/session_controller.dart';
@@ -33,7 +33,7 @@ class TestServices {
   Clock get clock => getIt<Clock>();
   SessionController get session => getIt<SessionController>();
   CatalogController get catalog => getIt<CatalogController>();
-  CartController get cart => getIt<CartController>();
+  CartCubit get cart => getIt<CartCubit>();
   NotificationCenter get notifications => getIt<NotificationCenter>();
   OrdersBloc get orders => getIt<OrdersBloc>();
   RateOrder get rateOrder => getIt<RateOrder>();

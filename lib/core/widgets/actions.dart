@@ -7,7 +7,7 @@ import '../../app/theme/app_colors.dart';
 import '../../data/models/cart.dart';
 import '../../data/models/catalog.dart';
 import '../../data/models/user.dart';
-import '../../shared/state/cart_controller.dart';
+import '../../features/buyer/cart/bloc/cart_cubit.dart';
 import '../../shared/state/catalog_controller.dart';
 import '../../shared/state/session_controller.dart';
 import '../constants/catalog_constants.dart';
@@ -75,7 +75,7 @@ Future<bool> addToCart(
   int qty = 1,
   String note = '',
 }) async {
-  final cart = getIt<CartController>();
+  final cart = getIt<CartCubit>();
   final result = cart.add(dish, selection: selection, qty: qty, note: note);
   switch (result) {
     case AddResult.added:

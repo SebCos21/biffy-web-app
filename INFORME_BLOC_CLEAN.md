@@ -266,7 +266,7 @@ el de Supabase. El resto del código no se entera. El Bloc se publica con
 ---
 
 ## 9. Qué quedó fuera (honestidad)
-- **Solo pedidos usa Bloc.** Sesión, catálogo, carrito y notificaciones siguen siendo `ChangeNotifier` + Provider, y se migrarían de a un slice.
+- **Pedidos, autenticación y carrito ya usan Bloc.** Además de `OrdersBloc` hay `LoginCubit`, `RegisterCubit`, `UniversityVerificationCubit` (Campus), `CartCubit` (reemplaza a `CartController`) y `CheckoutCubit`. Sesión, catálogo y notificaciones siguen siendo `ChangeNotifier` registrados en GetIt, y se migrarían de a un slice.
 - **Las entidades `Order` son mutables.** Por eso existe `revision`. En Bloc "puro" el estado sería inmutable.
 - **`request()` es una conveniencia propia**, no una API estándar de Bloc.
 - **Tras el merge con `dev`**, sesión, direcciones y verificación universitaria son los de `dev` (`SessionController` + `SupabaseProfileRepository`); el pedido solo consume `Address.serverId`.

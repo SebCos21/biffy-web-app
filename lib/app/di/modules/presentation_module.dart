@@ -11,13 +11,17 @@ import '../../../domain/usecases/merchant_boxes_usecases.dart';
 import '../../../domain/usecases/orders/order_usecases.dart';
 import '../../../domain/usecases/rate_order.dart';
 import '../../../domain/usecases/rewards_usecases.dart';
+import '../../../features/buyer/cart/bloc/cart_cubit.dart';
+import '../../../features/buyer/cart/bloc/checkout_cubit.dart';
 import '../../../features/buyer/notifications/notifications_cubit.dart';
 import '../../../features/buyer/rewards/rewards_cubit.dart';
 import '../../../features/buyer/tracking/rate_order_cubit.dart';
+import '../../../features/auth/bloc/login_cubit.dart';
+import '../../../features/auth/bloc/register_cubit.dart';
+import '../../../features/auth/bloc/university_verification_cubit.dart';
 import '../../../features/courier/earnings/earnings_cubit.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../features/restaurant_owner/boxes/merchant_boxes_cubit.dart';
-import '../../../shared/state/cart_controller.dart';
 import '../../../shared/state/catalog_controller.dart';
 import '../../../shared/state/notification_center.dart';
 import '../../../shared/state/session_controller.dart';
@@ -61,9 +65,7 @@ void _registerControllers(GetIt g) {
       g<Clock>(),
     ),
   );
-  g.registerLazySingleton<CartController>(
-    () => CartController(g<CatalogRepository>()),
-  );
+  g.registerLazySingleton<CartCubit>(() => CartCubit(g<CatalogRepository>()));
 }
 
 /// Bloc de pedidos (global) y cubits de pantalla.
@@ -107,6 +109,19 @@ void _registerBlocs(GetIt g) {
       load: g<LoadMerchantBoxes>(),
       add: g<AddDishToBox>(),
       claim: g<ClaimBoxPrize>(),
+    ),
+  );
+  // Cubits de una sola pantalla (login, registro, campus y checkout).
+  g.registerFactory<LoginCubit>(() => LoginCubit(g<SessionController>()));
+  g.registerFactory<RegisterCubit>(() => RegisterCubit(g<SessionController>()));
+  g.registerFactory<UniversityVerificationCubit>(
+    () => UniversityVerificationCubit(g<SessionController>()),
+  );
+  g.registerFactory<CheckoutCubit>(
+    () => CheckoutCubit(
+      orders: g<OrdersBloc>(),
+      session: g<SessionController>(),
+      cart: g<CartCubit>(),
     ),
   );
 }

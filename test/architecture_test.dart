@@ -52,6 +52,14 @@ void main() {
     expect(bad, isEmpty, reason: bad.join('\n'));
   });
 
+  test('los cubits de autenticación no importan data ni Supabase', () {
+    final bad = _violations(
+      'lib/features/auth/bloc',
+      RegExp(r"(\.\./)+data/|supabase"),
+    );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
   test('los repositorios de pedidos implementan la interfaz del dominio', () {
     for (final f in [
       'lib/data/repositories/in_memory_order_repository.dart',
@@ -67,14 +75,16 @@ void main() {
     }
   });
 
-  test('las pantallas no importan implementaciones de repositorios de pedidos', () {
-    final bad = _violations(
-      'lib/features',
-      RegExp(r"data/repositories/\w*order"),
-    );
-    expect(bad, isEmpty, reason: bad.join('\n'));
-  });
-
+  test(
+    'las pantallas no importan implementaciones de repositorios de pedidos',
+    () {
+      final bad = _violations(
+        'lib/features',
+        RegExp(r"data/repositories/\w*order"),
+      );
+      expect(bad, isEmpty, reason: bad.join('\n'));
+    },
+  );
 
   test('solo lib/app/di conoce las implementaciones concretas', () {
     // Ninguna pantalla, controlador ni caso de uso importa un repositorio en
@@ -108,20 +118,23 @@ void main() {
     );
   });
 
-  test('los módulos de GetIt separan núcleo, datos, dominio y presentación', () {
-    for (final m in ['core', 'data', 'domain', 'presentation']) {
-      expect(
-        File('lib/app/di/modules/${m}_module.dart').existsSync(),
-        isTrue,
-        reason: 'falta el módulo $m',
-      );
-    }
-    final injection = File('lib/app/di/injection.dart').readAsStringSync();
-    expect(injection, contains('registerCoreModule'));
-    expect(injection, contains('registerDataModule'));
-    expect(injection, contains('registerDomainModule'));
-    expect(injection, contains('registerPresentationModule'));
-  });
+  test(
+    'los módulos de GetIt separan núcleo, datos, dominio y presentación',
+    () {
+      for (final m in ['core', 'data', 'domain', 'presentation']) {
+        expect(
+          File('lib/app/di/modules/${m}_module.dart').existsSync(),
+          isTrue,
+          reason: 'falta el módulo $m',
+        );
+      }
+      final injection = File('lib/app/di/injection.dart').readAsStringSync();
+      expect(injection, contains('registerCoreModule'));
+      expect(injection, contains('registerDataModule'));
+      expect(injection, contains('registerDomainModule'));
+      expect(injection, contains('registerPresentationModule'));
+    },
+  );
 
   test('la única decisión de entorno vive en el módulo de datos', () {
     final bad = <String>[];
