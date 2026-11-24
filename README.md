@@ -12,7 +12,7 @@ Biffy es una aplicación de domicilios de comida para estudiantes universitarios
 | Capa | Tecnología |
 |---|---|
 | UI | Flutter 3.44 · Material 3 · tema propio (claro/oscuro) |
-| Estado | `flutter_bloc` (Bloc/Cubit) + controladores `ChangeNotifier` aún sin migrar |
+| Estado | `flutter_bloc` (Bloc/Cubit) en pedidos, auth y carrito; sesión, catálogo y avisos con `ChangeNotifier` (GetIt) |
 | Inyección de dependencias | `get_it` (`lib/app/di/`) |
 | Navegación | `go_router` con un `StatefulShellRoute` por rol y guardas por sesión |
 | Datos | Repositorios en memoria detrás de interfaces (`lib/data/repositories/`) |
@@ -106,7 +106,7 @@ lib/
     restaurant_owner/        # registration, home, orders, menu, products, statistics, profile
   shared/state/              # Controladores ChangeNotifier y ControllerScope
 test/
-  unit/  widget/  integration/   # 104 pruebas (sin dispositivo)
+  unit/  widget/  integration/   # 235 pruebas (sin dispositivo)
   helpers.dart
 integration_test/app_test.dart   # Flujo completo en Android/iOS
 supabase/
@@ -118,7 +118,8 @@ assets/
 
 ## Arquitectura
 
-- **Inyección de dependencias:** GetIt registra todo en `lib/app/di/`. El módulo de datos decide entre Supabase y memoria según `AppConfig.hasSupabase`; los casos de uso son `Factory`, los repositorios y controladores `LazySingleton`. Las pruebas llaman a `makeServices()` (reinicia GetIt con reloj fijo y semilla aleatoria), por lo que son deterministas.
+- **Inyección de dependencias:** GetIt registra todo en `lib/app/di/`. El módulo de datos decide entre Supabase y memoria según `AppConfig.hasSupabase`; los casos de uso y los cubits de pantalla son `Factory`, los repositorios, controladores y `CartCubit` `LazySingleton`. Las pruebas llaman a `makeServices()` (reinicia GetIt con reloj fijo y semilla aleatoria), por lo que son deterministas.
+- **Cubits por slice:** `LoginCubit`, `RegisterCubit` y `UniversityVerificationCubit` (auth/Campus); `CartCubit` y `CheckoutCubit` (carrito). Las pantallas piden el cubit a GetIt y solo pintan estado; `CheckoutCubit` delega el pedido a `OrdersBloc`.
 - **Reglas fuera de la UI:** `pricing.dart`, `catalog_rules.dart` (regla única de cobertura `isReachable`), `order_rules.dart` (tabla `kAllowedTransitions`, pago al repartidor, métricas), `scheduling.dart`, `recommendation.dart`, `assistant.dart`, `reorder.dart`.
 - **Pedidos compartidos:** `OrdersBloc` (casos de uso → `OrderRepository`) es el único que cambia estados. La aceptación del repartidor es atómica: si el pedido ya tiene repartidor devuelve `alreadyAssigned`.
 - **Navegación:** `lib/app/router.dart` concentra las rutas. El comprador explora sin sesión; checkout, pedidos, recompensas, favoritos, direcciones y pagos exigen cuenta y conservan la ruta de origen (`/login?from=…`). `/repartidor/*` exige perfil de repartidor y `/negocio/*` un negocio vinculado.
@@ -162,7 +163,7 @@ Estado verificado en esta rama:
 | Comando | Resultado |
 |---|---|
 | `flutter analyze` | `No issues found!` |
-| `flutter test` | **104 pruebas, todas pasan** |
+| `flutter test` | **235 pruebas, todas pasan** |
 
 - **Unitarias:** precios, reglas de catálogo, sesión y Gotas, carrito, servicio de pedidos, programación y asistente.
 - **Widgets:** recorrido de todas las rutas de los tres roles (falla ante excepciones u overflow), flujos del comprador y de roles, modo oscuro y punto sin cobertura.

@@ -169,11 +169,17 @@ remoto** (ver «Cómo probarlo» abajo).
 - **Fase 2 completada:** `CartCubit` reemplaza a `CartController` (se eliminó el
   archivo) y `CheckoutCubit` maneja el envío, la idempotencia y los errores.
   El checkout sigue usando `OrdersBloc` como única fuente de pedidos.
+- **Integración con GetIt:** la rama se rebasó sobre el `dev` con inyección de
+  dependencias. `CartCubit` se registra como `LazySingleton` y se publica con
+  `BlocProvider` en `app.dart` (no va en `ControllerScope`: no es `Listenable`);
+  `LoginCubit`, `RegisterCubit`, `UniversityVerificationCubit` y `CheckoutCubit`
+  son `Factory` en `presentation_module.dart`. Las pantallas los piden con
+  `getIt<T>()` y observan controladores con `context.watchController<T>()`.
 - **Pendiente 1b:** `SessionBloc` que reemplace `SessionController` y migre sus
   consumidores; se hará como slice independiente.
 - **Pendiente 3:** `CatalogBloc`/`ExploreCubit` y el resto de pantallas.
-- Calidad de la rama: `flutter analyze` limpio · **222/222** tests ·
-  17 pruebas de integración con credenciales.
+- Calidad de la rama: `flutter analyze` limpio · **235/235** tests ·
+  21 pruebas saltadas (las que necesitan credenciales de Supabase).
 
 ### HU-4 · Gotas, recompensas, cupones, reseñas y notificaciones
 
