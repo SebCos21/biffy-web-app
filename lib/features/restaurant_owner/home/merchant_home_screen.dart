@@ -7,7 +7,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/user.dart';
 import '../../../domain/order_rules.dart';
 import '../../../shared/state/catalog_controller.dart';
-import '../../../shared/state/notification_center.dart';
+import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
@@ -38,7 +38,7 @@ class MerchantHomeScreen extends StatelessWidget {
     final session = context.watchController<SessionController>();
     final catalog = context.watchController<CatalogController>();
     final orders = context.watch<OrdersBloc>();
-    final center = context.watchController<NotificationCenter>();
+    final center = context.watch<NotificationsBloc>();
     final t = Theme.of(context).textTheme;
     final b = catalog.businessById(session.businessId!)!;
     final m = businessMetrics(context);

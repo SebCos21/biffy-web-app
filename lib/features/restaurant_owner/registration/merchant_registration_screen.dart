@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
@@ -11,7 +12,7 @@ import '../../../data/models/catalog.dart';
 import '../../../data/models/user.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../shared/state/catalog_controller.dart';
-import '../../../shared/state/notification_center.dart';
+import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../../../app/di/injection.dart';
 
@@ -151,7 +152,7 @@ class _MerchantRegistrationScreenState
   /// Crea la cuenta si hace falta, guarda el negocio y navega al menú.
   Future<void> _runFinish() async {
     final catalog = getIt<CatalogController>();
-    final notifications = getIt<NotificationCenter>();
+    final notifications = context.read<NotificationsBloc>();
 
     try {
       if (!_session.isLoggedIn) {
@@ -271,11 +272,13 @@ class _MerchantRegistrationScreenState
     }
 
     if (!mounted) return;
-    notifications.push(
-      title: 'Negocio registrado ✅',
-      body: 'Crea tu primer producto para aparecer en el catálogo.',
-      audience: 'business:${_session.businessId ?? bizId}',
-      route: '/negocio/menu',
+    notifications.add(
+      NotificationPushed(
+        title: 'Negocio registrado ✅',
+        body: 'Crea tu primer producto para aparecer en el catálogo.',
+        audience: 'business:${_session.businessId ?? bizId}',
+        route: '/negocio/menu',
+      ),
     );
     showSnack(context, '${biz.brand} registrado · agrega tu menú');
     context.go('/negocio/menu');

@@ -14,7 +14,8 @@ import 'package:biffy/features/courier/earnings/earnings_cubit.dart';
 import 'package:biffy/features/orders/bloc/orders_bloc.dart';
 import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
 import 'package:biffy/shared/state/catalog_controller.dart';
-import 'package:biffy/shared/state/notification_center.dart';
+import 'package:biffy/domain/repositories/notification_repository.dart';
+import 'package:biffy/features/notifications/bloc/notifications_bloc.dart';
 import 'package:biffy/shared/state/session_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,7 +49,11 @@ void main() {
       expect(getIt<CatalogController>(), same(getIt<CatalogController>()));
       expect(getIt<CartCubit>(), same(getIt<CartCubit>()));
       expect(getIt<PaymentRepository>(), same(getIt<PaymentRepository>()));
-      expect(getIt<NotificationCenter>(), same(getIt<NotificationCenter>()));
+      expect(
+        getIt<NotificationRepository>(),
+        same(getIt<NotificationRepository>()),
+      );
+      expect(getIt<NotificationsBloc>(), same(getIt<NotificationsBloc>()));
       expect(getIt<OrdersBloc>(), same(getIt<OrdersBloc>()));
     });
 

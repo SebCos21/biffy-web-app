@@ -10,7 +10,8 @@ import 'package:biffy/domain/usecases/rate_order.dart';
 import 'package:biffy/features/orders/bloc/orders_bloc.dart';
 import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
 import 'package:biffy/shared/state/catalog_controller.dart';
-import 'package:biffy/shared/state/notification_center.dart';
+import 'package:biffy/domain/usecases/notifications/notification_usecases.dart';
+import 'package:biffy/features/notifications/bloc/notifications_bloc.dart';
 import 'package:biffy/shared/state/session_controller.dart';
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_users.dart';
@@ -37,7 +38,8 @@ class TestServices {
   CatalogController get catalog => getIt<CatalogController>();
   CartCubit get cart => getIt<CartCubit>();
   PaymentRepository get payment => getIt<PaymentRepository>();
-  NotificationCenter get notifications => getIt<NotificationCenter>();
+  NotificationsBloc get notifications => getIt<NotificationsBloc>();
+  PushNotification get pushNotification => getIt<PushNotification>();
   OrdersBloc get orders => getIt<OrdersBloc>();
   RateOrder get rateOrder => getIt<RateOrder>();
 }

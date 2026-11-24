@@ -4,11 +4,11 @@ import '../../../core/utils/clock.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/catalog_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
-import '../../../domain/repositories/notification_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
 import '../../../domain/repositories/profile_repository.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
 import '../../../domain/usecases/merchant_boxes_usecases.dart';
+import '../../../domain/usecases/notifications/notification_usecases.dart';
 import '../../../domain/usecases/orders/order_usecases.dart';
 import '../../../domain/usecases/payments/check_payment_status.dart';
 import '../../../domain/usecases/payments/retry_payment.dart';
@@ -25,16 +25,16 @@ import '../../../features/auth/bloc/login_cubit.dart';
 import '../../../features/auth/bloc/register_cubit.dart';
 import '../../../features/auth/bloc/university_verification_cubit.dart';
 import '../../../features/courier/earnings/earnings_cubit.dart';
+import '../../../features/notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../features/restaurant_owner/boxes/merchant_boxes_cubit.dart';
 import '../../../shared/state/catalog_controller.dart';
-import '../../../shared/state/notification_center.dart';
 import '../../../shared/state/session_controller.dart';
 
 /// Módulo de presentación: estado que consumen las pantallas.
 ///
-/// - Controladores (`ChangeNotifier`, aún sin migrar) y `OrdersBloc`: un solo
-///   objeto para toda la app (`LazySingleton`).
+/// - Controladores (`ChangeNotifier`, aún sin migrar), `OrdersBloc` y
+///   `NotificationsBloc`: un solo objeto para toda la app (`LazySingleton`).
 /// - Cubits de una pantalla: `Factory`, uno nuevo cada vez que se abre.
 void registerPresentationModule(GetIt g) {
   _registerControllers(g);
@@ -46,21 +46,12 @@ T? _optional<T extends Object>(GetIt g) => g.isRegistered<T>() ? g<T>() : null;
 
 /// Controladores compartidos por todas las pantallas.
 void _registerControllers(GetIt g) {
-  g.registerLazySingleton<NotificationCenter>(() {
-    final repo = _optional<NotificationRepository>(g);
-    return NotificationCenter(
-      g<Clock>(),
-      persist: repo?.save,
-      onRead: repo?.markRead,
-    );
-  });
   g.registerLazySingleton<SessionController>(
     () => SessionController(
       g<AuthRepository>(),
-      g<NotificationCenter>(),
+      g<NotificationUseCases>(),
       g<Clock>(),
       profile: _optional<ProfileRepository>(g),
-      notificationsRepo: _optional<NotificationRepository>(g),
     ),
   );
   g.registerLazySingleton<CatalogController>(
@@ -79,9 +70,13 @@ void _registerBlocs(GetIt g) {
     () => OrdersBloc(g<OrderUseCases>()),
     dispose: (bloc) => bloc.close(),
   );
+  g.registerLazySingleton<NotificationsBloc>(
+    () => NotificationsBloc(g<NotificationUseCases>()),
+    dispose: (bloc) => bloc.close(),
+  );
   g.registerFactory<NotificationsCubit>(
     () => NotificationsCubit(
-      center: g<NotificationCenter>(),
+      notifications: g<NotificationsBloc>(),
       session: g<SessionController>(),
     ),
   );

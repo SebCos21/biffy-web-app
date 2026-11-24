@@ -8,7 +8,7 @@ import '../../../data/models/order.dart';
 import '../../../data/models/user.dart';
 import '../../../domain/order_rules.dart';
 import '../../../shared/state/catalog_controller.dart';
-import '../../../shared/state/notification_center.dart';
+import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../offers/offer_widgets.dart';
@@ -25,7 +25,7 @@ class CourierHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final session = context.watchController<SessionController>();
     final orders = context.watch<OrdersBloc>();
-    final center = context.watchController<NotificationCenter>();
+    final center = context.watch<NotificationsBloc>();
     final now = getIt<CatalogController>().now;
     final t = Theme.of(context).textTheme;
     final u = session.user!;

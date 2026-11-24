@@ -52,6 +52,41 @@ void main() {
     expect(bad, isEmpty, reason: bad.join('\n'));
   });
 
+  test(
+    'el Bloc de avisos solo conoce el dominio (no data, shared ni Supabase)',
+    () {
+      final bad = _violations(
+        'lib/features/notifications',
+        RegExp(r"(\.\./)+(data|shared)/|supabase"),
+      );
+      expect(bad, isEmpty, reason: bad.join('\n'));
+    },
+  );
+
+  test('los repositorios de avisos implementan la interfaz del dominio', () {
+    for (final f in [
+      'lib/data/repositories/in_memory_notification_repository.dart',
+      'lib/data/repositories/supabase_notification_repository.dart',
+    ]) {
+      final src = File(f).readAsStringSync();
+      expect(src, contains('implements NotificationRepository'), reason: f);
+      expect(
+        src,
+        contains('domain/repositories/notification_repository.dart'),
+        reason: f,
+      );
+    }
+  });
+
+  test('no queda NotificationCenter (lo reemplazó NotificationsBloc)', () {
+    expect(
+      File('lib/shared/state/notification_center.dart').existsSync(),
+      isFalse,
+    );
+    final bad = _violations('lib', RegExp(r'notification_center'));
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
   test('los cubits de autenticación no importan data ni Supabase', () {
     final bad = _violations(
       'lib/features/auth/bloc',

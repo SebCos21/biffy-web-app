@@ -3,13 +3,11 @@ import 'package:flutter/foundation.dart';
 import '../../core/constants/catalog_constants.dart';
 import '../../core/utils/clock.dart';
 import '../../data/models/address.dart';
-import '../../data/models/app_notification.dart';
 import '../../data/models/catalog.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/repositories/profile_repository.dart';
-import '../../domain/repositories/notification_repository.dart';
-import 'notification_center.dart';
+import '../../domain/usecases/notifications/notification_usecases.dart';
 
 /// Beneficio canjeable con Gotas (valores de demostración).
 class Benefit {
@@ -76,30 +74,23 @@ enum VerifyResult {
 
 /// Sesión simulada: usuario, rol activo, datos personales y preferencias.
 class SessionController extends ChangeNotifier {
-  /// Recibe el repositorio de auth, las notificaciones y el reloj.
+  /// Recibe el repositorio de auth, los casos de uso de avisos y el reloj.
   SessionController(
     this._auth,
     this._notifications,
     this._clock, {
     ProfileRepository? profile,
-    NotificationRepository? notificationsRepo,
-  }) : _profile = profile, // ignore: prefer_initializing_formals
-       // ignore: prefer_initializing_formals
-       _notificationsRepo = notificationsRepo;
+  }) : _profile = profile; // ignore: prefer_initializing_formals
 
   final AuthRepository _auth;
-  final NotificationCenter _notifications;
+
+  // TODO(puente): la sesión publica y sincroniza avisos con los casos de uso
+  // de notificaciones hasta que el AuthBloc la reemplace (módulo 6).
+  final NotificationUseCases _notifications;
   final Clock _clock;
 
   /// Repositorio de datos personales; null en modo demo.
   final ProfileRepository? _profile;
-
-  /// Avisos guardados en la base; `null` en modo demo.
-  final NotificationRepository? _notificationsRepo;
-
-  /// Cancela la escucha de avisos en Realtime del usuario actual.
-  void Function()? _stopNotifications;
-  String? _watchingUserId;
 
   AppUser? _user;
   UserRole _activeRole = UserRole.buyer;
@@ -243,9 +234,7 @@ class SessionController extends ChangeNotifier {
 
   /// Cierra la sesión local y vuelve al modo invitado.
   void logout() {
-    _stopNotifications?.call();
-    _stopNotifications = null;
-    _watchingUserId = null;
+    _notifications.sync.stop();
     _user = null;
     _activeRole = UserRole.buyer;
     notifyListeners();
@@ -397,9 +386,8 @@ class SessionController extends ChangeNotifier {
       final favsF = profile.favorites(u.id);
       final settingsF = profile.settings(u.id);
       final couponsF = profile.coupons(u.id);
-      final notifsF =
-          _notificationsRepo?.forUser(u.id) ??
-          Future.value(const <AppNotification>[]);
+      // Avisos guardados: se cargan en paralelo y luego se escuchan en vivo.
+      final notifsF = _notifications.sync(u.id);
       final verificationF = profile.verification(u.id);
 
       final p = await prefsF;
@@ -447,17 +435,7 @@ class SessionController extends ChangeNotifier {
       d.coupons
         ..clear()
         ..addAll(await couponsF);
-      _notifications.seed(await notifsF);
-
-      // Avisos nuevos (cambios de pedido, ofertas) llegan en vivo.
-      if (_watchingUserId != u.id) {
-        _stopNotifications?.call();
-        _watchingUserId = u.id;
-        _stopNotifications = _notificationsRepo?.watch(
-          u.id,
-          _notifications.upsert,
-        );
-      }
+      await notifsF;
     }
 
     notifyListeners();

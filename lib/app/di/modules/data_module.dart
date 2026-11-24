@@ -6,6 +6,7 @@ import '../../../core/utils/clock.dart';
 import '../../../data/mock/seed_users.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/catalog_repository.dart';
+import '../../../data/repositories/in_memory_notification_repository.dart';
 import '../../../data/repositories/in_memory_order_repository.dart';
 import '../../../data/repositories/in_memory_payment_repository.dart';
 import '../../../data/repositories/review_repository_impl.dart';
@@ -52,6 +53,12 @@ void _registerInMemory(GetIt g) {
   g.registerLazySingleton<ReviewRepository>(
     () => InMemoryReviewRepository(g<OrderRepository>()),
   );
+  g.registerLazySingleton<NotificationRepository>(
+    InMemoryNotificationRepository.new,
+    dispose: (repo) {
+      if (repo is InMemoryNotificationRepository) repo.dispose();
+    },
+  );
 }
 
 /// Repositorios de Supabase. El catálogo y los pedidos se precargan, por eso
@@ -83,6 +90,9 @@ void _registerSupabase(GetIt g) {
   g.registerLazySingleton<ProfileRepository>(SupabaseProfileRepository.new);
   g.registerLazySingleton<NotificationRepository>(
     SupabaseNotificationRepository.new,
+    dispose: (repo) {
+      if (repo is SupabaseNotificationRepository) repo.dispose();
+    },
   );
   g.registerLazySingleton<ReviewRepository>(SupabaseReviewRepository.new);
   // Un solo repositorio sirve a las dos interfaces (comprador y restaurante).

@@ -9,7 +9,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/order.dart';
 import '../../../domain/recommendation.dart';
 import '../../../shared/state/catalog_controller.dart';
-import '../../../shared/state/notification_center.dart';
+import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 import '../ai/recommendation_input.dart';
@@ -26,7 +26,7 @@ class HomeScreen extends StatelessWidget {
     final session = context.watchController<SessionController>();
     final catalog = context.watchController<CatalogController>();
     final orders = context.watch<OrdersBloc>();
-    final notifications = context.watchController<NotificationCenter>();
+    final notifications = context.watch<NotificationsBloc>();
     final t = Theme.of(context).textTheme;
     final user = session.user;
     final restaurants = catalog.reachableRestaurants;

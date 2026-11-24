@@ -38,7 +38,7 @@ abstract class OrderWalletPort {
 }
 
 /// Avisos a las personas involucradas en un pedido. Lo implementa un adaptador
-/// sobre `NotificationCenter`.
+/// sobre el caso de uso `PushNotification` (demo) o no hace nada (servidor).
 abstract class OrderNotifier {
   void placed(Order order, {required String businessId});
   void buyerCancelled(Order order, {required String? businessId});

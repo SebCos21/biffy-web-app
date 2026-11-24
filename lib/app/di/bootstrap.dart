@@ -1,7 +1,7 @@
 import '../../data/mock/seed_state.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../../shared/state/catalog_controller.dart';
-import '../../shared/state/notification_center.dart';
+import '../../domain/usecases/notifications/notification_usecases.dart';
 import '../../shared/state/session_controller.dart';
 import '../../core/utils/clock.dart';
 import 'injection.dart';
@@ -34,7 +34,7 @@ void bootstrapDemo({bool seedData = true}) {
       getIt<Clock>(),
     );
   }
-  getIt<NotificationCenter>().push(
+  getIt<PushNotification>()(
     title: 'Bienvenido a Biffy 🐝',
     body: 'Explora sin registrarte. Todo es una demostración sin cobros reales.',
     audience: 'all',

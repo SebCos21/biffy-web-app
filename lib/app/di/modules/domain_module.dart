@@ -4,12 +4,14 @@ import '../../../core/utils/clock.dart';
 import '../../../domain/ports/order_ports.dart';
 import '../../../domain/ports/review_ports.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
+import '../../../domain/repositories/notification_repository.dart';
 import '../../../domain/repositories/order_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
 import '../../../domain/repositories/review_repository.dart';
 import '../../../domain/repositories/rewards_repository.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
 import '../../../domain/usecases/merchant_boxes_usecases.dart';
+import '../../../domain/usecases/notifications/notification_usecases.dart';
 import '../../../domain/usecases/orders/order_usecases.dart';
 import '../../../domain/usecases/payments/check_payment_status.dart';
 import '../../../domain/usecases/payments/retry_payment.dart';
@@ -20,7 +22,6 @@ import '../../../shared/adapters/order_adapters.dart';
 import '../../../shared/adapters/review_adapters.dart';
 import '../../../shared/adapters/server_order_notifier.dart';
 import '../../../shared/state/catalog_controller.dart';
-import '../../../shared/state/notification_center.dart';
 import '../../../shared/state/session_controller.dart';
 
 /// Módulo de dominio: puertos (con sus adaptadores) y casos de uso.
@@ -47,7 +48,7 @@ void _registerPorts(GetIt g) {
   g.registerLazySingleton<OrderNotifier>(
     () => g<OrderRepository>().isRemote
         ? const ServerOrderNotifier()
-        : NotificationOrderAdapter(g<NotificationCenter>(), demo: true),
+        : NotificationOrderAdapter(g<PushNotification>(), demo: true),
   );
   g.registerLazySingleton<BranchRatingPort>(
     () => CatalogRatingAdapter(g<CatalogController>()),
@@ -55,7 +56,7 @@ void _registerPorts(GetIt g) {
   g.registerLazySingleton<ReviewNotifier>(
     () => g<OrderRepository>().isRemote
         ? const ServerReviewNotifier()
-        : LocalReviewNotifier(g<NotificationCenter>(), g<CatalogController>()),
+        : LocalReviewNotifier(g<PushNotification>(), g<CatalogController>()),
   );
 }
 
@@ -79,6 +80,18 @@ void _registerUseCases(GetIt g) {
     ),
   );
   g.registerFactory<GetCourierEarnings>(GetCourierEarnings.new);
+
+  // Avisos: el paquete completo (para el Bloc y la sesión) y el de publicar
+  // (para los notificadores de pedidos y reseñas del modo demo).
+  g.registerFactory<NotificationUseCases>(
+    () => NotificationUseCases(
+      repo: g<NotificationRepository>(),
+      clock: g<Clock>(),
+    ),
+  );
+  g.registerFactory<PushNotification>(
+    () => PushNotification(g<NotificationRepository>(), g<Clock>()),
+  );
 
   // Pagos: iniciar, consultar y reintentar (sin estado propio).
   g.registerFactory<StartPayment>(() => StartPayment(g<PaymentRepository>()));

@@ -9,7 +9,7 @@ import '../features/orders/bloc/orders_bloc.dart';
 import '../features/buyer/cart/bloc/cart_cubit.dart';
 import '../shared/state/catalog_controller.dart';
 import '../shared/state/controller_scope.dart';
-import '../shared/state/notification_center.dart';
+import '../features/notifications/bloc/notifications_bloc.dart';
 import '../shared/state/session_controller.dart';
 import 'di/injection.dart';
 import 'router.dart';
@@ -89,12 +89,14 @@ class _BiffyAppState extends State<BiffyApp> {
       controllers: {
         SessionController: getIt<SessionController>(),
         CatalogController: getIt<CatalogController>(),
-        NotificationCenter: getIt<NotificationCenter>(),
       },
       child: MultiBlocProvider(
         providers: [
           BlocProvider<OrdersBloc>.value(value: getIt<OrdersBloc>()),
           BlocProvider<CartCubit>.value(value: getIt<CartCubit>()),
+          BlocProvider<NotificationsBloc>.value(
+            value: getIt<NotificationsBloc>(),
+          ),
         ],
         child: _DarkModeBuilder(
           session: getIt<SessionController>(),

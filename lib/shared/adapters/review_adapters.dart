@@ -1,7 +1,7 @@
 import '../../domain/entities/order.dart';
 import '../../domain/ports/review_ports.dart';
 import '../state/catalog_controller.dart';
-import '../state/notification_center.dart';
+import '../../domain/usecases/notifications/notification_usecases.dart';
 
 /// Conecta el puerto de promedio de sede con `CatalogController`.
 class CatalogRatingAdapter implements BranchRatingPort {
@@ -17,16 +17,16 @@ class CatalogRatingAdapter implements BranchRatingPort {
 
 /// Avisa al restaurante de una calificación (solo en modo demo).
 class LocalReviewNotifier implements ReviewNotifier {
-  /// Recibe el centro de avisos y el catálogo para saber el negocio.
-  LocalReviewNotifier(this._center, this._catalog);
-  final NotificationCenter _center;
+  /// Recibe el caso de uso de avisos y el catálogo para saber el negocio.
+  LocalReviewNotifier(this._push, this._catalog);
+  final PushNotification _push;
   final CatalogController _catalog;
 
   /// Crea el aviso «Nueva calificación» para el negocio del pedido.
   @override
   void rated(Order order, int stars) {
     final business = _catalog.restaurantById(order.restaurantId)?.businessId;
-    _center.push(
+    _push(
       title: 'Nueva calificación ⭐',
       body: '${order.buyerName} calificó ${order.id} con $stars de 5.',
       audience: 'business:$business',

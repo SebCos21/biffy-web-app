@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../data/models/app_notification.dart';
-import '../../../shared/state/notification_center.dart';
+import '../../../domain/entities/app_notification.dart';
+import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../shared/state/session_controller.dart';
 
 /// Lo que muestra la pantalla de notificaciones del rol activo.
@@ -19,52 +21,55 @@ class NotificationsState {
   int get unread => items.where((n) => !n.read).length;
 }
 
-/// Cubit de notificaciones: filtra los avisos del rol activo y los marca
-/// como leídos. Se actualiza solo cuando llega un aviso (Realtime o demo).
+/// Cubit de la pantalla de notificaciones: filtra los avisos del rol activo y
+/// despacha al [NotificationsBloc] las acciones de leer.
 ///
-/// Flujo: [NotificationCenter] (avisos compartidos) + [SessionController]
-/// (quién soy) → [NotificationsCubit] → pantalla.
+/// Flujo: [NotificationsBloc] (avisos compartidos) + sesión (quién soy) →
+/// [NotificationsCubit] → pantalla.
 class NotificationsCubit extends Cubit<NotificationsState> {
-  /// Escucha el centro de avisos y la sesión para mantenerse al día.
+  /// Escucha el Bloc de avisos y la sesión para mantenerse al día.
   NotificationsCubit({
-    required NotificationCenter center,
+    required NotificationsBloc notifications,
     required SessionController session,
-  }) : _center = center,
+  }) : _bloc = notifications,
        _session = session,
-       super(_read(center, session)) {
-    _center.addListener(_refresh);
+       super(_read(notifications, session)) {
+    _sub = _bloc.stream.listen((_) => _refresh());
+    // TODO(puente): la sesión sigue en ChangeNotifier hasta el módulo de Auth.
     _session.addListener(_refresh);
   }
 
-  final NotificationCenter _center;
+  final NotificationsBloc _bloc;
   final SessionController _session;
+  StreamSubscription<void>? _sub;
 
   /// Lee los avisos visibles para el usuario y rol actuales.
   static NotificationsState _read(
-    NotificationCenter center,
+    NotificationsBloc bloc,
     SessionController session,
   ) => NotificationsState(
-    items: center.visibleFor(session.user, session.activeRole),
+    items: bloc.visibleFor(session.user, session.activeRole),
     enabled: session.settings.notifications,
   );
 
   /// Vuelve a leer los avisos cuando algo cambia.
   void _refresh() {
-    if (!isClosed) emit(_read(_center, _session));
+    if (!isClosed) emit(_read(_bloc, _session));
   }
 
   /// Marca un aviso como leído (y en la base si viene de Supabase).
   void open(AppNotification n) {
-    if (!n.read) _center.markRead(n.id);
+    if (!n.read) _bloc.add(NotificationOpened(n.id));
   }
 
   /// Marca como leídos todos los avisos visibles.
-  void markAllRead() => _center.markAllRead(_session.user, _session.activeRole);
+  void markAllRead() =>
+      _bloc.add(AllNotificationsRead(_session.user, _session.activeRole));
 
   /// Deja de escuchar al cerrar la pantalla.
   @override
   Future<void> close() {
-    _center.removeListener(_refresh);
+    _sub?.cancel();
     _session.removeListener(_refresh);
     return super.close();
   }

@@ -2,7 +2,8 @@ import 'package:biffy/core/utils/clock.dart';
 import 'package:biffy/data/models/address.dart';
 import 'package:biffy/data/models/user.dart';
 import 'package:biffy/data/repositories/auth_repository.dart';
-import 'package:biffy/shared/state/notification_center.dart';
+import 'package:biffy/data/repositories/in_memory_notification_repository.dart';
+import 'package:biffy/domain/usecases/notifications/notification_usecases.dart';
 import 'package:biffy/shared/state/session_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -126,7 +127,10 @@ class _FakeRemoteAuth implements AuthRepository {
 /// Crea un controlador de sesión con el repositorio remoto falso.
 SessionController _session(_FakeRemoteAuth auth) => SessionController(
   auth,
-  NotificationCenter(Clock.fixed(DateTime(2026))),
+  NotificationUseCases(
+    repo: InMemoryNotificationRepository(),
+    clock: Clock.fixed(DateTime(2026)),
+  ),
   Clock.fixed(DateTime(2026)),
 );
 

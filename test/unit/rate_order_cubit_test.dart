@@ -33,7 +33,7 @@ void main() {
         rateOrder: RateOrder(
           _FakeReviews(outcome),
           CatalogRatingAdapter(s.catalog),
-          LocalReviewNotifier(s.notifications, s.catalog),
+          LocalReviewNotifier(s.pushNotification, s.catalog),
         ),
         order: o,
         userId: o.buyerId,
