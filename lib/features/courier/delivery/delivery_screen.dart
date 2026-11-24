@@ -11,9 +11,8 @@ import '../../../data/models/catalog.dart';
 import '../../../data/mock/seed_users.dart';
 import '../../../data/models/order.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Entrega: requiere el código correcto y una foto de evidencia local.
@@ -69,7 +68,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final t = Theme.of(context).textTheme;
     final remote = orders.isRemote;
     final o = orders.byId(widget.id);
@@ -269,7 +268,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   /// Cierra la entrega validando código y evidencia, y celebra el resultado.
   Future<void> _complete(BuildContext context, Order o) async {
     if (_busy) return;
-    final session = getIt<SessionController>();
+    final session = getIt<AuthBloc>();
     final orders = context.read<OrdersBloc>();
     setState(() => _busy = true);
     final outcome = await orders.request(

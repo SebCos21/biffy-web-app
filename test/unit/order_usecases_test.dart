@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
 
-AppUser user(TestServices s, String id) => s.session.auth.byId(id)!;
+AppUser user(TestServices s, String id) => s.session.accountById(id)!;
 
 /// Casos de uso del ciclo del pedido sobre el repositorio en memoria (demo).
 void main() {

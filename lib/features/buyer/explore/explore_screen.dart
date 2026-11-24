@@ -11,11 +11,10 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
 import '../../../domain/catalog_rules.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../university/bloc/university_cubit.dart';
 import '../../preferences/bloc/preferences_cubit.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Buscador de platos y restaurantes con filtros rápidos y avanzados.
 class ExploreScreen extends StatefulWidget {
@@ -80,7 +79,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   void _set(DishFilters f) => setState(() => _filters = f);
 
   /// Filtra los platos alcanzables con los filtros y preferencias actuales.
-  List<Dish> _results(CatalogBloc catalog, SessionController session) =>
+  List<Dish> _results(CatalogBloc catalog, AuthBloc session) =>
       filterDishes(
         catalog.reachableDishes,
         _filters,
@@ -98,7 +97,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     // Repinta cuando cambian las alergias o la universidad verificada.
     context.watch<PreferencesCubit>();
     context.watch<UniversityCubit>();
@@ -410,7 +409,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   /// Abre la hoja de filtros avanzados y aplica el resultado.
   Future<void> _openFilters(BuildContext context) async {
     final catalog = getIt<CatalogBloc>();
-    final session = getIt<SessionController>();
+    final session = getIt<AuthBloc>();
     final uniCubit = getIt<UniversityCubit>();
     final result = await showModalBottomSheet<DishFilters>(
       context: context,

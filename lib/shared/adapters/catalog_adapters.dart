@@ -1,29 +1,29 @@
 import 'dart:async';
 
+import '../../core/constants/catalog_constants.dart';
 import '../../domain/entities/catalog.dart';
 import '../../domain/ports/catalog_ports.dart';
-import '../state/session_controller.dart';
+import '../../domain/repositories/session_repository.dart';
 
-// TODO(puente): adaptador sobre SessionController (ChangeNotifier); se
-// reemplaza por el AuthBloc en el módulo 6.
 /// Conecta el contexto del catálogo con la sesión: avisa solo cuando cambian
 /// el punto de entrega o el horario de demostración (no en cada cambio).
 class SessionCatalogAdapter implements CatalogContextPort {
-  /// Escucha la sesión compartida.
+  /// Escucha el estado de la sesión.
   SessionCatalogAdapter(this._session)
-    : _lastPoint = _session.pointId,
-      _lastLunch = _session.settings.demoLunch {
-    _session.addListener(_onSession);
+    : _lastPoint = _session.current.pointId,
+      _lastLunch = _session.current.settings.demoLunch {
+    _sub = _session.changes.listen((_) => _onSession());
   }
 
-  final SessionController _session;
+  final SessionRepository _session;
   final StreamController<void> _changes = StreamController<void>.broadcast();
+  late final StreamSubscription<void> _sub;
   String _lastPoint;
   bool _lastLunch;
 
   /// Punto de entrega activo.
   @override
-  DeliveryPoint get point => _session.point;
+  DeliveryPoint get point => pointById(_session.current.pointId);
 
   /// Emite cuando cambian el punto o el horario de demostración.
   @override
@@ -31,16 +31,16 @@ class SessionCatalogAdapter implements CatalogContextPort {
 
   /// Compara con lo último visto y avisa si cambió.
   void _onSession() {
-    final lunch = _session.settings.demoLunch;
-    if (_session.pointId == _lastPoint && lunch == _lastLunch) return;
-    _lastPoint = _session.pointId;
-    _lastLunch = lunch;
+    final s = _session.current;
+    if (s.pointId == _lastPoint && s.settings.demoLunch == _lastLunch) return;
+    _lastPoint = s.pointId;
+    _lastLunch = s.settings.demoLunch;
     if (!_changes.isClosed) _changes.add(null);
   }
 
   /// Deja de escuchar la sesión.
   void dispose() {
-    _session.removeListener(_onSession);
+    _sub.cancel();
     _changes.close();
   }
 }

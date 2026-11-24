@@ -7,7 +7,7 @@ import '../../domain/repositories/preferences_repository.dart';
 import '../../domain/repositories/university_repository.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
-import '../../shared/state/session_controller.dart';
+import '../../features/auth/bloc/auth_bloc.dart';
 import '../../core/utils/clock.dart';
 import 'injection.dart';
 
@@ -19,7 +19,7 @@ import 'injection.dart';
 Future<void> bootstrapApp({bool seedData = true}) async {
   if (getIt<OrderRepository>().isRemote) {
     try {
-      await getIt<SessionController>().restoreAsync();
+      await getIt<AuthBloc>().request(SessionRestoreRequested());
     } on Object {
       // Sin red se abre sin sesión; la persona puede volver a entrar.
     }
@@ -33,7 +33,6 @@ Future<void> bootstrapApp({bool seedData = true}) async {
 void bootstrapDemo({bool seedData = true}) {
   if (seedData) {
     applyDemoSeed(
-      getIt<SessionController>(),
       getIt<OrderRepository>(),
       getIt<CatalogRepository>(),
       getIt<Clock>(),

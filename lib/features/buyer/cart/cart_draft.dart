@@ -1,13 +1,13 @@
 import '../../../data/models/address.dart';
 import '../../../domain/usecases/orders/checkout_draft.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../addresses/bloc/addresses_cubit.dart';
 import '../../wallet/bloc/wallet_cubit.dart';
 import 'bloc/cart_cubit.dart';
 
 /// Dirección elegida para el carrito (o la predeterminada del usuario).
 Address? cartAddress(
-  SessionController session,
+  AuthBloc session,
   CartCubit cart,
   AddressesCubit addresses,
 ) =>
@@ -17,7 +17,7 @@ Address? cartAddress(
 /// Construye el borrador del checkout a partir del carrito actual; el cupón
 /// sale de la billetera de la cuenta.
 CheckoutDraft draftFromCart(
-  SessionController session,
+  AuthBloc session,
   CartCubit cart,
   WalletCubit wallet,
   AddressesCubit addresses,
@@ -26,7 +26,7 @@ CheckoutDraft draftFromCart(
       restaurant: cart.restaurant,
       items: cart.items,
       address: cartAddress(session, cart, addresses),
-      payment: cart.payment ?? session.data.defaultPayment,
+      payment: cart.payment ?? session.defaultPayment,
       scheduledFor: cart.scheduledFor,
       tip: cart.tip,
       useGotas: cart.useGotas && session.isLoggedIn,

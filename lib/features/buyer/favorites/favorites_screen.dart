@@ -5,9 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/catalog_cards.dart';
 import '../../../core/widgets/ui.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../preferences/bloc/preferences_cubit.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Lista los platos y restaurantes marcados como favoritos.
 class FavoritesScreen extends StatelessWidget {
@@ -16,7 +15,7 @@ class FavoritesScreen extends StatelessWidget {
   /// Construye la lista de favoritos o el estado vacío.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final prefsCubit = context.watch<PreferencesCubit>();
     final catalog = context.watch<CatalogBloc>();
     final dishes = [

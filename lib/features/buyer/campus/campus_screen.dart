@@ -8,8 +8,7 @@ import '../../../core/widgets/actions.dart';
 import '../../../core/widgets/catalog_cards.dart';
 import '../../../core/widgets/ui.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/controller_scope.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../university/bloc/university_cubit.dart';
 import '../../auth/bloc/university_verification_cubit.dart';
 import '../../orders/bloc/orders_bloc.dart';
@@ -36,7 +35,7 @@ class _CampusScreenState extends State<CampusScreen> {
   @override
   void initState() {
     super.initState();
-    final session = getIt<SessionController>();
+    final session = getIt<AuthBloc>();
     final uniCubit = getIt<UniversityCubit>();
     _email.text = uniCubit.emailOf(session.user?.id) ?? '';
     _verification = getIt<UniversityVerificationCubit>();
@@ -52,7 +51,7 @@ class _CampusScreenState extends State<CampusScreen> {
   }
 
   /// Envía el código al correo institucional.
-  Future<void> _send(SessionController session, String uniId) async {
+  Future<void> _send(AuthBloc session, String uniId) async {
     final uniCubit = getIt<UniversityCubit>();
     final email = _email.text.trim().isEmpty
         ? (uniCubit.emailOf(session.user?.id) ?? '')
@@ -70,7 +69,7 @@ class _CampusScreenState extends State<CampusScreen> {
   }
 
   /// Confirma el código y activa Campus por 30 días.
-  Future<void> _confirm(SessionController session, String uniId) async {
+  Future<void> _confirm(AuthBloc session, String uniId) async {
     final uniCubit = getIt<UniversityCubit>();
     final email = _email.text.trim().isEmpty
         ? (uniCubit.emailOf(session.user?.id) ?? '')
@@ -90,7 +89,7 @@ class _CampusScreenState extends State<CampusScreen> {
   /// Construye el selector de universidad, la verificación y los populares.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final uniCubit = context.watch<UniversityCubit>();
     final catalog = context.watch<CatalogBloc>();
     final orders = context.watch<OrdersBloc>();

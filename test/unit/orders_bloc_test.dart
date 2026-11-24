@@ -50,7 +50,7 @@ void main() {
     final s = await makeServices();
     repo = FakeOrderRepository();
     final session = SessionOrderAdapter(
-      s.session,
+      s.session.useCases.session,
       s.wallet.useCases,
       s.university.useCases.queries,
     );

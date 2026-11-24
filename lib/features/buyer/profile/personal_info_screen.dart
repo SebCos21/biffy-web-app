@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/ui.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Formulario para editar nombre y teléfono del usuario.
 class PersonalInfoScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class PersonalInfoScreen extends StatefulWidget {
 /// Estado con los controladores de nombre y teléfono.
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   final _form = GlobalKey<FormState>();
-  late final _session = getIt<SessionController>();
+  late final _session = getIt<AuthBloc>();
   late final _name = TextEditingController(text: _session.user?.name);
   late final _phone = TextEditingController(text: _session.user?.phone);
 
@@ -41,7 +41,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   /// Construye el formulario de datos personales.
   @override
   Widget build(BuildContext context) {
-    final u = context.watchController<SessionController>().user;
+    final u = context.watch<AuthBloc>().user;
     if (u == null) return const Scaffold();
     return Scaffold(
       appBar: AppBar(title: const Text('Información personal')),
@@ -85,18 +85,19 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 label: 'Guardar',
                 onPressed: () async {
                   if (!_form.currentState!.validate()) return;
-                  try {
-                    await _session.updateProfile(
+                  final result = await _session.request(
+                    ProfileUpdateRequested(
                       name: _name.text,
                       phone: _phone.text,
-                    );
-                    if (!context.mounted) return;
-                    showSnack(context, 'Datos actualizados');
-                    context.pop();
-                  } on Object catch (e) {
-                    if (!context.mounted) return;
-                    showSnack(context, '$e', error: true);
+                    ),
+                  );
+                  if (!context.mounted) return;
+                  if (!result.ok) {
+                    showSnack(context, result.message, error: true);
+                    return;
                   }
+                  showSnack(context, 'Datos actualizados');
+                  context.pop();
                 },
               ),
             ],

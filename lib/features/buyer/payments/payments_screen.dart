@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
-import '../../../shared/state/session_controller.dart';
-import '../../../shared/state/controller_scope.dart';
+import '../../auth/bloc/auth_bloc.dart';
 
 /// Selector del método de pago predeterminado del comprador.
 class PaymentsScreen extends StatelessWidget {
@@ -13,8 +13,8 @@ class PaymentsScreen extends StatelessWidget {
   /// Construye la lista de métodos de pago simulados.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
-    final selected = session.data.defaultPayment;
+    final session = context.watch<AuthBloc>();
+    final selected = session.defaultPayment;
     return Scaffold(
       appBar: AppBar(title: const Text('Métodos de pago')),
       body: MobileFrame(
@@ -40,7 +40,7 @@ class PaymentsScreen extends StatelessWidget {
                       ? Border.all(color: AppColors.primary, width: 2)
                       : null,
                   onTap: () {
-                    session.setDefaultPayment(m);
+                    session.add(DefaultPaymentChanged(m));
                     showSnack(
                       context,
                       '${m.label} es tu método predeterminado',

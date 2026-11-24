@@ -2,7 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../domain/pricing.dart';
 import '../../../../domain/usecases/orders/checkout_draft.dart';
-import '../../../../shared/state/session_controller.dart';
+import '../../../auth/bloc/auth_bloc.dart';
 import '../../../orders/bloc/orders_bloc.dart';
 import '../../../wallet/bloc/wallet_cubit.dart';
 import '../../../addresses/bloc/addresses_cubit.dart';
@@ -65,7 +65,7 @@ class CheckoutCubit extends Cubit<CheckoutState> {
   final OrdersBloc orders;
 
   /// Sesión con dirección y usuario.
-  final SessionController session;
+  final AuthBloc session;
 
   /// Carrito compartido.
   final CartCubit cart;

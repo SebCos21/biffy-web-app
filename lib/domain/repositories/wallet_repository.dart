@@ -72,6 +72,13 @@ abstract interface class WalletRepository {
   /// Trae saldo y cupones del servidor (no-op en demo). Nunca lanza.
   Future<WalletResult> load(String userId);
 
+  /// `true` si la cuenta ya recibió las Gotas de bienvenida (en demo las da
+  /// la app una sola vez; con servidor las acredita la base).
+  bool welcomeGrantedOf(String userId);
+
+  /// Marca la bienvenida como entregada.
+  void markWelcomeGranted(String userId);
+
   /// Solo para datos de demostración: deja saldo e historial de una cuenta.
   void insertSeed(String userId, {int? gotas, List<GotasEntry> history});
 }

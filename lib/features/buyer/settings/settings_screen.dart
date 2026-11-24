@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/widgets/actions.dart';
 import '../../../core/widgets/ui.dart';
-import '../../../shared/state/session_controller.dart';
-import '../../../shared/state/controller_scope.dart';
+import '../../auth/bloc/auth_bloc.dart';
 
 /// Preferencias de notificaciones, tema y punto de entrega.
 class SettingsScreen extends StatelessWidget {
@@ -12,7 +12,7 @@ class SettingsScreen extends StatelessWidget {
   /// Construye los interruptores de ajustes y el acceso al punto de entrega.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final s = session.settings;
     return Scaffold(
       appBar: AppBar(title: const Text('Configuración')),
@@ -32,7 +32,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     value: s.notifications,
                     onChanged: (v) =>
-                        session.updateSettings(s.copyWith(notifications: v)),
+                        session.add(SettingsChanged(s.copyWith(notifications: v))),
                   ),
                   SwitchListTile(
                     title: const Text('Promociones'),
@@ -41,7 +41,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     value: s.promotions,
                     onChanged: (v) =>
-                        session.updateSettings(s.copyWith(promotions: v)),
+                        session.add(SettingsChanged(s.copyWith(promotions: v))),
                   ),
                   SwitchListTile(
                     title: const Text('Resumen por correo'),
@@ -50,7 +50,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     value: s.emailSummary,
                     onChanged: (v) =>
-                        session.updateSettings(s.copyWith(emailSummary: v)),
+                        session.add(SettingsChanged(s.copyWith(emailSummary: v))),
                   ),
                   SwitchListTile(
                     key: const Key('set-demo-lunch'),
@@ -60,14 +60,14 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     value: s.demoLunch,
                     onChanged: (v) =>
-                        session.updateSettings(s.copyWith(demoLunch: v)),
+                        session.add(SettingsChanged(s.copyWith(demoLunch: v))),
                   ),
                   SwitchListTile(
                     key: const Key('set-dark'),
                     title: const Text('Modo oscuro'),
                     value: s.darkMode,
                     onChanged: (v) =>
-                        session.updateSettings(s.copyWith(darkMode: v)),
+                        session.add(SettingsChanged(s.copyWith(darkMode: v))),
                   ),
                 ],
               ),

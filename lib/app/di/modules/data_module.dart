@@ -12,6 +12,8 @@ import '../../../data/repositories/in_memory_notification_repository.dart';
 import '../../../data/repositories/in_memory_order_repository.dart';
 import '../../../data/repositories/in_memory_payment_repository.dart';
 import '../../../data/repositories/in_memory_preferences_repository.dart';
+import '../../../data/repositories/in_memory_profile_repository.dart';
+import '../../../data/repositories/in_memory_session_repository.dart';
 import '../../../data/repositories/in_memory_university_repository.dart';
 import '../../../data/repositories/in_memory_wallet_repository.dart';
 import '../../../data/repositories/review_repository_impl.dart';
@@ -38,6 +40,7 @@ import '../../../domain/repositories/preferences_repository.dart';
 import '../../../domain/repositories/profile_repository.dart';
 import '../../../domain/repositories/review_repository.dart';
 import '../../../domain/repositories/rewards_repository.dart';
+import '../../../domain/repositories/session_repository.dart';
 import '../../../domain/repositories/university_repository.dart';
 import '../../../domain/repositories/wallet_repository.dart';
 
@@ -52,8 +55,21 @@ void registerDataModule(GetIt g) {
   }
 }
 
+/// Estado de la sesión en el equipo: igual en demo y con Supabase (la cuenta
+/// la valida `AuthRepository`).
+void _registerSession(GetIt g) {
+  g.registerLazySingleton<SessionRepository>(
+    InMemorySessionRepository.new,
+    dispose: (repo) {
+      if (repo is InMemorySessionRepository) repo.dispose();
+    },
+  );
+}
+
 /// Repositorios en memoria: modo demo y pruebas, sin red.
 void _registerInMemory(GetIt g) {
+  _registerSession(g);
+  g.registerLazySingleton<ProfileRepository>(InMemoryProfileRepository.new);
   g.registerLazySingleton<CatalogRepository>(
     InMemoryCatalogRepository.new,
     dispose: (repo) {
@@ -115,6 +131,7 @@ void _registerInMemory(GetIt g) {
 /// Repositorios de Supabase. El catálogo y los pedidos se precargan, por eso
 /// son asíncronos y `configureDependencies` espera a que estén listos.
 void _registerSupabase(GetIt g) {
+  _registerSession(g);
   // El cliente se inicializa primero; todo lo demás espera a que esté listo.
   g.registerSingletonAsync<Supabase>(
     () => Supabase.initialize(

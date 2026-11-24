@@ -16,7 +16,8 @@ import 'package:biffy/features/notifications/bloc/notifications_bloc.dart';
 import 'package:biffy/features/preferences/bloc/preferences_cubit.dart';
 import 'package:biffy/features/university/bloc/university_cubit.dart';
 import 'package:biffy/features/wallet/bloc/wallet_cubit.dart';
-import 'package:biffy/shared/state/session_controller.dart';
+import 'package:biffy/features/auth/bloc/auth_bloc.dart';
+import 'package:biffy/data/models/user.dart';
 import 'package:biffy/core/constants/catalog_constants.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:biffy/data/models/cart.dart';
@@ -38,7 +39,7 @@ class TestServices {
   const TestServices();
 
   Clock get clock => getIt<Clock>();
-  SessionController get session => getIt<SessionController>();
+  AuthBloc get session => getIt<AuthBloc>();
   CatalogBloc get catalog => getIt<CatalogBloc>();
   CartCubit get cart => getIt<CartCubit>();
   PaymentRepository get payment => getIt<PaymentRepository>();
@@ -179,7 +180,7 @@ Future<void> waitSnackBars(WidgetTester tester) async {
 Future<Order> deliverQbano(TestServices s) async {
   final o = await placeQbano(s);
   final uc = s.orders.useCases;
-  final andres = s.session.auth.byId('u-andres')!;
+  final andres = s.session.accountById('u-andres')!;
   for (final step in <Future<OrderResult> Function()>[
     () => uc.acceptOrder(o.id),
     () => uc.markOrderReady(o.id),
@@ -198,4 +199,29 @@ Future<Order> deliverQbano(TestServices s) async {
   }
   expect(o.status, OrderStatus.delivered);
   return o;
+}
+
+/// Atajos síncronos de sesión para las pruebas (antes eran métodos del
+/// `SessionController`). Llaman a los mismos casos de uso que el [AuthBloc]
+/// sin esperar su evento; el Bloc se entera por el stream de la sesión.
+extension DemoSessionShortcuts on AuthBloc {
+  /// Inicia sesión demo y devuelve la cuenta (falla la prueba si no entra).
+  AppUser login(String email, String password) {
+    final r = useCases.signIn.demo(email, password);
+    final u = r.user;
+    if (!r.ok || u == null) throw StateError('Login demo falló: ${r.message}');
+    return u;
+  }
+
+  /// Entra con una cuenta de demostración.
+  void loginAs(AppUser u) => useCases.signIn.demoAccount(u);
+
+  /// Cierra la sesión local.
+  void logout() => useCases.signOut.local();
+
+  /// Cambia el punto de entrega.
+  void setPoint(String id) => useCases.settings.setPoint(id);
+
+  /// Guarda los ajustes.
+  void updateSettings(AppSettings s) => useCases.settings.updateSettings(s);
 }

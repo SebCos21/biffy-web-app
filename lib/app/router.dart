@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/navigation/shells.dart';
@@ -44,9 +45,8 @@ import '../features/restaurant_owner/products/product_form_screen.dart';
 import '../features/restaurant_owner/profile/merchant_profile_screen.dart';
 import '../features/restaurant_owner/registration/merchant_registration_screen.dart';
 import '../features/restaurant_owner/statistics/merchant_stats_screen.dart';
-import '../shared/state/session_controller.dart';
+import '../features/auth/bloc/auth_bloc.dart';
 import 'di/injection.dart';
-import '../shared/state/controller_scope.dart';
 
 /// Rutas del comprador que requieren cuenta (explorar nunca la requiere).
 const kBuyerProtected = [
@@ -63,7 +63,7 @@ const kBuyerProtected = [
 ];
 
 /// Reglas de acceso por rol. Conserva la ruta de origen en `from`.
-String? appRedirect(SessionController s, String location, String fullUri) {
+String? appRedirect(AuthBloc s, String location, String fullUri) {
   String login() => '/login?from=${Uri.encodeComponent(fullUri)}';
   if (location.startsWith('/repartidor')) {
     if (!s.isLoggedIn) return login();
@@ -103,8 +103,8 @@ class _RoleScopeState extends State<RoleScope> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final s = getIt<SessionController>();
-      if (s.activeRole != widget.role) s.setActiveRole(widget.role);
+      final s = getIt<AuthBloc>();
+      if (s.activeRole != widget.role) s.add(ActiveRoleChanged(widget.role));
     });
   }
 
@@ -113,7 +113,7 @@ class _RoleScopeState extends State<RoleScope> {
   Widget build(BuildContext context) {
     // Si la sesión dejó de cumplir los requisitos del rol (p. ej. al cambiar
     // de cuenta), no se construyen sus pantallas mientras el router redirige.
-    final s = context.watchController<SessionController>();
+    final s = context.watch<AuthBloc>();
     final allowed = switch (widget.role) {
       UserRole.buyer => true,
       UserRole.courier => s.isLoggedIn && s.hasCourierProfile,
@@ -127,14 +127,16 @@ class _RoleScopeState extends State<RoleScope> {
 GoRoute _r(String path, Widget Function(GoRouterState s) build) =>
     GoRoute(path: path, builder: (_, s) => build(s));
 
-/// Construye el router con todas las rutas y las reglas de acceso.
+/// Construye el router con todas las rutas y las reglas de acceso; [refresh]
+/// avisa cuándo volver a evaluar las redirecciones (cambios de sesión).
 GoRouter buildRouter(
-  SessionController session, {
+  AuthBloc session, {
+  required Listenable refresh,
   String initialLocation = '/splash',
 }) {
   return GoRouter(
     initialLocation: initialLocation,
-    refreshListenable: session,
+    refreshListenable: refresh,
     redirect: (_, state) =>
         appRedirect(session, state.matchedLocation, state.uri.toString()),
     errorBuilder: (context, state) => Scaffold(

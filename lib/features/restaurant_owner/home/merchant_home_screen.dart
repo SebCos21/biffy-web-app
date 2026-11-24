@@ -9,14 +9,13 @@ import '../../../domain/order_rules.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Métricas del negocio actual derivadas de pedidos y productos locales.
 RestaurantMetrics businessMetrics(BuildContext context) {
-  final session = getIt<SessionController>();
+  final session = getIt<AuthBloc>();
   final catalog = getIt<CatalogBloc>();
   final orders = context.read<OrdersBloc>();
   final id = session.businessId!;
@@ -35,7 +34,7 @@ class MerchantHomeScreen extends StatelessWidget {
   /// Muestra el estado del negocio y atajos a pedidos y menú.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final catalog = context.watch<CatalogBloc>();
     final orders = context.watch<OrdersBloc>();
     final center = context.watch<NotificationsBloc>();

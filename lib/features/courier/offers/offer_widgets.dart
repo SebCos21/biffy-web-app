@@ -8,7 +8,7 @@ import '../../../data/models/catalog.dart';
 import '../../../data/models/order.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../../app/di/injection.dart';
 import '../bloc/courier_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,7 +20,7 @@ String paymentForCourier(Order o) => o.payment == PaymentMethod.cash
 
 /// Aceptar una oferta: asignación atómica en el estado compartido.
 Future<void> acceptOffer(BuildContext context, Order o) async {
-  final session = getIt<SessionController>();
+  final session = getIt<AuthBloc>();
   final outcome = await context.read<OrdersBloc>().request(
     OfferAccepted(
       o.id,
@@ -51,7 +51,7 @@ Future<void> acceptOffer(BuildContext context, Order o) async {
 
 /// Rechaza la oferta para este repartidor y avisa al usuario.
 void declineOffer(BuildContext context, Order o) {
-  final session = getIt<SessionController>();
+  final session = getIt<AuthBloc>();
   context.read<OrdersBloc>().add(OfferDeclined(o.id, session.user!.id));
   showSnack(context, 'Oferta rechazada · no afecta tu nivel');
 }

@@ -1,11 +1,9 @@
 import 'package:get_it/get_it.dart';
 
 import '../../../core/utils/clock.dart';
-import '../../../data/repositories/auth_repository.dart';
 import '../../../domain/repositories/catalog_repository.dart';
 import '../../../domain/repositories/merchant_boxes_repository.dart';
 import '../../../domain/repositories/payment_repository.dart';
-import '../../../domain/repositories/profile_repository.dart';
 import '../../../domain/usecases/addresses/address_usecases.dart';
 import '../../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../../domain/usecases/courier/courier_usecases.dart';
@@ -40,37 +38,26 @@ import '../../../features/preferences/bloc/preferences_cubit.dart';
 import '../../../features/restaurant_owner/boxes/merchant_boxes_cubit.dart';
 import '../../../features/university/bloc/university_cubit.dart';
 import '../../../features/wallet/bloc/wallet_cubit.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../../features/auth/bloc/auth_bloc.dart';
+import '../../../domain/repositories/session_repository.dart';
+import '../../../domain/usecases/auth/auth_usecases.dart';
 
 /// Módulo de presentación: estado que consumen las pantallas.
 ///
-/// - `SessionController` (`ChangeNotifier`, aún sin migrar), `CatalogBloc`,
+/// - `AuthBloc`, `CatalogBloc`,
 ///   `OrdersBloc`, `NotificationsBloc` y `CourierCubit`: un solo objeto para
 ///   toda la app (`LazySingleton`).
 /// - Cubits de una pantalla: `Factory`, uno nuevo cada vez que se abre.
 void registerPresentationModule(GetIt g) {
-  _registerControllers(g);
+  _registerSessionAndCart(g);
   _registerBlocs(g);
 }
 
-/// Devuelve la dependencia si el módulo de datos la registró; si no, `null`.
-T? _optional<T extends Object>(GetIt g) => g.isRegistered<T>() ? g<T>() : null;
-
-/// Controladores compartidos por todas las pantallas.
-void _registerControllers(GetIt g) {
-  g.registerLazySingleton<SessionController>(
-    () => SessionController(
-      g<AuthRepository>(),
-      g<NotificationUseCases>(),
-      g<Clock>(),
-      couriers: g<CourierQueries>(),
-      loadCourier: g<LoadCourier>(),
-      wallet: g<WalletUseCases>(),
-      preferences: g<PreferencesUseCases>(),
-      addresses: g<AddressUseCases>(),
-      university: g<UniversityUseCases>(),
-      profile: _optional<ProfileRepository>(g),
-    ),
+/// Bloc de la sesión y cubit del carrito, compartidos por todas las pantallas.
+void _registerSessionAndCart(GetIt g) {
+  g.registerLazySingleton<AuthBloc>(
+    () => AuthBloc(g<AuthUseCases>()),
+    dispose: (bloc) => bloc.close(),
   );
   g.registerLazySingleton<CartCubit>(() => CartCubit(g<CatalogRepository>()));
 }
@@ -112,14 +99,15 @@ void _registerBlocs(GetIt g) {
   g.registerFactory<NotificationsCubit>(
     () => NotificationsCubit(
       notifications: g<NotificationsBloc>(),
-      session: g<SessionController>(),
+      session: g<AuthBloc>(),
     ),
   );
   g.registerFactory<RewardsCubit>(
     () => RewardsCubit(
       load: g<LoadRewards>(),
       redeem: g<RedeemReward>(),
-      refreshBalance: g<SessionController>().refreshRemote,
+      refreshBalance: () =>
+          g<AuthBloc>().request(SessionRefreshRequested()),
     ),
   );
   g.registerFactoryParam<RateOrderCubit, RateOrderArgs, void>(
@@ -147,18 +135,18 @@ void _registerBlocs(GetIt g) {
     ),
   );
   // Cubits de una sola pantalla (login, registro, campus y checkout).
-  g.registerFactory<LoginCubit>(() => LoginCubit(g<SessionController>()));
-  g.registerFactory<RegisterCubit>(() => RegisterCubit(g<SessionController>()));
+  g.registerFactory<LoginCubit>(() => LoginCubit(g<AuthBloc>()));
+  g.registerFactory<RegisterCubit>(() => RegisterCubit(g<AuthBloc>()));
   g.registerFactory<UniversityVerificationCubit>(
     () => UniversityVerificationCubit(
       g<UniversityUseCases>(),
-      () => g<SessionController>().user?.id,
+      () => g<SessionRepository>().current.user?.id,
     ),
   );
   g.registerFactory<CheckoutCubit>(
     () => CheckoutCubit(
       orders: g<OrdersBloc>(),
-      session: g<SessionController>(),
+      session: g<AuthBloc>(),
       cart: g<CartCubit>(),
       wallet: g<WalletCubit>(),
       addresses: g<AddressesCubit>(),

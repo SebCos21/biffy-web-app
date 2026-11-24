@@ -18,8 +18,13 @@ import 'package:biffy/domain/usecases/notifications/notification_usecases.dart';
 import 'package:biffy/domain/usecases/preferences/preferences_usecases.dart';
 import 'package:biffy/domain/usecases/wallet/wallet_usecases.dart';
 import 'package:biffy/shared/adapters/courier_adapters.dart';
-import 'package:biffy/shared/state/session_controller.dart';
+import 'package:biffy/data/repositories/in_memory_profile_repository.dart';
+import 'package:biffy/data/repositories/in_memory_session_repository.dart';
+import 'package:biffy/domain/usecases/auth/auth_usecases.dart';
+import 'package:biffy/features/auth/bloc/auth_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../helpers.dart' show DemoSessionShortcuts;
 
 /// Repositorio remoto falso que registra las escrituras del perfil.
 class _FakeRemoteAuth implements AuthRepository {
@@ -164,8 +169,9 @@ class _FakeRemoteCourier extends InMemoryCourierRepository {
   }
 }
 
-/// Crea un controlador de sesión con el repositorio remoto falso.
-SessionController _session(
+/// Crea el AuthBloc con el repositorio remoto falso (antes un
+/// `SessionController`); se cierra al terminar la prueba.
+AuthBloc _session(
   _FakeRemoteAuth auth, {
   CourierRepository? couriers,
   UniversityRepository? university,
@@ -182,22 +188,28 @@ SessionController _session(
     credit: wallet.credit,
     push: notifications.push,
   );
-  return SessionController(
-    auth,
-    notifications,
-    clock,
-    couriers: CourierQueries(c),
-    loadCourier: LoadCourier(c),
-    wallet: wallet,
-    preferences: preferences,
-    addresses: AddressUseCases(repo: InMemoryAddressRepository()),
-    university: UniversityUseCases(
-      repo: university ?? InMemoryUniversityRepository(),
-      preferences: preferences,
-      push: notifications.push,
+  final bloc = AuthBloc(
+    AuthUseCases(
+      auth: auth,
+      session: InMemorySessionRepository(),
+      profile: InMemoryProfileRepository(),
+      notifications: notifications,
       clock: clock,
+      couriers: CourierQueries(c),
+      loadCourier: LoadCourier(c),
+      wallet: wallet,
+      preferences: preferences,
+      addresses: AddressUseCases(repo: InMemoryAddressRepository()),
+      university: UniversityUseCases(
+        repo: university ?? InMemoryUniversityRepository(),
+        preferences: preferences,
+        push: notifications.push,
+        clock: clock,
+      ),
     ),
   );
+  addTearDown(bloc.close);
+  return bloc;
 }
 
 void main() {
@@ -206,7 +218,9 @@ void main() {
       final auth = _FakeRemoteAuth();
       final s = _session(auth)..loginAs(auth.user);
 
-      await s.updateProfile(name: 'Ana María', phone: '300 111 2233');
+      await s.request(
+        ProfileUpdateRequested(name: 'Ana María', phone: '300 111 2233'),
+      );
 
       expect(auth.savedProfile?.name, 'Ana María');
       expect(auth.savedProfile?.phone, '300 111 2233');
@@ -230,7 +244,10 @@ void main() {
       // repartidor, conectado a la sesión por su adaptador.
       final result = await RegisterCourier(
         couriers,
-        SessionCourierAdapter(s, _uni(InMemoryUniversityRepository()).queries),
+        SessionCourierAdapter(
+          s.useCases,
+          _uni(InMemoryUniversityRepository()).queries,
+        ),
       )(profile);
 
       expect(result.ok, isTrue);
@@ -240,21 +257,22 @@ void main() {
       expect(s.hasCourierProfile, isTrue);
     });
 
-    test('restoreAsync recupera la sesión persistida', () async {
+    // Adaptado: restoreAsync/logoutAsync son ahora eventos del AuthBloc.
+    test('restaurar recupera la sesión persistida', () async {
       final auth = _FakeRemoteAuth();
       final s = _session(auth);
 
-      final restored = await s.restoreAsync();
+      final restored = await s.request(SessionRestoreRequested());
 
-      expect(restored?.id, auth.user.id);
+      expect(restored.user?.id, auth.user.id);
       expect(s.isLoggedIn, isTrue);
     });
 
-    test('logoutAsync limpia la sesión', () async {
+    test('cerrar sesión limpia la sesión', () async {
       final auth = _FakeRemoteAuth();
       final s = _session(auth)..loginAs(auth.user);
 
-      await s.logoutAsync();
+      await s.request(LogoutRequested());
 
       expect(s.isLoggedIn, isFalse);
       expect(s.user, isNull);

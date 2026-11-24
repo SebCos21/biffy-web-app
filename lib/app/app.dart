@@ -9,13 +9,13 @@ import '../features/orders/bloc/orders_bloc.dart';
 import '../features/buyer/cart/bloc/cart_cubit.dart';
 import '../features/addresses/bloc/addresses_cubit.dart';
 import '../features/catalog/bloc/catalog_bloc.dart';
-import '../shared/state/controller_scope.dart';
 import '../features/courier/bloc/courier_cubit.dart';
 import '../features/notifications/bloc/notifications_bloc.dart';
 import '../features/preferences/bloc/preferences_cubit.dart';
 import '../features/university/bloc/university_cubit.dart';
 import '../features/wallet/bloc/wallet_cubit.dart';
-import '../shared/state/session_controller.dart';
+import '../features/auth/bloc/auth_bloc.dart';
+import 'auth_refresh.dart';
 import 'di/injection.dart';
 import 'router.dart';
 import 'theme/app_colors.dart';
@@ -36,8 +36,13 @@ class BiffyApp extends StatefulWidget {
 
 /// Estado que crea el router una sola vez y escucha el modo oscuro.
 class _BiffyAppState extends State<BiffyApp> {
+  /// Avisa al router cada vez que cambia la sesión.
+  late final StreamRefreshListenable _authRefresh = StreamRefreshListenable(
+    getIt<AuthBloc>().stream,
+  );
   late final GoRouter _router = buildRouter(
-    getIt<SessionController>(),
+    getIt<AuthBloc>(),
+    refresh: _authRefresh,
     initialLocation: widget.initialLocation,
   );
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -84,91 +89,44 @@ class _BiffyAppState extends State<BiffyApp> {
   void dispose() {
     _orderErrors?.cancel();
     _router.dispose();
+    _authRefresh.dispose();
     super.dispose();
   }
 
   /// Envuelve la app con el estado compartido, el tema y el router.
   @override
   Widget build(BuildContext context) {
-    return ControllerScope(
-      controllers: {
-        SessionController: getIt<SessionController>(),
-      },
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider<CatalogBloc>.value(value: getIt<CatalogBloc>()),
-          BlocProvider<OrdersBloc>.value(value: getIt<OrdersBloc>()),
-          BlocProvider<CartCubit>.value(value: getIt<CartCubit>()),
-          BlocProvider<NotificationsBloc>.value(
-            value: getIt<NotificationsBloc>(),
-          ),
-          BlocProvider<CourierCubit>.value(value: getIt<CourierCubit>()),
-          BlocProvider<WalletCubit>.value(value: getIt<WalletCubit>()),
-          BlocProvider<AddressesCubit>.value(value: getIt<AddressesCubit>()),
-          BlocProvider<UniversityCubit>.value(
-            value: getIt<UniversityCubit>(),
-          ),
-          BlocProvider<PreferencesCubit>.value(
-            value: getIt<PreferencesCubit>(),
-          ),
-        ],
-        child: _DarkModeBuilder(
-          session: getIt<SessionController>(),
-          builder: (dark) => MaterialApp.router(
-            title: 'Biffy',
-            debugShowCheckedModeBanner: false,
-            scaffoldMessengerKey: _messengerKey,
-            theme: AppTheme.light(),
-            darkTheme: AppTheme.dark(),
-            themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-            locale: const Locale('es', 'CO'),
-            supportedLocales: const [Locale('es', 'CO'), Locale('es')],
-            localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            routerConfig: _router,
-          ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthBloc>.value(value: getIt<AuthBloc>()),
+        BlocProvider<CatalogBloc>.value(value: getIt<CatalogBloc>()),
+        BlocProvider<OrdersBloc>.value(value: getIt<OrdersBloc>()),
+        BlocProvider<CartCubit>.value(value: getIt<CartCubit>()),
+        BlocProvider<NotificationsBloc>.value(
+          value: getIt<NotificationsBloc>(),
+        ),
+        BlocProvider<CourierCubit>.value(value: getIt<CourierCubit>()),
+        BlocProvider<WalletCubit>.value(value: getIt<WalletCubit>()),
+        BlocProvider<AddressesCubit>.value(value: getIt<AddressesCubit>()),
+        BlocProvider<UniversityCubit>.value(value: getIt<UniversityCubit>()),
+        BlocProvider<PreferencesCubit>.value(value: getIt<PreferencesCubit>()),
+      ],
+      // Reconstruye el tema solo cuando cambia el modo oscuro.
+      child: BlocSelector<AuthBloc, AuthState, bool>(
+        selector: (s) => s.session.settings.darkMode,
+        builder: (context, dark) => MaterialApp.router(
+          title: 'Biffy',
+          debugShowCheckedModeBanner: false,
+          scaffoldMessengerKey: _messengerKey,
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+          locale: const Locale('es', 'CO'),
+          supportedLocales: const [Locale('es', 'CO'), Locale('es')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          routerConfig: _router,
         ),
       ),
     );
   }
-}
-
-/// Reconstruye el tema solo cuando cambia el modo oscuro de la sesión.
-class _DarkModeBuilder extends StatefulWidget {
-  const _DarkModeBuilder({required this.session, required this.builder});
-
-  final SessionController session;
-  final Widget Function(bool dark) builder;
-
-  /// Crea el estado que escucha el ajuste.
-  @override
-  State<_DarkModeBuilder> createState() => _DarkModeBuilderState();
-}
-
-/// Estado: recuerda el último valor del modo oscuro.
-class _DarkModeBuilderState extends State<_DarkModeBuilder> {
-  late bool _dark = widget.session.settings.darkMode;
-
-  /// Empieza a escuchar la sesión.
-  @override
-  void initState() {
-    super.initState();
-    widget.session.addListener(_onSession);
-  }
-
-  /// Redibuja solo si el modo oscuro cambió.
-  void _onSession() {
-    final dark = widget.session.settings.darkMode;
-    if (dark != _dark) setState(() => _dark = dark);
-  }
-
-  /// Deja de escuchar la sesión.
-  @override
-  void dispose() {
-    widget.session.removeListener(_onSession);
-    super.dispose();
-  }
-
-  /// Construye la app con el modo actual.
-  @override
-  Widget build(BuildContext context) => widget.builder(_dark);
 }

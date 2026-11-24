@@ -6,10 +6,9 @@ import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/catalog_constants.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/address.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../addresses/bloc/addresses_cubit.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Lista las direcciones guardadas y permite crear, editar o borrar.
 class AddressesScreen extends StatelessWidget {
@@ -18,7 +17,7 @@ class AddressesScreen extends StatelessWidget {
   /// Construye la lista de direcciones con sus acciones.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final addresses = context.watch<AddressesCubit>();
     final list = addresses.addressesOf(session.user?.id);
     final def = addresses.defaultOf(session.user?.id)?.id;
@@ -96,7 +95,7 @@ class AddressesScreen extends StatelessWidget {
                                           session.user?.id,
                                           a.id,
                                         );
-                                        session.setPoint(a.pointId);
+                                        session.add(DeliveryPointChanged(a.pointId));
                                         showSnack(
                                           context,
                                           '${a.label} es tu dirección principal',
@@ -158,7 +157,7 @@ class AddressFormScreen extends StatefulWidget {
 /// Estado con los controladores del formulario de dirección.
 class _AddressFormScreenState extends State<AddressFormScreen> {
   final _form = GlobalKey<FormState>();
-  late final SessionController _session = getIt<SessionController>();
+  late final AuthBloc _session = getIt<AuthBloc>();
   late final AddressesCubit _addresses = getIt<AddressesCubit>();
   late final Address? _orig = _addresses.byId(_session.user?.id, widget.id);
   late final _label = TextEditingController(text: _orig?.label);
@@ -285,7 +284,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     pointId: _pointId,
                   );
                   _addresses.save(_session.user?.id, a, makeDefault: _default);
-                  if (_default) _session.setPoint(_pointId);
+                  if (_default) _session.add(DeliveryPointChanged(_pointId));
                   showSnack(context, 'Dirección guardada');
                   context.pop();
                 },

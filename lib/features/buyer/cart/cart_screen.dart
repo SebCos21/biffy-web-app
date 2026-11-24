@@ -13,13 +13,12 @@ import '../../../domain/pricing.dart';
 import 'bloc/cart_cubit.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../wallet/bloc/wallet_cubit.dart';
 import '../../addresses/bloc/addresses_cubit.dart';
 import 'cart_draft.dart';
 import 'schedule_sheet.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Carrito con productos, horario, dirección, pago y totales.
@@ -55,7 +54,7 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartCubit>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final wallet = context.watch<WalletCubit>();
     final addresses = context.watch<AddressesCubit>();
     final catalog = context.watch<CatalogBloc>();
@@ -83,7 +82,7 @@ class _CartScreenState extends State<CartScreen> {
     final reachable = isReachable(r, point);
     final draft = draftFromCart(session, cart, wallet, addresses);
     final totals = orders.preview(draft);
-    final payment = cart.payment ?? session.data.defaultPayment;
+    final payment = cart.payment ?? session.defaultPayment;
     final coupons = wallet.availableCoupons(session.user?.id);
 
     return Scaffold(
@@ -363,7 +362,7 @@ class _CartScreenState extends State<CartScreen> {
 
   /// Abre la hoja para elegir la dirección de entrega.
   Future<void> _pickAddress(BuildContext context) async {
-    final session = getIt<SessionController>();
+    final session = getIt<AuthBloc>();
     final cart = getIt<CartCubit>();
     final addresses = getIt<AddressesCubit>();
     await showModalBottomSheet<void>(
@@ -391,7 +390,7 @@ class _CartScreenState extends State<CartScreen> {
                 subtitle: Text('${a.full} · zona ${pointById(a.pointId).name}'),
                 onTap: () {
                   cart.setAddress(a.id);
-                  session.setPoint(a.pointId);
+                  session.add(DeliveryPointChanged(a.pointId));
                   Navigator.pop(ctx);
                 },
               ),

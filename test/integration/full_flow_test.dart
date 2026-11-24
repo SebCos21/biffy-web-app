@@ -43,7 +43,7 @@ void main() {
     expect(
       (await s.orders.useCases.acceptOffer(
         o.id,
-        s.session.auth.byId('u-andres')!,
+        s.session.accountById('u-andres')!,
       )).code,
       'ok',
     );

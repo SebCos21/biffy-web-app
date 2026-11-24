@@ -7,9 +7,8 @@ import '../../../data/models/order.dart';
 import '../../../domain/pricing.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import 'reorder_flow.dart';
-import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Grupo de pedidos repetidos con su última versión y el número de veces.
@@ -46,7 +45,7 @@ class FrequentOrdersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final catalog = context.watch<CatalogBloc>();
     final t = Theme.of(context).textTheme;
     if (session.user == null) return const Scaffold();

@@ -7,7 +7,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
 import '../../../data/models/user.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../../app/di/injection.dart';
 import '../../preferences/bloc/preferences_cubit.dart';
 
@@ -24,7 +24,7 @@ class PreferencesScreen extends StatefulWidget {
 class _PreferencesScreenState extends State<PreferencesScreen> {
   int _step = 0;
   late Preferences _p = getIt<PreferencesCubit>().prefsOf(
-    getIt<SessionController>().user?.id,
+    getIt<AuthBloc>().user?.id,
   );
 
   /// Agrega o quita un valor del conjunto de selección.
@@ -34,7 +34,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   /// Construye el paso actual y los botones de navegación fijos.
   @override
   Widget build(BuildContext context) {
-    final session = getIt<SessionController>();
+    final session = getIt<AuthBloc>();
     final t = Theme.of(context).textTheme;
     final titles = [
       'Tus gustos',

@@ -120,7 +120,7 @@ void main() {
   testWidgets('la recogida exige los tres checks', (tester) async {
     final s = await makeServices();
     final o = await seedOrder(s, until: OrderStatus.ready);
-    await s.orders.useCases.acceptOffer(o.id, s.session.auth.byId('u-andres')!);
+    await s.orders.useCases.acceptOffer(o.id, s.session.accountById('u-andres')!);
     s.session.login(kDemoCourierEmail, kDemoPassword);
     await pumpBiffy(
       tester,
@@ -149,7 +149,7 @@ void main() {
   ) async {
     final s = await makeServices();
     final o = await seedOrder(s, until: OrderStatus.ready);
-    await s.orders.useCases.acceptOffer(o.id, s.session.auth.byId('u-andres')!);
+    await s.orders.useCases.acceptOffer(o.id, s.session.accountById('u-andres')!);
     await s.orders.useCases.confirmPickup(
       o.id,
       'u-andres',
@@ -194,7 +194,7 @@ void main() {
   testWidgets('el pedido entregado aparece en el historial', (tester) async {
     final s = await makeServices();
     final o = await seedOrder(s, until: OrderStatus.ready);
-    await s.orders.useCases.acceptOffer(o.id, s.session.auth.byId('u-andres')!);
+    await s.orders.useCases.acceptOffer(o.id, s.session.accountById('u-andres')!);
     await s.orders.useCases.confirmPickup(
       o.id,
       'u-andres',

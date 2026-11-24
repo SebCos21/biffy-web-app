@@ -9,11 +9,10 @@ import '../../../data/mock/seed_users.dart';
 import '../../../data/models/order.dart';
 import '../../../data/models/user.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../university/bloc/university_cubit.dart';
 import '../../wallet/bloc/wallet_cubit.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Perfil del comprador con accesos a cuenta, pedidos y modos de rol.
@@ -23,7 +22,7 @@ class ProfileScreen extends StatelessWidget {
   /// Construye la cabecera del perfil y el menú de accesos.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final uniCubit = context.watch<UniversityCubit>();
     final verified = uniCubit.isVerifiedStudent(session.user?.id);
     final wallet = context.watch<WalletCubit>();
@@ -268,9 +267,10 @@ class ProfileScreen extends StatelessWidget {
   Future<void> _courierMode(BuildContext context) async {
     if (!await requireLogin(context, reason: 'usar el modo repartidor')) return;
     if (!context.mounted) return;
-    final session = getIt<SessionController>();
+    final session = getIt<AuthBloc>();
     if (session.hasCourierProfile) {
-      session.setActiveRole(UserRole.courier);
+      await session.request(ActiveRoleChanged(UserRole.courier));
+      if (!context.mounted) return;
       context.go('/repartidor');
     } else {
       context.push('/repartidor/registro');
@@ -278,10 +278,11 @@ class ProfileScreen extends StatelessWidget {
   }
 
   /// Cambia al modo restaurante o explica cómo registrar un negocio.
-  void _restaurantMode(BuildContext context) {
-    final session = getIt<SessionController>();
+  Future<void> _restaurantMode(BuildContext context) async {
+    final session = getIt<AuthBloc>();
     if (session.businessId != null) {
-      session.setActiveRole(UserRole.restaurant);
+      await session.request(ActiveRoleChanged(UserRole.restaurant));
+      if (!context.mounted) return;
       context.go('/negocio');
       return;
     }
@@ -314,13 +315,14 @@ class ProfileScreen extends StatelessWidget {
               SecondaryButton(
                 key: const Key('use-demo-restaurant'),
                 label: 'Entrar como Qbano Icesi (demo)',
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(ctx);
-                  final owner = session.auth.login(
-                    kDemoRestaurantEmail,
-                    kDemoPassword,
-                  );
-                  session.loginAs(owner);
+                  final owner = session.useCases.signIn
+                      .demo(kDemoRestaurantEmail, kDemoPassword)
+                      .user;
+                  if (owner == null) return;
+                  await session.request(DemoAccountSelected(owner));
+                  if (!context.mounted) return;
                   context.go('/negocio');
                 },
               ),
@@ -342,7 +344,9 @@ Future<void> logoutFlow(BuildContext context) async {
     destructive: true,
   );
   if (!ok || !context.mounted) return;
-  getIt<SessionController>().logout();
+  // Igual que antes de HU-2: cierra solo en el equipo.
+  await getIt<AuthBloc>().request(LogoutRequested(local: true));
+  if (!context.mounted) return;
   context.go('/');
   showSnack(context, 'Sesión cerrada');
 }

@@ -8,7 +8,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../domain/order_rules.dart';
 import '../../../domain/usecases/get_courier_earnings.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import 'earnings_cubit.dart';
 import '../../../app/di/injection.dart';
 
@@ -19,7 +19,7 @@ class EarningsScreen extends StatelessWidget {
   /// Crea el [EarningsCubit] del repartidor y pinta su resumen.
   @override
   Widget build(BuildContext context) {
-    final session = getIt<SessionController>();
+    final session = getIt<AuthBloc>();
     final catalog = getIt<CatalogBloc>();
     return BlocProvider(
       create: (_) => getIt<EarningsCubit>(param1: session.user!.id),
@@ -28,7 +28,7 @@ class EarningsScreen extends StatelessWidget {
           summary: e,
           now: catalog.now,
           // Con Supabase todo sale de las entregas guardadas en la base.
-          real: session.auth.isRemote,
+          real: session.isRemote,
         ),
       ),
     );

@@ -130,7 +130,7 @@ Future<void> runFullOrderFlow(WidgetTester tester, TestServices s) async {
   expect(
     (await s.orders.useCases.acceptOffer(
       order.id,
-      s.session.auth.byId('u-valentina')!,
+      s.session.accountById('u-valentina')!,
     )).code,
     'already_assigned',
   );

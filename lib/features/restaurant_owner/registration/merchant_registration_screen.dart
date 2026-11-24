@@ -10,10 +10,9 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/business.dart';
 import '../../../data/models/catalog.dart';
 import '../../../data/models/user.dart';
-import '../../../data/repositories/auth_repository.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../../app/di/injection.dart';
 
 const _docs = {
@@ -39,7 +38,7 @@ class _MerchantRegistrationScreenState
   static int _seq = 0;
   final _forms = List.generate(6, (_) => GlobalKey<FormState>());
   int _step = 0;
-  late final SessionController _session = getIt<SessionController>();
+  late final AuthBloc _session = getIt<AuthBloc>();
 
   final _owner = TextEditingController();
   final _ownerDoc = TextEditingController();
@@ -154,21 +153,22 @@ class _MerchantRegistrationScreenState
     final catalog = context.read<CatalogBloc>();
     final notifications = context.read<NotificationsBloc>();
 
-    try {
-      if (!_session.isLoggedIn) {
-        await _session.registerAsync(
+    if (!_session.isLoggedIn) {
+      final created = await _session.request(
+        RegisterRequested(
           name: _owner.text,
           email: _email.text,
           password: _password.text,
           role: UserRole.restaurant,
           phone: _phone.text,
-        );
+        ),
+      );
+      if (!created.ok) {
+        if (!mounted) return;
+        setState(() => _step = 0);
+        showSnack(context, created.message, error: true);
+        return;
       }
-    } on AuthException catch (e) {
-      if (!mounted) return;
-      setState(() => _step = 0);
-      showSnack(context, e.message, error: true);
-      return;
     }
 
     final n = ++_seq;
@@ -214,10 +214,10 @@ class _MerchantRegistrationScreenState
       branchName: _branchName.text.trim(),
     );
 
-    if (_session.auth.isRemote) {
+    if (_session.isRemote) {
       // Alta real: el negocio y sus sedes se crean en la base.
-      try {
-        final businessId = await _session.auth.registerBusiness({
+      final result = await _session.request(
+        BusinessRegistrationRequested({
           'brand': biz.brand,
           'legal_name': biz.legalName,
           'nit': biz.nit,
@@ -249,27 +249,19 @@ class _MerchantRegistrationScreenState
               'tagline': branch.tagline,
             },
           ],
-        });
-        if (!mounted) return;
-        if (businessId == null) {
-          showSnack(
-            context,
-            'No pudimos crear el negocio. Revisa los datos o tu conexión.',
-            error: true,
-          );
-          return;
-        }
-        _session.linkBusiness(businessId);
-        await catalog.request(CatalogRefreshRequested());
-      } on AuthException catch (e) {
-        if (!mounted) return;
-        showSnack(context, e.message, error: true);
+        }),
+      );
+      if (!mounted) return;
+      // El caso de uso ya vinculó la cuenta al negocio si salió bien.
+      if (!result.ok) {
+        showSnack(context, result.message, error: true);
         return;
       }
+      await catalog.request(CatalogRefreshRequested());
     } else {
       // Se espera el alta para que el menú ya vea la sede al navegar.
       await catalog.request(BusinessRegistered(biz, [branch]));
-      _session.linkBusiness(biz.id);
+      await _session.request(BusinessLinked(biz.id));
     }
 
     if (!mounted) return;

@@ -6,7 +6,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../domain/entities/order.dart';
 import '../../../domain/order_rules.dart';
 import '../../orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import 'rate_order_cubit.dart';
 import '../../../app/di/injection.dart';
 
@@ -115,7 +115,7 @@ Future<void> showRateOrderSheet(
   Order order,
   int initial,
 ) {
-  final user = getIt<SessionController>().user;
+  final user = getIt<AuthBloc>().user;
   if (user == null) return Future.value();
   final orders = context.read<OrdersBloc>();
   return showModalBottomSheet<void>(

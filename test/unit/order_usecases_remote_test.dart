@@ -34,7 +34,7 @@ void main() {
     wallet = RecordingWallet();
     notifier = RecordingNotifier();
     final sessionAdapter = SessionOrderAdapter(
-      s.session,
+      s.session.useCases.session,
       s.wallet.useCases,
       s.university.useCases.queries,
     );
@@ -271,7 +271,7 @@ void main() {
   });
 
   group('Repartidor', () {
-    AppUser courier() => s.session.auth.byId(_courierId)!;
+    AppUser courier() => s.session.accountById(_courierId)!;
 
     test('cada resultado del servidor se conserva', () async {
       final o = serverOrder(OrderStatus.ready);

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../shared/state/controller_scope.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,7 +13,7 @@ import '../../features/buyer/cart/bloc/cart_cubit.dart';
 import '../../features/catalog/bloc/catalog_bloc.dart';
 import '../../features/preferences/bloc/preferences_cubit.dart';
 import '../../domain/entities/preferences_status.dart';
-import '../../shared/state/session_controller.dart';
+import '../../features/auth/bloc/auth_bloc.dart';
 import '../constants/catalog_constants.dart';
 import '../utils/format.dart';
 import 'ui.dart';
@@ -26,7 +25,7 @@ Future<bool> requireLogin(
   BuildContext context, {
   required String reason,
 }) async {
-  final session = getIt<SessionController>();
+  final session = getIt<AuthBloc>();
   if (session.isLoggedIn) return true;
   final go = await showModalBottomSheet<bool>(
     context: context,
@@ -119,7 +118,7 @@ Future<void> quickAdd(BuildContext context, Dish dish) async {
 Future<void> toggleFavoriteDish(BuildContext context, Dish dish) async {
   if (!await requireLogin(context, reason: 'guardar favoritos')) return;
   if (!context.mounted) return;
-  final s = getIt<SessionController>();
+  final s = getIt<AuthBloc>();
   final prefs = context.read<PreferencesCubit>();
   // La caché cambia al instante; si el servidor falla se revierte sola.
   unawaited(prefs.toggleFavorite(s.user?.id, FavoriteKind.dish, dish.id));
@@ -150,7 +149,7 @@ Future<void> showDeliveryPointSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     builder: (ctx) {
-      final session = ctx.watchController<SessionController>();
+      final session = ctx.watch<AuthBloc>();
       return SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -181,9 +180,10 @@ Future<void> showDeliveryPointSheet(BuildContext context) {
                     border: p.id == session.pointId
                         ? Border.all(color: AppColors.primary, width: 2)
                         : null,
-                    onTap: () {
-                      session.setPoint(p.id);
+                    onTap: () async {
                       Navigator.pop(ctx);
+                      await session.request(DeliveryPointChanged(p.id));
+                      if (!context.mounted) return;
                       final n = getIt<CatalogBloc>()
                           .reachableRestaurants
                           .length;
@@ -244,8 +244,8 @@ String homeForRole(UserRole role) => switch (role) {
 
 /// Selector de cuentas de demostración para recorrer los tres roles.
 Future<void> showDemoAccountsSheet(BuildContext context) {
-  final session = getIt<SessionController>();
-  final accounts = session.auth.demoAccounts;
+  final session = getIt<AuthBloc>();
+  final accounts = session.demoAccounts;
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -284,9 +284,10 @@ Future<void> showDemoAccountsSheet(BuildContext context) {
                   trailing: session.user?.id == u.id
                       ? const Icon(Icons.check_circle, color: AppColors.success)
                       : const Icon(Icons.chevron_right),
-                  onTap: () {
-                    session.loginAs(u);
+                  onTap: () async {
                     Navigator.pop(ctx);
+                    await session.request(DemoAccountSelected(u));
+                    if (!context.mounted) return;
                     context.go(homeForRole(u.role));
                     showSnack(context, 'Sesión demo: ${u.name}');
                   },

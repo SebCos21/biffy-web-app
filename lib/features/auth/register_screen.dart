@@ -5,8 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/app_colors.dart';
 import '../../core/widgets/ui.dart';
 import '../../domain/entities/user.dart';
-import '../../shared/state/session_controller.dart';
-import '../../shared/state/controller_scope.dart';
+import 'bloc/auth_bloc.dart';
 import 'bloc/register_cubit.dart';
 import 'login_screen.dart';
 import '../../app/di/injection.dart';
@@ -84,7 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final remote = context.watchController<SessionController>().auth.isRemote;
+    final remote = context.watch<AuthBloc>().isRemote;
     return BlocBuilder<RegisterCubit, RegisterState>(
       bloc: _cubit,
       builder: (context, state) => Scaffold(

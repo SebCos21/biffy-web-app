@@ -10,14 +10,15 @@ import 'package:biffy/domain/entities/preferences_status.dart';
 import 'package:biffy/features/preferences/bloc/preferences_cubit.dart';
 import 'package:biffy/data/mock/seed_users.dart';
 import 'package:biffy/data/models/user.dart';
-import 'package:biffy/data/repositories/auth_repository.dart';
-import 'package:biffy/shared/state/session_controller.dart';
+import 'package:biffy/features/auth/bloc/auth_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
 
 void main() {
-  late SessionController s;
+  // Adaptado: la sesión es el AuthBloc (antes SessionController); login y
+  // logout síncronos son los atajos de prueba de helpers.dart.
+  late AuthBloc s;
   setUp(() async => s = (await makeServices()).session);
 
   // Adaptado: el saldo y los canjes viven ahora en la billetera (WalletCubit);
@@ -53,23 +54,28 @@ void main() {
       expect(s.activeRole, UserRole.courier);
     });
 
-    test('contraseña incorrecta falla', () {
-      expect(
-        () => s.login(kDemoBuyerEmail, 'mal'),
-        throwsA(isA<AuthException>()),
-      );
+    // Adaptado: antes lanzaba AuthException; ahora el Bloc devuelve un
+    // AuthResult de error con el mensaje en español.
+    test('contraseña incorrecta falla', () async {
+      final r = await s.request(LoginRequested(kDemoBuyerEmail, 'mal'));
+      expect(r.ok, isFalse);
+      expect(r.code, 'auth_error');
+      expect(r.message, isNotEmpty);
+      expect(s.isLoggedIn, isFalse);
     });
 
-    test('registro duplicado falla', () {
-      expect(
-        () => s.register(
+    test('registro duplicado falla', () async {
+      final r = await s.request(
+        RegisterRequested(
           name: 'X',
           email: kDemoBuyerEmail,
           password: '123456',
           role: UserRole.buyer,
         ),
-        throwsA(isA<AuthException>()),
       );
+      expect(r.ok, isFalse);
+      expect(r.code, 'auth_error');
+      expect(s.isLoggedIn, isFalse);
     });
 
     test('bienvenida de 450 Gotas una sola vez', () {

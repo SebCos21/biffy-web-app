@@ -10,11 +10,10 @@ import '../../../data/models/rewards.dart';
 import '../../../domain/repositories/rewards_repository.dart';
 import '../../../domain/entities/user.dart';
 import '../../../domain/entities/wallet.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../wallet/bloc/wallet_cubit.dart';
 import 'rewards_cubit.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Pantalla de Gotas: saldo, cómo ganarlas, canjes e historial.
 ///
@@ -108,7 +107,7 @@ class _RewardsPage extends StatelessWidget {
   /// Construye el saldo, los beneficios y el historial.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final wallet = context.watch<WalletCubit>();
     final userId = session.user?.id;
     final gotas = wallet.balanceOf(userId);

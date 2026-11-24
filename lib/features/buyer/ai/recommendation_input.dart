@@ -4,7 +4,7 @@ import '../../../data/models/order.dart';
 import '../../../domain/recommendation.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../university/bloc/university_cubit.dart';
 import '../../../app/di/injection.dart';
 import '../../preferences/bloc/preferences_cubit.dart';
@@ -15,7 +15,7 @@ RecommendationInput buildRecommendationInput(
   BuildContext context, {
   int seed = 0,
 }) {
-  final session = getIt<SessionController>();
+  final session = getIt<AuthBloc>();
   final uniCubit = getIt<UniversityCubit>();
   final catalog = getIt<CatalogBloc>();
   final prefs = getIt<PreferencesCubit>();

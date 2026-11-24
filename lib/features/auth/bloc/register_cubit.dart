@@ -1,8 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../domain/entities/user.dart';
-import '../../../domain/repositories/auth_repository.dart';
-import '../../../shared/state/session_controller.dart';
+import 'auth_bloc.dart';
 
 /// Etapa del registro de una cuenta.
 enum RegisterStatus { idle, submitting, success, error }
@@ -57,10 +56,10 @@ class RegisterState {
 /// El restaurante no crea la cuenta aquí: pasa al formulario ampliado del
 /// negocio, que es quien termina el alta.
 class RegisterCubit extends Cubit<RegisterState> {
-  /// Recibe la sesión que ejecuta el registro real.
-  RegisterCubit(this._session) : super(const RegisterState());
+  /// Recibe el Bloc de la sesión que ejecuta el registro real.
+  RegisterCubit(this._auth) : super(const RegisterState());
 
-  final SessionController _session;
+  final AuthBloc _auth;
 
   /// Cambia el rol que se va a registrar.
   void roleChanged(UserRole role) {
@@ -94,15 +93,18 @@ class RegisterCubit extends Cubit<RegisterState> {
     }
 
     emit(state.copyWith(status: RegisterStatus.submitting));
-    try {
-      final user = await _session.registerAsync(
+    final result = await _auth.request(
+      RegisterRequested(
         name: name,
         email: email,
         password: password,
         role: state.role,
         phone: phone,
-      );
-      if (isClosed) return state;
+      ),
+    );
+    if (isClosed) return state;
+    if (result.ok) {
+      final user = result.user;
       final next = state.role == UserRole.courier
           ? '/repartidor/registro'
           : null;
@@ -114,21 +116,8 @@ class RegisterCubit extends Cubit<RegisterState> {
         ),
       );
       return state;
-    } on AuthException catch (e) {
-      if (!isClosed) {
-        emit(state.copyWith(status: RegisterStatus.error, error: e.message));
-      }
-      return state;
-    } on Object {
-      if (!isClosed) {
-        emit(
-          state.copyWith(
-            status: RegisterStatus.error,
-            error: 'No pudimos crear la cuenta. Revisa tu conexión.',
-          ),
-        );
-      }
-      return state;
     }
+    emit(state.copyWith(status: RegisterStatus.error, error: result.message));
+    return state;
   }
 }

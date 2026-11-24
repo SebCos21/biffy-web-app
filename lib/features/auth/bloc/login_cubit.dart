@@ -1,8 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../domain/repositories/auth_repository.dart';
 import '../../../domain/entities/user.dart';
-import '../../../shared/state/session_controller.dart';
+import 'auth_bloc.dart';
 
 /// Etapa del inicio de sesión.
 enum LoginStatus { idle, submitting, success, error }
@@ -48,13 +47,13 @@ class LoginState {
 
 /// Cubit del login: valida el formulario, llama a la sesión y publica el error.
 ///
-/// Flujo: pantalla → [LoginCubit] → [SessionController.loginAsync] →
-/// `AuthRepository` (memoria o Supabase).
+/// Flujo: pantalla → [LoginCubit] → [AuthBloc] (`LoginRequested`) → caso de
+/// uso `SignIn` → `AuthRepository` (memoria o Supabase).
 class LoginCubit extends Cubit<LoginState> {
-  /// Recibe la sesión que ejecuta el login real.
-  LoginCubit(this._session) : super(const LoginState());
+  /// Recibe el Bloc de la sesión que ejecuta el login real.
+  LoginCubit(this._auth) : super(const LoginState());
 
-  final SessionController _session;
+  final AuthBloc _auth;
 
   /// Alterna la visibilidad de la contraseña.
   void toggleObscure() => emit(state.copyWith(obscure: !state.obscure));
@@ -68,26 +67,13 @@ class LoginCubit extends Cubit<LoginState> {
   Future<AppUser?> submit(String email, String password) async {
     if (state.isSubmitting) return null;
     emit(state.copyWith(status: LoginStatus.submitting));
-    try {
-      final user = await _session.loginAsync(email, password);
-      if (isClosed) return user;
-      emit(state.copyWith(status: LoginStatus.success, user: user));
-      return user;
-    } on AuthException catch (e) {
-      if (!isClosed) {
-        emit(state.copyWith(status: LoginStatus.error, error: e.message));
-      }
-      return null;
-    } on Object {
-      if (!isClosed) {
-        emit(
-          state.copyWith(
-            status: LoginStatus.error,
-            error: 'No pudimos iniciar sesión. Revisa tu conexión.',
-          ),
-        );
-      }
-      return null;
+    final result = await _auth.request(LoginRequested(email, password));
+    if (isClosed) return result.user;
+    if (result.ok) {
+      emit(state.copyWith(status: LoginStatus.success, user: result.user));
+      return result.user;
     }
+    emit(state.copyWith(status: LoginStatus.error, error: result.message));
+    return null;
   }
 }

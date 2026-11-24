@@ -6,10 +6,9 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/order.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import 'reorder_flow.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Historial separado en activos, programados, anteriores y cancelados.
@@ -20,7 +19,7 @@ class OrdersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final now = getIt<CatalogBloc>().now;
     if (session.user == null) return const Scaffold();
     final mine = orders.forBuyer(session.user!.id)

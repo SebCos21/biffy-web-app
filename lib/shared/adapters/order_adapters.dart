@@ -1,3 +1,4 @@
+import '../../core/constants/catalog_constants.dart';
 import '../../core/utils/format.dart';
 import '../../domain/entities/catalog.dart';
 import '../../domain/entities/order.dart';
@@ -7,7 +8,7 @@ import '../../domain/usecases/catalog/catalog_usecases.dart';
 import '../../domain/usecases/notifications/notification_usecases.dart';
 import '../../domain/usecases/university/university_usecases.dart';
 import '../../domain/usecases/wallet/wallet_usecases.dart';
-import '../state/session_controller.dart';
+import '../../domain/repositories/session_repository.dart';
 
 /// Conecta el puerto de catálogo de pedidos con los casos de uso del catálogo.
 class CatalogOrderAdapter implements OrderCatalogPort {
@@ -33,14 +34,12 @@ class CatalogOrderAdapter implements OrderCatalogPort {
   void recordSale(String dishId, int qty) => _catalog.recordSale(dishId, qty);
 }
 
-// TODO(puente): lee de SessionController (ChangeNotifier) el punto de entrega
-// y la cuenta activa hasta que el AuthBloc la reemplace (módulo 6).
 /// Conecta los puertos de comprador y billetera de pedidos con la sesión y
 /// con los casos de uso de la billetera.
 class SessionOrderAdapter implements OrderBuyerPort, OrderWalletPort {
   /// Recibe la sesión, la billetera y la verificación universitaria.
   SessionOrderAdapter(this._session, this._wallet, this._university);
-  final SessionController _session;
+  final SessionRepository _session;
   final WalletUseCases _wallet;
   final UniversityQueries _university;
 
@@ -55,7 +54,7 @@ class SessionOrderAdapter implements OrderBuyerPort, OrderWalletPort {
 
   /// Punto de entrega activo.
   @override
-  DeliveryPoint get currentPoint => _session.point;
+  DeliveryPoint get currentPoint => pointById(_session.current.pointId);
 
   /// Descuenta Gotas (solo demo; con servidor las mueve la base).
   @override
@@ -75,7 +74,7 @@ class SessionOrderAdapter implements OrderBuyerPort, OrderWalletPort {
   /// Relee el saldo del servidor; no hace nada en demo ni sin sesión.
   @override
   Future<void> syncBalance() async {
-    final u = _session.user;
+    final u = _session.current.user;
     if (u == null || !_wallet.repo.isRemote) return;
     await _wallet.sync(u.id);
   }

@@ -11,11 +11,10 @@ import '../../../core/widgets/ui.dart';
 import '../../../domain/catalog_rules.dart';
 import '../../../domain/pricing.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../university/bloc/university_cubit.dart';
 import '../../preferences/bloc/preferences_cubit.dart';
 import '../../../domain/entities/preferences_status.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Menú de un restaurante con portada, filtros de sección y platos.
 class RestaurantScreen extends StatefulWidget {
@@ -35,7 +34,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final uniCubit = context.watch<UniversityCubit>();
     final prefsCubit = context.watch<PreferencesCubit>();
     final t = Theme.of(context).textTheme;

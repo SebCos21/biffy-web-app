@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/catalog_constants.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/user.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../university/bloc/university_cubit.dart';
 import '../../../app/di/injection.dart';
 import '../bloc/courier_cubit.dart';
@@ -27,7 +27,7 @@ class CourierRegistrationScreen extends StatefulWidget {
 /// Estado del formulario de registro del repartidor.
 class _CourierRegistrationScreenState extends State<CourierRegistrationScreen> {
   final _form = GlobalKey<FormState>();
-  late final SessionController _s = getIt<SessionController>();
+  late final AuthBloc _s = getIt<AuthBloc>();
   late final CourierProfile? _p = _s.user == null
       ? null
       : getIt<CourierCubit>().statusOf(_s.user!.id).profile;

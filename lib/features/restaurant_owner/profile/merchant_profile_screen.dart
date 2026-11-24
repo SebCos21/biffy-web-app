@@ -9,9 +9,8 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/user.dart';
 import '../../../domain/catalog_rules.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../buyer/profile/profile_screen.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Perfil del negocio. Los campos que aún no se pueden editar se muestran
 /// como información (sin botones engañosos).
@@ -21,7 +20,7 @@ class MerchantProfileScreen extends StatelessWidget {
   /// Muestra identidad, sedes, horarios y opciones de la cuenta.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final catalog = context.watch<CatalogBloc>();
     final t = Theme.of(context).textTheme;
     final b = catalog.businessById(session.businessId!)!;
@@ -134,8 +133,9 @@ class MerchantProfileScreen extends StatelessWidget {
                     leading: const Icon(Icons.shopping_bag_outlined),
                     title: const Text('Cambiar a modo comprador'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      session.setActiveRole(UserRole.buyer);
+                    onTap: () async {
+                      await session.request(ActiveRoleChanged(UserRole.buyer));
+                      if (!context.mounted) return;
                       context.go('/');
                     },
                   ),

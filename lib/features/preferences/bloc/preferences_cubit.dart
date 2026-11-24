@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../domain/entities/catalog.dart';
 import '../../../domain/entities/preferences_status.dart';
 import '../../../domain/entities/user.dart';
 import '../../../domain/repositories/preferences_repository.dart';
@@ -77,6 +78,14 @@ class PreferencesCubit extends Cubit<PreferencesState> {
   /// `true` si la sede es favorita.
   bool isFavoriteBranch(String? userId, String branchId) =>
       useCases.queries.isFavoriteBranch(userId, branchId);
+
+  /// Medio de pago preferido de la cuenta.
+  PaymentMethod defaultPaymentOf(String? userId) =>
+      useCases.queries.defaultPaymentOf(userId);
+
+  /// Cambia el medio de pago preferido.
+  void setDefaultPayment(String? userId, PaymentMethod method) =>
+      useCases.setDefaultPayment(userId, method);
 
   /// Guarda las preferencias; el resultado trae las Gotas acreditadas.
   PreferencesResult save(String? userId, Preferences prefs) =>

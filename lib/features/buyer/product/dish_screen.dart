@@ -12,10 +12,9 @@ import '../../../domain/catalog_rules.dart';
 import '../../../domain/pricing.dart';
 import '../cart/bloc/cart_cubit.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../preferences/bloc/preferences_cubit.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Detalle y personalización. Con [editLineId] edita una línea del carrito
 /// sin modificarla hasta guardar.
@@ -63,7 +62,7 @@ class _DishScreenState extends State<DishScreen> {
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final prefsCubit = context.watch<PreferencesCubit>();
     final t = Theme.of(context).textTheme;
     final d = catalog.dishById(widget.id);

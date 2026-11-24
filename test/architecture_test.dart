@@ -32,6 +32,19 @@ List<String> _violations(
   return bad;
 }
 
+/// Código de la sesión (antes `lib/shared/state/session_controller.dart`):
+/// Bloc, estado, evento, instantánea, repositorio y, salvo [stateOnly], sus
+/// casos de uso.
+String _sessionSources({bool stateOnly = false}) => [
+  'lib/features/auth/bloc/auth_bloc.dart',
+  'lib/features/auth/bloc/auth_event.dart',
+  'lib/features/auth/bloc/auth_state.dart',
+  'lib/domain/entities/session.dart',
+  'lib/domain/repositories/session_repository.dart',
+  'lib/data/repositories/in_memory_session_repository.dart',
+  if (!stateOnly) 'lib/domain/usecases/auth/auth_usecases.dart',
+].map((p) => File(p).readAsStringSync()).join('\n');
+
 void main() {
   test('domain no depende de data, features, shared, app ni de frameworks', () {
     final bad = _violations(
@@ -207,9 +220,7 @@ void main() {
 
   test('Gotas y cupones no se mueven en la sesión', () {
     // Saldo, historial y cupones viven en la billetera (WalletRepository).
-    final src = File(
-      'lib/shared/state/session_controller.dart',
-    ).readAsStringSync();
+    final src = _sessionSources();
     for (final m in [
       'int get gotas',
       'spendGotas(',
@@ -219,7 +230,7 @@ void main() {
       'gotasHistory',
       '.coupons',
     ]) {
-      expect(src.contains(m), isFalse, reason: 'session_controller: $m');
+      expect(src.contains(m), isFalse, reason: 'sesión: $m');
     }
   });
 
@@ -247,9 +258,7 @@ void main() {
   });
 
   test('preferencias y favoritos no viven en la sesión', () {
-    final src = File(
-      'lib/shared/state/session_controller.dart',
-    ).readAsStringSync();
+    final src = _sessionSources();
     for (final m in [
       'savePreferences(',
       'toggleFavoriteDish(',
@@ -258,7 +267,7 @@ void main() {
       'prefsCompleted',
       'Preferences get prefs',
     ]) {
-      expect(src.contains(m), isFalse, reason: 'session_controller: $m');
+      expect(src.contains(m), isFalse, reason: 'sesión: $m');
     }
   });
 
@@ -286,19 +295,23 @@ void main() {
   });
 
   test('las direcciones no viven en la sesión', () {
-    final src = File(
-      'lib/shared/state/session_controller.dart',
-    ).readAsStringSync();
+    final src = _sessionSources();
     for (final m in [
       'saveAddress(',
       'deleteAddress(',
       'setDefaultAddress(',
       'addressById(',
-      '.addresses',
       'defaultAddressId',
     ]) {
-      expect(src.contains(m), isFalse, reason: 'session_controller: $m');
+      expect(src.contains(m), isFalse, reason: 'sesión: $m');
     }
+    // Adaptado: los casos de uso de la sesión delegan en AddressUseCases
+    // (`_d.addresses.load`), así que la lista se busca solo en el estado.
+    expect(
+      _sessionSources(stateOnly: true).contains('.addresses'),
+      isFalse,
+      reason: 'sesión: .addresses',
+    );
   });
 
   test('los cubits de verificación universitaria solo conocen el dominio', () {
@@ -334,9 +347,7 @@ void main() {
   });
 
   test('la verificación universitaria no vive en la sesión', () {
-    final src = File(
-      'lib/shared/state/session_controller.dart',
-    ).readAsStringSync();
+    final src = _sessionSources();
     for (final m in [
       'enum VerifyResult',
       'verifyUniversity',
@@ -347,7 +358,7 @@ void main() {
       'universityEmail',
       'void setUniversity(',
     ]) {
-      expect(src.contains(m), isFalse, reason: 'session_controller: $m');
+      expect(src.contains(m), isFalse, reason: 'sesión: $m');
     }
   });
 
@@ -366,6 +377,66 @@ void main() {
       RegExp(r"(\.\./)+data/|supabase"),
     );
     expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test('el AuthBloc y los cubits de auth solo conocen el dominio', () {
+    final bad = _violations(
+      'lib/features/auth/bloc',
+      RegExp(r"(\.\./)+(data|shared|app)/|supabase"),
+    );
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test(
+    'no queda SessionController ni ControllerScope (los reemplazó AuthBloc)',
+    () {
+      for (final f in [
+        'lib/shared/state/session_controller.dart',
+        'lib/shared/state/controller_scope.dart',
+      ]) {
+        expect(File(f).existsSync(), isFalse, reason: f);
+      }
+      final bad = _violations(
+        'lib',
+        RegExp(r'session_controller|controller_scope'),
+      );
+      expect(bad, isEmpty, reason: bad.join('\n'));
+      final watch = [
+        for (final f in Directory('lib').listSync(recursive: true))
+          if (f is File &&
+              f.path.endsWith('.dart') &&
+              f.readAsStringSync().contains('watchController'))
+            f.path,
+      ];
+      expect(watch, isEmpty, reason: watch.join('\n'));
+    },
+  );
+
+  test('no hay ChangeNotifier ni ValueNotifier en lib/', () {
+    final pattern = RegExp(
+      r'(extends|with|implements)\s+ChangeNotifier|ValueNotifier<|ChangeNotifier\(',
+    );
+    final bad = [
+      for (final f in Directory('lib').listSync(recursive: true))
+        if (f is File &&
+            f.path.endsWith('.dart') &&
+            pattern.hasMatch(f.readAsStringSync()))
+          f.path,
+    ];
+    expect(bad, isEmpty, reason: bad.join('\n'));
+  });
+
+  test('el router se refresca con el stream del AuthBloc', () {
+    final router = File('lib/app/router.dart').readAsStringSync();
+    expect(router, contains('refreshListenable: refresh'));
+    expect(router, contains('AuthBloc'));
+    final app = File('lib/app/app.dart').readAsStringSync();
+    expect(
+      app,
+      matches(
+        RegExp(r'StreamRefreshListenable\(\s*getIt<AuthBloc>\(\)\.stream'),
+      ),
+    );
   });
 
   test('los repositorios de pedidos implementan la interfaz del dominio', () {

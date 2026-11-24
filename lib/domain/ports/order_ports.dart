@@ -15,7 +15,7 @@ abstract class OrderCatalogPort {
   void recordSale(String dishId, int qty);
 }
 
-/// Datos del comprador que afectan al precio. Lo implementa `SessionController`.
+/// Datos del comprador que afectan al precio. Lo implementa `SessionOrderAdapter`.
 abstract class OrderBuyerPort {
   String? verifiedUniversityId(String userId);
   int gotasOf(String userId);

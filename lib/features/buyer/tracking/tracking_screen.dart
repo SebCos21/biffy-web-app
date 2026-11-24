@@ -13,12 +13,11 @@ import '../../../domain/payment_errors.dart';
 import '../../../domain/pricing.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../cart/cart_screen.dart';
 import '../orders/reorder_flow.dart';
 import 'rate_order_card.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Seguimiento del pedido con línea de tiempo, código y resumen.
@@ -30,7 +29,7 @@ class TrackingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersBloc>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final t = Theme.of(context).textTheme;
     final o = orders.byId(id);
     if (o == null || (session.user != null && o.buyerId != session.user!.id)) {
@@ -343,10 +342,10 @@ class _DemoControls extends StatelessWidget {
   /// Dibuja los atajos según la etapa del pedido.
   @override
   Widget build(BuildContext context) {
-    final session = getIt<SessionController>();
+    final session = getIt<AuthBloc>();
     final catalog = getIt<CatalogBloc>();
     final r = catalog.restaurantById(order.restaurantId);
-    final owner = r == null ? null : session.auth.byBusiness(r.businessId);
+    final owner = r == null ? null : session.accountByBusiness(r.businessId);
     final kitchen =
         order.status == OrderStatus.pending ||
         order.status == OrderStatus.preparing;
@@ -376,8 +375,9 @@ class _DemoControls extends StatelessWidget {
                 key: const Key('demo-open-restaurant'),
                 icon: const Icon(Icons.storefront),
                 label: Text('Abrir como ${r!.name}'),
-                onPressed: () {
-                  session.loginAs(owner);
+                onPressed: () async {
+                  await session.request(DemoAccountSelected(owner));
+                  if (!context.mounted) return;
                   context.go('/negocio/pedidos');
                 },
               ),
@@ -385,11 +385,12 @@ class _DemoControls extends StatelessWidget {
               TextButton.icon(
                 icon: const Icon(Icons.delivery_dining),
                 label: const Text('Abrir como repartidor demo'),
-                onPressed: () {
-                  final u = session.auth.byId('u-andres');
+                onPressed: () async {
+                  final u = session.accountById('u-andres');
                   if (u == null) return;
-                  session.loginAs(u);
-                  session.setActiveRole(UserRole.courier);
+                  await session.request(DemoAccountSelected(u));
+                  await session.request(ActiveRoleChanged(UserRole.courier));
+                  if (!context.mounted) return;
                   context.go('/repartidor');
                 },
               ),
@@ -397,10 +398,11 @@ class _DemoControls extends StatelessWidget {
               TextButton.icon(
                 icon: const Icon(Icons.delivery_dining),
                 label: Text('Abrir como ${order.courierName}'),
-                onPressed: () {
-                  final u = session.auth.byId(order.courierId!);
+                onPressed: () async {
+                  final u = session.accountById(order.courierId!);
                   if (u == null) return;
-                  session.loginAs(u);
+                  await session.request(DemoAccountSelected(u));
+                  if (!context.mounted) return;
                   context.go('/repartidor');
                 },
               ),

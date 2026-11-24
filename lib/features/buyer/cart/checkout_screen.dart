@@ -13,12 +13,11 @@ import '../../../domain/entities/catalog.dart';
 import '../../../domain/pricing.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import 'bloc/cart_cubit.dart';
 import 'bloc/checkout_cubit.dart';
 import 'cart_screen.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Resumen final y confirmación del pedido de demostración (sin pagos).
 class CheckoutScreen extends StatefulWidget {
@@ -58,7 +57,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartCubit>();
-    context.watchController<SessionController>();
+    context.watch<AuthBloc>();
     final catalog = context.watch<CatalogBloc>();
     final t = Theme.of(context).textTheme;
     final draft = _checkout.draft;

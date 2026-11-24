@@ -10,10 +10,9 @@ import '../../../domain/recommendation.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../preferences/bloc/preferences_cubit.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import 'recommendation_input.dart';
 import '../../../app/di/injection.dart';
-import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Mensaje del chat local con Biffy AI y sus platos sugeridos.
@@ -86,7 +85,7 @@ class _AiScreenState extends State<AiScreen> {
   /// Construye las recomendaciones, el chat y el campo de entrada.
   @override
   Widget build(BuildContext context) {
-    context.watchController<SessionController>();
+    context.watch<AuthBloc>();
     context.watch<CatalogBloc>();
     context.watch<PreferencesCubit>();
     context.watch<OrdersBloc>();

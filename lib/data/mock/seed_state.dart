@@ -12,7 +12,6 @@ import '../../domain/repositories/address_repository.dart';
 import '../../domain/repositories/catalog_repository.dart';
 import '../../domain/repositories/university_repository.dart';
 import '../../domain/entities/university_status.dart';
-import '../../shared/state/session_controller.dart';
 import '../models/address.dart';
 import '../models/cart.dart';
 import '../models/catalog.dart';
@@ -22,7 +21,6 @@ import '../models/user.dart';
 /// Datos personales y pedidos semilla para probar las pantallas antes de
 /// crear un pedido nuevo. Todo es ficticio.
 void applyDemoSeed(
-  SessionController session,
   OrderRepository orders,
   CatalogRepository catalog,
   Clock clock,
@@ -49,9 +47,7 @@ void applyDemoSeed(
       favoriteBranches: {'qbano-icesi'},
     ),
   );
-  session.dataFor('u-diego')
-    ..welcomeGranted = true
-    ..defaultPayment = PaymentMethod.nequi;
+  wallet.markWelcomeGranted('u-diego');
   university.setStatus(
     'u-diego',
     const UniversityStatus(

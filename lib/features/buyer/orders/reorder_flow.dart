@@ -9,7 +9,7 @@ import '../../../domain/usecases/orders/checkout_draft.dart';
 import '../cart/bloc/cart_cubit.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../addresses/bloc/addresses_cubit.dart';
 import '../cart/cart_screen.dart';
 import '../../../app/di/injection.dart';
@@ -87,14 +87,14 @@ Future<void> orderNow(BuildContext context, Order order) async {
   final c = _check(context, order);
   if (!await _showWarnings(context, c, confirm: 'Continuar')) return;
   if (!context.mounted) return;
-  final session = getIt<SessionController>();
+  final session = getIt<AuthBloc>();
   final orders = context.read<OrdersBloc>();
   final draft = CheckoutDraft(
     buyer: session.user,
     restaurant: c.restaurant,
     items: c.items,
     address: getIt<AddressesCubit>().defaultOf(session.user?.id),
-    payment: session.data.defaultPayment,
+    payment: session.defaultPayment,
   );
   final totals = orders.preview(draft);
   final errors = orders.validate(draft);

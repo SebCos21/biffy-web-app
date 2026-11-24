@@ -37,7 +37,10 @@ import '../../../shared/adapters/order_adapters.dart';
 import '../../../shared/adapters/review_adapters.dart';
 import '../../../shared/adapters/server_order_notifier.dart';
 import '../../../shared/adapters/catalog_adapters.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../../domain/repositories/auth_repository.dart';
+import '../../../domain/repositories/profile_repository.dart';
+import '../../../domain/repositories/session_repository.dart';
+import '../../../domain/usecases/auth/auth_usecases.dart';
 
 /// Módulo de dominio: puertos (con sus adaptadores) y casos de uso.
 ///
@@ -55,14 +58,14 @@ void _registerPorts(GetIt g) {
   );
   g.registerLazySingleton<OrderBuyerPort>(
     () => SessionOrderAdapter(
-      g<SessionController>(),
+      g<SessionRepository>(),
       g<WalletUseCases>(),
       g<UniversityUseCases>().queries,
     ),
   );
   g.registerLazySingleton<OrderWalletPort>(
     () => SessionOrderAdapter(
-      g<SessionController>(),
+      g<SessionRepository>(),
       g<WalletUseCases>(),
       g<UniversityUseCases>().queries,
     ),
@@ -75,12 +78,12 @@ void _registerPorts(GetIt g) {
   );
   g.registerLazySingleton<CourierSessionPort>(
     () => SessionCourierAdapter(
-      g<SessionController>(),
+      g<AuthUseCases>(),
       g<UniversityUseCases>().queries,
     ),
   );
   g.registerLazySingleton<CatalogContextPort>(
-    () => SessionCatalogAdapter(g<SessionController>()),
+    () => SessionCatalogAdapter(g<SessionRepository>()),
     dispose: (port) {
       if (port is SessionCatalogAdapter) port.dispose();
     },
@@ -129,6 +132,23 @@ void _registerUseCases(GetIt g) {
   );
   g.registerFactory<PushNotification>(
     () => PushNotification(g<NotificationRepository>(), g<Clock>()),
+  );
+
+  // Sesión: login, registro, restaurar, cerrar y datos de la cuenta activa.
+  g.registerFactory<AuthUseCases>(
+    () => AuthUseCases(
+      auth: g<AuthRepository>(),
+      session: g<SessionRepository>(),
+      profile: g<ProfileRepository>(),
+      clock: g<Clock>(),
+      notifications: g<NotificationUseCases>(),
+      wallet: g<WalletUseCases>(),
+      preferences: g<PreferencesUseCases>(),
+      addresses: g<AddressUseCases>(),
+      couriers: g<CourierQueries>(),
+      loadCourier: g<LoadCourier>(),
+      university: g<UniversityUseCases>(),
+    ),
   );
 
   // Billetera: Gotas y cupones (la sesión, el WalletCubit y pedidos).

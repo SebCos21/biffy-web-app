@@ -6,6 +6,7 @@ import '../../domain/repositories/wallet_repository.dart';
 /// Saldo, movimientos y cupones de una cuenta dentro de la caché.
 class _Account {
   int gotas = 0;
+  bool welcomeGranted = false;
   final List<GotasEntry> history = [];
   final List<Coupon> coupons = [];
 }
@@ -89,6 +90,12 @@ class WalletCache {
     _emit();
     return found ? const WalletResult.ok() : const WalletResult('not_found');
   }
+
+  /// `true` si la cuenta ya recibió la bienvenida.
+  bool welcomeGrantedOf(String userId) => _of(userId).welcomeGranted;
+
+  /// Marca la bienvenida como entregada.
+  void markWelcomeGranted(String userId) => _of(userId).welcomeGranted = true;
 
   /// Deja saldo e historial de demostración.
   void seed(String userId, {int? gotas, List<GotasEntry> history = const []}) {

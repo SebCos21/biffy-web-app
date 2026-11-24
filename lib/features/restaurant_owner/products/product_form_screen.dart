@@ -9,7 +9,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/catalog.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../../app/di/injection.dart';
 
 /// Fila editable de un tamaño o extra del producto.
@@ -35,7 +35,7 @@ class ProductFormScreen extends StatefulWidget {
 class _ProductFormScreenState extends State<ProductFormScreen> {
   final _form = GlobalKey<FormState>();
   late final CatalogBloc _catalog = getIt<CatalogBloc>();
-  late final String _biz = getIt<SessionController>().businessId!;
+  late final String _biz = getIt<AuthBloc>().businessId!;
   late final Dish? _orig = widget.id == 'nuevo'
       ? null
       : _catalog.dishById(widget.id);

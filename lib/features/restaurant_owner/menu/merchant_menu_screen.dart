@@ -8,8 +8,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/ui.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
-import '../../../shared/state/session_controller.dart';
-import '../../../shared/state/controller_scope.dart';
+import '../../auth/bloc/auth_bloc.dart';
 
 /// Menú del negocio con búsqueda, filtros y acciones por producto.
 class MerchantMenuScreen extends StatefulWidget {
@@ -27,7 +26,7 @@ class _MerchantMenuScreenState extends State<MerchantMenuScreen> {
   /// Lista los productos filtrados con interruptores de disponibilidad.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final catalog = context.watch<CatalogBloc>();
     final t = Theme.of(context).textTheme;
     final branches = catalog.branchesOf(session.businessId!);

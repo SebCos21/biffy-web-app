@@ -1,3 +1,4 @@
+import 'catalog.dart';
 import 'user.dart';
 
 /// Cuenta bajo la que se guardan las preferencias del modo invitado (se
@@ -23,6 +24,7 @@ class PreferencesStatus {
     this.rewarded = false,
     this.favoriteDishes = const {},
     this.favoriteBranches = const {},
+    this.defaultPayment = PaymentMethod.nequi,
   });
 
   /// Gustos, estilo de vida, alergias, presupuesto y universidad elegida.
@@ -40,6 +42,9 @@ class PreferencesStatus {
   /// Sedes favoritas (ids).
   final Set<String> favoriteBranches;
 
+  /// Medio de pago preferido para el checkout.
+  final PaymentMethod defaultPayment;
+
   /// Favoritos del tipo indicado.
   Set<String> favoritesOf(FavoriteKind kind) =>
       kind == FavoriteKind.dish ? favoriteDishes : favoriteBranches;
@@ -51,12 +56,14 @@ class PreferencesStatus {
     bool? rewarded,
     Set<String>? favoriteDishes,
     Set<String>? favoriteBranches,
+    PaymentMethod? defaultPayment,
   }) => PreferencesStatus(
     prefs: prefs ?? this.prefs,
     completed: completed ?? this.completed,
     rewarded: rewarded ?? this.rewarded,
     favoriteDishes: favoriteDishes ?? this.favoriteDishes,
     favoriteBranches: favoriteBranches ?? this.favoriteBranches,
+    defaultPayment: defaultPayment ?? this.defaultPayment,
   );
 
   /// Copia con el favorito [id] agregado o quitado.

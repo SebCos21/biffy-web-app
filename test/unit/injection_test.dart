@@ -17,7 +17,8 @@ import 'package:biffy/features/buyer/cart/bloc/cart_cubit.dart';
 import 'package:biffy/features/catalog/bloc/catalog_bloc.dart';
 import 'package:biffy/domain/repositories/notification_repository.dart';
 import 'package:biffy/features/notifications/bloc/notifications_bloc.dart';
-import 'package:biffy/shared/state/session_controller.dart';
+import 'package:biffy/features/auth/bloc/auth_bloc.dart';
+import 'package:biffy/domain/repositories/session_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_order_repository.dart';
@@ -46,7 +47,8 @@ void main() {
   group('Ciclo de vida', () {
     test('repositorios y controladores son una sola instancia', () {
       expect(getIt<OrderRepository>(), same(getIt<OrderRepository>()));
-      expect(getIt<SessionController>(), same(getIt<SessionController>()));
+      expect(getIt<AuthBloc>(), same(getIt<AuthBloc>()));
+      expect(getIt<SessionRepository>(), same(getIt<SessionRepository>()));
       expect(getIt<CatalogBloc>(), same(getIt<CatalogBloc>()));
       expect(getIt<CartCubit>(), same(getIt<CartCubit>()));
       expect(getIt<PaymentRepository>(), same(getIt<PaymentRepository>()));
@@ -108,7 +110,7 @@ void main() {
     test('reset deja el contenedor vacío para la prueba siguiente', () async {
       await getIt.reset();
       expect(getIt.isRegistered<OrderRepository>(), isFalse);
-      expect(getIt.isRegistered<SessionController>(), isFalse);
+      expect(getIt.isRegistered<AuthBloc>(), isFalse);
     });
   });
 }

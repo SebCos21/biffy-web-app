@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../domain/entities/app_notification.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 
 /// Lo que muestra la pantalla de notificaciones del rol activo.
 class NotificationsState {
@@ -30,23 +30,24 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   /// Escucha el Bloc de avisos y la sesión para mantenerse al día.
   NotificationsCubit({
     required NotificationsBloc notifications,
-    required SessionController session,
+    required AuthBloc session,
   }) : _bloc = notifications,
        _session = session,
        super(_read(notifications, session)) {
-    _sub = _bloc.stream.listen((_) => _refresh());
-    // TODO(puente): la sesión sigue en ChangeNotifier hasta el módulo de Auth.
-    _session.addListener(_refresh);
+    _subs = [
+      _bloc.stream.listen((_) => _refresh()),
+      _session.stream.listen((_) => _refresh()),
+    ];
   }
 
   final NotificationsBloc _bloc;
-  final SessionController _session;
-  StreamSubscription<void>? _sub;
+  final AuthBloc _session;
+  List<StreamSubscription<Object?>> _subs = const [];
 
   /// Lee los avisos visibles para el usuario y rol actuales.
   static NotificationsState _read(
     NotificationsBloc bloc,
-    SessionController session,
+    AuthBloc session,
   ) => NotificationsState(
     items: bloc.visibleFor(session.user, session.activeRole),
     enabled: session.settings.notifications,
@@ -69,8 +70,9 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   /// Deja de escuchar al cerrar la pantalla.
   @override
   Future<void> close() {
-    _sub?.cancel();
-    _session.removeListener(_refresh);
+    for (final s in _subs) {
+      s.cancel();
+    }
     return super.close();
   }
 }

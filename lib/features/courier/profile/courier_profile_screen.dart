@@ -8,11 +8,10 @@ import '../../../core/widgets/actions.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/mock/seed_users.dart';
 import '../../../data/models/user.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../university/bloc/university_cubit.dart';
 import '../../buyer/profile/profile_screen.dart';
 import '../bloc/courier_cubit.dart';
-import '../../../shared/state/controller_scope.dart';
 
 /// Perfil del repartidor con sus datos y accesos de cuenta.
 class CourierProfileScreen extends StatelessWidget {
@@ -21,7 +20,7 @@ class CourierProfileScreen extends StatelessWidget {
   /// Lista los datos de registro y las opciones de sesión.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final uniCubit = context.watch<UniversityCubit>();
     final p = context.watch<CourierCubit>().statusOf(session.user!.id).profile!;
     final t = Theme.of(context).textTheme;
@@ -99,8 +98,9 @@ class CourierProfileScreen extends StatelessWidget {
                     leading: const Icon(Icons.shopping_bag_outlined),
                     title: const Text('Cambiar a modo comprador'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      session.setActiveRole(UserRole.buyer);
+                    onTap: () async {
+                      await session.request(ActiveRoleChanged(UserRole.buyer));
+                      if (!context.mounted) return;
                       context.go('/');
                     },
                   ),

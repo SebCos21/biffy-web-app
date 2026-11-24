@@ -464,6 +464,8 @@ Orden sugerido. Cada punto tiene criterio de aceptación.
 | Registro abierto | `disable_signup = false`: cualquiera con la URL y la clave publicable puede crear cuenta. Es aceptable en demo, no en producción. |
 | Disponibilidad y zona del repartidor | Límite conocido (HU-2): `CourierRepository.setOnline/setZone` son **locales en los dos modos**; no se guardan en Supabase. Al iniciar sesión con servidor, una cuenta con `courier_profiles` queda conectada y en zona Campus si su perfil tiene universidad. Solo el perfil se persiste. |
 | Avisos creados por la app | Límite conocido (HU-2): la escritura de `SupabaseNotificationRepository.push` en `notifications` (avisos `user:<id>`) **no tiene test automático**; la caché, `load`, `markRead` y la regla de visibilidad sí están probadas. |
+| Cerrar sesión con Supabase | Límite conocido (HU-2, heredado): «Cerrar sesión» del perfil despacha `LogoutRequested(local: true)` y **no llama a `auth.signOut()`**, igual que el `SessionController` anterior (que nunca usó `logoutAsync`). La sesión de Supabase guardada se restaura al reabrir la app. `LogoutRequested()` sin `local` ya cierra también en el servidor; cambiarlo es una decisión de producto. |
+| Eventos de sesión asíncronos | `AuthBloc` procesa los eventos después del `add`. Si la pantalla navega o lee la sesión justo después (iniciar sesión, cambiar de rol o de punto), debe usar `await bloc.request(evento)` antes de `context.go`; si no, el `redirect` del router aún ve la sesión vieja. |
 
 ---
 

@@ -12,12 +12,11 @@ import '../../../domain/recommendation.dart';
 import '../../catalog/bloc/catalog_bloc.dart';
 import '../../notifications/bloc/notifications_bloc.dart';
 import '../../../features/orders/bloc/orders_bloc.dart';
-import '../../../shared/state/session_controller.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../university/bloc/university_cubit.dart';
 import '../../preferences/bloc/preferences_cubit.dart';
 import '../../wallet/bloc/wallet_cubit.dart';
 import '../ai/recommendation_input.dart';
-import '../../../shared/state/controller_scope.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Página de inicio del comprador con accesos, promociones y catálogo.
@@ -27,7 +26,7 @@ class HomeScreen extends StatelessWidget {
   /// Construye la cabecera, las tarjetas y los listados de comida.
   @override
   Widget build(BuildContext context) {
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final uniCubit = context.watch<UniversityCubit>();
     final prefsCubit = context.watch<PreferencesCubit>();
     final wallet = context.watch<WalletCubit>();
@@ -359,8 +358,10 @@ class HomeScreen extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          session.updateSettings(
-                            session.settings.copyWith(demoLunch: true),
+                          session.add(
+                            SettingsChanged(
+                              session.settings.copyWith(demoLunch: true),
+                            ),
                           );
                           showSnack(
                             context,

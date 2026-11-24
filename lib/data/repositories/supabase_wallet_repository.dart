@@ -137,6 +137,14 @@ class SupabaseWalletRepository implements WalletRepository {
     }
   }
 
+  /// `true` si la cuenta ya recibió la bienvenida.
+  @override
+  bool welcomeGrantedOf(String userId) => _cache.welcomeGrantedOf(userId);
+
+  /// Marca la bienvenida como entregada.
+  @override
+  void markWelcomeGranted(String userId) => _cache.markWelcomeGranted(userId);
+
   /// Cierra el stream de cambios.
   void dispose() => _cache.dispose();
 }

@@ -7,13 +7,12 @@ import '../../app/theme/app_colors.dart';
 import '../../data/models/catalog.dart';
 import '../../domain/pricing.dart';
 import '../../features/catalog/bloc/catalog_bloc.dart';
-import '../../shared/state/session_controller.dart';
+import '../../features/auth/bloc/auth_bloc.dart';
 import '../../features/university/bloc/university_cubit.dart';
 import '../../features/preferences/bloc/preferences_cubit.dart';
 import '../utils/format.dart';
 import 'actions.dart';
 import 'ui.dart';
-import '../../shared/state/controller_scope.dart';
 
 /// Botón circular con signo más que agrega el plato o avisa si está agotado.
 class _AddButton extends StatelessWidget {
@@ -132,7 +131,7 @@ class DishTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final uniCubit = context.watch<UniversityCubit>();
     final prefsCubit = context.watch<PreferencesCubit>();
     final r = catalog.restaurantById(dish.restaurantId);
@@ -237,7 +236,7 @@ class RestaurantCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogBloc>();
-    final session = context.watchController<SessionController>();
+    final session = context.watch<AuthBloc>();
     final uniCubit = context.watch<UniversityCubit>();
     final r = restaurant;
 

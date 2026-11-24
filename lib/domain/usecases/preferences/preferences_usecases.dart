@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../../../core/constants/catalog_constants.dart';
+import '../../entities/catalog.dart';
 import '../../entities/preferences_status.dart';
 import '../../entities/user.dart';
 import '../../repositories/preferences_repository.dart';
@@ -39,6 +40,10 @@ class PreferencesQueries {
   /// `true` si la sede es favorita.
   bool isFavoriteBranch(String? userId, String branchId) =>
       favoriteBranches(userId).contains(branchId);
+
+  /// Medio de pago preferido (también el del invitado).
+  PaymentMethod defaultPaymentOf(String? userId) =>
+      statusOf(userId).defaultPayment;
 }
 
 /// Guarda las preferencias; la primera vez con sesión acredita 300 Gotas y
@@ -144,6 +149,22 @@ class SetPreferredUniversity {
   }
 }
 
+/// Guarda el medio de pago preferido (solo local, como antes).
+class SetDefaultPayment {
+  /// Recibe el repositorio.
+  const SetDefaultPayment(this._repo);
+  final PreferencesRepository _repo;
+
+  /// Fija [method] para la cuenta (o el invitado).
+  void call(String? userId, PaymentMethod method) {
+    final account = userId ?? kGuestAccount;
+    _repo.replace(
+      account,
+      _repo.statusOf(account).copyWith(defaultPayment: method),
+    );
+  }
+}
+
 /// Trae preferencias y favoritos al iniciar sesión.
 class LoadPreferences {
   /// Recibe el repositorio.
@@ -166,6 +187,7 @@ class PreferencesUseCases {
        toggleFavorite = ToggleFavorite(repo),
        adoptGuest = AdoptGuestPreferences(repo),
        setUniversity = SetPreferredUniversity(repo),
+       setDefaultPayment = SetDefaultPayment(repo),
        load = LoadPreferences(repo);
 
   /// Repositorio (en memoria o Supabase).
@@ -185,6 +207,9 @@ class PreferencesUseCases {
 
   /// Cambiar la universidad elegida.
   final SetPreferredUniversity setUniversity;
+
+  /// Cambiar el medio de pago preferido.
+  final SetDefaultPayment setDefaultPayment;
 
   /// Cargar del servidor.
   final LoadPreferences load;
